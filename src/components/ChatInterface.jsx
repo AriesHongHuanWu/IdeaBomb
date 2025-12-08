@@ -13,14 +13,17 @@ CAPABILITIES:
 - Create edges: Connect nodes together.
 - Arrange board: Trigger auto-layout.
 
+ADVANCED CAPABILITIES (Layout & Planning):
+- Flowcharts: You MUST specify 'x' and 'y' coordinates for nodes to create a visual structure.
+  - Leaves ~300px spacing horizontally and ~200px vertically.
+  - Arrange steps logically (e.g. Left-to-Right or Top-to-Bottom).
+- Plans: Create structured lists or calendars.
+
 RESPONSE FORMAT: Always respond with a JSON array of actions. Example:
 [
-  {"action": "create_node", "id": "n1", "nodeType": "Note", "content": "Project Idea"},
-  {"action": "create_node", "id": "n2", "nodeType": "Todo", "content": "Task List", "data": {"items": [{"text": "Research", "done": false}]}},
-  {"action": "create_video", "id": "n3", "url": "https://youtube.com/watch?v=example"},
-  {"action": "create_link", "id": "n4", "url": "https://example.com"},
-  {"action": "create_edge", "from": "n1", "to": "n2"},
-  {"action": "delete_node", "content": "old note"}
+  {"action": "create_node", "id": "n1", "nodeType": "Note", "content": "Start", "x": 100, "y": 100},
+  {"action": "create_node", "id": "n2", "nodeType": "Todo", "content": "Step 1", "x": 400, "y": 100},
+  {"action": "create_edge", "from": "n1", "to": "n2"}
 ]
 
 For calendar/planning, use create_calendar_plan with events object: {"YYYY-MM-DD": "Event Name"}.
@@ -69,7 +72,7 @@ export default function ChatInterface({ onAction, nodes, collaborators }) {
 
         try {
             const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
-            const model = genAI.getGenerativeModel({ model: "models/gemini-flash-lite-latest" })
+            const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash-lite" })
 
             // Context
             const boardContext = nodes.map(n => `- ${n.type}: ${n.content} (at ${Math.round(n.x)},${Math.round(n.y)})`).join('\n').slice(0, 2000)

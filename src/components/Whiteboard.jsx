@@ -400,12 +400,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                 </div>
             )}
 
-            {/* Zoom Controls */}
-            <div style={{ position: 'absolute', top: 20, right: 20, display: 'flex', flexDirection: 'column', gap: 5, zIndex: 100 }}>
-                <button onClick={() => setScale(s => Math.min(s * 1.2, 5))} style={{ width: 32, height: 32, background: 'white', border: '1px solid #ddd', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
-                <div style={{ background: 'white', padding: 4, borderRadius: 4, fontSize: '0.7rem', textAlign: 'center', fontWeight: 'bold' }}>{Math.round(scale * 100)}%</div>
-                <button onClick={() => setScale(s => Math.max(s / 1.2, 0.2))} style={{ width: 32, height: 32, background: 'white', border: '1px solid #ddd', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>-</button>
-            </div>
+
 
             <motion.div className="glass-panel" style={{ position: 'absolute', bottom: 30, left: '50%', x: '-50%', padding: '12px 24px', display: 'flex', gap: 20, borderRadius: 24, zIndex: 100, pointerEvents: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.1)' }} initial={{ y: 100 }} animate={{ y: 0 }}>
                 <ToolBtn icon={<FiType />} label="Note" onClick={() => onAddNode('Note')} />
