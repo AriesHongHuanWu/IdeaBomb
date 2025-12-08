@@ -180,6 +180,7 @@ const NoteNode = ({ node, onUpdate }) => (
 const DraggableNode = ({ node, onUpdatePosition, onUpdateData, onDelete }) => {
     const x = useMotionValue(node.x)
     const y = useMotionValue(node.y)
+    const [isHovered, setIsHovered] = useState(false)
 
     useEffect(() => { x.set(node.x); y.set(node.y) }, [node.x, node.y, x, y])
 
@@ -189,8 +190,10 @@ const DraggableNode = ({ node, onUpdatePosition, onUpdateData, onDelete }) => {
             dragMomentum={false}
             dragElastic={0}
             onDragEnd={(e, info) => onUpdatePosition(node.id, info.offset)}
-            style={{ x, y, position: 'absolute' }}
+            style={{ x, y, position: 'absolute', pointerEvents: 'auto' }}
             className="node-container"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
         >
             <div className="glass-panel" style={{
                 width: node.type === 'Image' ? 320 : 300,
@@ -213,7 +216,10 @@ const DraggableNode = ({ node, onUpdatePosition, onUpdateData, onDelete }) => {
                         background: '#ff6b6b', color: 'white', border: 'none',
                         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         boxShadow: '0 5px 15px rgba(255, 107, 107, 0.4)',
-                        zIndex: 10
+                        zIndex: 10,
+                        opacity: isHovered ? 1 : 0,
+                        transition: 'opacity 0.2s ease',
+                        pointerEvents: isHovered ? 'auto' : 'none'
                     }}
                     onPointerDown={e => e.stopPropagation()}
                 >
@@ -238,7 +244,9 @@ export default function Whiteboard({ nodes, onAddNode, onUpdateNodePosition, onU
     const [scale, setScale] = useState(1)
     const [offset, setOffset] = useState({ x: 0, y: 0 })
     const containerRef = useRef()
+    const [isDraggingCanvas, setIsDraggingCanvas] = useState(false)
 
+    // Zoom (Wheel) & Pan (Wheel)
     useEffect(() => {
         const container = containerRef.current
         if (!container) return
@@ -256,21 +264,32 @@ export default function Whiteboard({ nodes, onAddNode, onUpdateNodePosition, onU
         return () => container.removeEventListener('wheel', handleWheel)
     }, [])
 
-    // Auto Arrange Function
+    // Pan (Drag)
+    const handlePointerDown = (e) => {
+        // Only pan if clicking on background (not a node/button)
+        if (e.target === containerRef.current || e.target.classList.contains('grid-bg')) {
+            setIsDraggingCanvas(true)
+            e.target.setPointerCapture(e.pointerId)
+        }
+    }
+
+    const handlePointerMove = (e) => {
+        if (!isDraggingCanvas) return
+        setOffset(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }))
+    }
+
+    const handlePointerUp = (e) => {
+        setIsDraggingCanvas(false)
+        if (e.target) e.target.releasePointerCapture(e.pointerId)
+    }
+
+    // Auto Arrange
     const autoArrange = () => {
         const cols = Math.ceil(Math.sqrt(nodes.length))
         const gap = 350
         nodes.forEach((node, i) => {
             const col = i % cols
             const row = Math.floor(i / cols)
-            // Use updateNodePosition logic (but simulate absolute position update)
-            // Since updateNodePosition uses relative offset in App.jsx (x = old + offset),
-            // we actually need an ABSOLUTE set function or calculate delta.
-            // BoardPage's updateNodePosition uses relative logic: x + offset.x.
-
-            // Correction: We need to write absolute x/y to Firestore.
-            // But 'onUpdateNodePosition' expects offset.
-            // We should use 'onUpdateNodeData' to set absolute x,y!
 
             const targetX = 100 + col * gap
             const targetY = 100 + row * gap
@@ -280,20 +299,30 @@ export default function Whiteboard({ nodes, onAddNode, onUpdateNodePosition, onU
     }
 
     return (
-        <div ref={containerRef} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f0f2f5', position: 'relative', touchAction: 'none' }}>
+        <div
+            ref={containerRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f0f2f5', position: 'relative', touchAction: 'none', cursor: isDraggingCanvas ? 'grabbing' : 'grab' }}
+        >
 
-            <div style={{
+            {/* Background Grid */}
+            <div className="grid-bg" style={{
                 position: 'absolute', inset: 0,
                 backgroundImage: 'radial-gradient(#ccc 1px, transparent 1px)',
                 backgroundSize: '20px 20px',
                 transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
                 transformOrigin: '0 0',
-                opacity: 0.5
+                opacity: 0.5,
+                pointerEvents: 'none'
             }} />
 
             <motion.div style={{
                 width: '100%', height: '100%',
-                x: offset.x, y: offset.y, scale
+                x: offset.x, y: offset.y, scale,
+                transformOrigin: '0 0',
+                pointerEvents: 'none' // Nodes have pointerEvents: auto
             }}>
                 {nodes.map(node => (
                     <DraggableNode
@@ -311,7 +340,7 @@ export default function Whiteboard({ nodes, onAddNode, onUpdateNodePosition, onU
                 style={{
                     position: 'absolute', bottom: 30, left: '50%', x: '-50%',
                     padding: '10px 20px', display: 'flex', gap: 15, borderRadius: 50,
-                    zIndex: 100
+                    zIndex: 100, pointerEvents: 'auto'
                 }}
                 initial={{ y: 100 }} animate={{ y: 0 }}
             >
