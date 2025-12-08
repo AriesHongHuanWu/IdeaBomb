@@ -32,6 +32,7 @@ const CalendarNode = ({ node, onUpdate }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#e67e22', fontWeight: 800, fontSize: '1.1rem', borderBottom: '1px solid #eee', paddingBottom: 8 }}>
                 <FiCalendar size={20} /> Agenda
             </div>
+            {node.content && <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: 10, padding: '6px 8px', background: 'rgba(0,0,0,0.03)', borderRadius: 6, fontStyle: 'italic' }}>{node.content}</div>}
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 4 }}>
                 {sortedEvents.length === 0 && <div style={{ textAlign: 'center', color: '#aaa', marginTop: 20, fontSize: '0.9rem' }}>No events planned</div>}
                 {sortedEvents.map(([d, t]) => (
@@ -131,7 +132,7 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode, tempEdge }) => {
                         <feMergeNode in="SourceGraphic" />
                     </feMerge>
                 </filter>
-                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="7" refY="3.5" orient="auto">
                     <polygon points="0 0, 10 3.5, 0 7" fill="#00f2fe" style={{ filter: 'drop-shadow(0 0 5px #00f2fe)' }} />
                 </marker>
                 <marker id="arrowhead-del" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -233,7 +234,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
                 backdropFilter: isDragging ? 'none' : 'blur(24px)', transition: 'box-shadow 0.2s, background 0.2s',
                 overflow: 'hidden'
             }}>
-                <div onPointerDown={handleResize} style={{ position: 'absolute', bottom: 5, right: 5, width: 20, height: 20, cursor: 'nwse-resize', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiMaximize2 size={12} color="#aaa" /></div>
+                <div onPointerDown={handleResize} style={{ position: 'absolute', bottom: 5, right: 5, width: 24, height: 24, background: 'rgba(255,255,255,0.8)', borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', cursor: 'nwse-resize', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}><FiMaximize2 size={14} color="#666" /></div>
 
                 {node.type === 'Todo' && <TodoNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Calendar' && <CalendarNode node={node} onUpdate={onUpdateData} />}

@@ -184,7 +184,11 @@ export default function BoardPage({ user }) {
                 }
                 else if (type === 'Link') {
                     const u = a.url || (content.startsWith('http') ? content : '')
-                    if (u) { extra.url = u; if (!content) content = u }
+                    if (u) { extra.url = u; content = u } // Force content to be URL for Links
+                }
+                else if (type === 'Calendar') {
+                    // Try to extract events from data, or parse content if needed (simple fallback)
+                    if (!extra.events && a.events) extra.events = a.events
                 }
 
                 // Positioning
