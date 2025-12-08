@@ -100,8 +100,8 @@ export default function ChatInterface({ onAction, nodes, collaborators }) {
                     </div>
                 </div>
             )}
-            <button onClick={() => setIsOpen(!isOpen)} style={{ width: 60, height: 60, borderRadius: '50%', background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white', border: 'none', boxShadow: '0 10px 30px rgba(118, 75, 162, 0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
-                <BsStars />
+            <button onClick={() => setIsOpen(!isOpen)} style={{ width: 60, height: 60, borderRadius: '50%', background: 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white', border: 'none', boxShadow: '0 10px 30px rgba(0, 242, 254, 0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', transition: 'transform 0.2s', transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)' }}>
+                {isOpen ? '＋' : <BsStars />}
             </button>
         </div>
     )
