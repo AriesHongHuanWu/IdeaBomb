@@ -134,8 +134,9 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode }) => {
 const DraggableNode = ({ node, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart }) => {
     const x = useMotionValue(node.x); const y = useMotionValue(node.y);
     const [isHovered, setIsHovered] = useState(false)
+    const [isDragging, setIsDragging] = useState(false)
     const [size, setSize] = useState({ w: node.w || 320, h: node.h || 240 })
-    useEffect(() => { x.set(node.x); y.set(node.y) }, [node.x, node.y, x, y])
+    useEffect(() => { if (!isDragging) { x.set(node.x); y.set(node.y) } }, [node.x, node.y, x, y, isDragging])
 
     const handleResize = (e) => {
         e.stopPropagation();
@@ -148,18 +149,20 @@ const DraggableNode = ({ node, isSelected, onSelect, onUpdatePosition, onUpdateD
 
     return (
         <motion.div
-            drag dragMomentum={false} dragElastic={0} onDragEnd={(e, i) => onUpdatePosition(node.id, i.offset)}
+            drag dragMomentum={false} dragElastic={0}
+            onDragStart={() => setIsDragging(true)}
+            onDragEnd={(e, i) => { setIsDragging(false); onUpdatePosition(node.id, i.offset) }}
             onClick={(e) => { e.stopPropagation(); if (onConnectStart) { onConnectStart(node.id) } else { onSelect(e) } }}
             onContextMenu={(e) => { onSelect(e) }}
             onHoverStart={() => setIsHovered(true)} onHoverEnd={() => setIsHovered(false)}
-            style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isSelected ? 50 : 10, width: size.w, height: size.h }}
+            style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isSelected || isDragging ? 50 : 10, width: size.w, height: size.h }}
         >
             <div className="glass-panel" style={{
                 width: '100%', height: '100%', padding: 25, borderRadius: 24, display: 'flex', flexDirection: 'column',
                 background: node.color || 'rgba(255,255,255,0.65)',
                 border: isSelected ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.4)',
-                boxShadow: isSelected ? '0 15px 40px rgba(0,0,0,0.15)' : '0 10px 30px rgba(0,0,0,0.05)',
-                backdropFilter: 'blur(24px)', transition: 'box-shadow 0.2s, background 0.2s',
+                boxShadow: isSelected || isDragging ? '0 15px 40px rgba(0,0,0,0.15)' : '0 10px 30px rgba(0,0,0,0.05)',
+                backdropFilter: isDragging ? 'none' : 'blur(24px)', transition: 'box-shadow 0.2s, background 0.2s',
                 overflow: 'hidden'
             }}>
                 <div onPointerDown={handleResize} style={{ position: 'absolute', bottom: 5, right: 5, width: 20, height: 20, cursor: 'nwse-resize', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiMaximize2 size={12} color="#aaa" /></div>

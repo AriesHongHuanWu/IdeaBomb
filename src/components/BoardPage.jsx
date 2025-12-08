@@ -264,6 +264,11 @@ export default function BoardPage({ user }) {
     const [editName, setEditName] = useState('')
     const [tabMenu, setTabMenu] = useState(null) // { x, y, page }
 
+    // Board Renaming
+    const [isEditingTitle, setIsEditingTitle] = useState(false)
+    const [tempTitle, setTempTitle] = useState('')
+    const saveTitle = async () => { setIsEditingTitle(false); if (tempTitle && tempTitle !== boardTitle) { try { await updateDoc(doc(db, 'boards', boardId), { title: tempTitle }) } catch (e) { console.error(e) } } }
+
     useEffect(() => {
         const h = () => setTabMenu(null)
         window.addEventListener('click', h)
@@ -277,7 +282,21 @@ export default function BoardPage({ user }) {
             <ShareModal boardId={boardId} isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
 
             <motion.div className="glass-panel" style={{ position: 'absolute', top: 20, left: 20, right: 20, padding: '10px 20px', zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 50, pointerEvents: 'auto' }} initial={{ y: -100 }} animate={{ y: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}><button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button><h1 style={{ fontSize: '1.2rem', margin: 0 }}>{boardTitle}</h1></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                    <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button>
+                    {isEditingTitle ? (
+                        <input
+                            value={tempTitle}
+                            onChange={e => setTempTitle(e.target.value)}
+                            onBlur={saveTitle}
+                            onKeyDown={e => e.key === 'Enter' && saveTitle()}
+                            autoFocus
+                            style={{ fontSize: '1.2rem', fontWeight: 'bold', border: '1px solid #ccc', borderRadius: 4, padding: '2px 5px', outline: 'none', width: 250 }}
+                        />
+                    ) : (
+                        <h1 onClick={() => { setTempTitle(boardTitle); setIsEditingTitle(true) }} style={{ fontSize: '1.2rem', margin: 0, cursor: 'pointer', border: '1px solid transparent', padding: '2px 5px' }} title="Click to rename">{boardTitle}</h1>
+                    )}
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ display: 'flex', paddingRight: 10, borderRight: '1px solid #ddd' }}>{collaborators.map(c => (<img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid white', marginLeft: -10 }} />))}</div>
                     <button onClick={exportBoard} style={{ background: 'rgba(255,255,255,0.2)', color: '#333', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiDownload /> Export</button>
