@@ -6,7 +6,7 @@ import Whiteboard from './Whiteboard'
 import ChatInterface from './ChatInterface'
 import ShareModal from './ShareModal'
 import { db } from '../firebase'
-import { collection, onSnapshot, setDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { collection, onSnapshot, setDoc, doc, updateDoc, deleteDoc, arrayUnion } from 'firebase/firestore'
 import { FiHome, FiShare2, FiUserPlus } from 'react-icons/fi'
 
 export default function BoardPage({ user }) {
@@ -87,6 +87,7 @@ export default function BoardPage({ user }) {
             items: [], // For Todo
             events: {}, // For Calendar
             src: '', // For Image
+            videoId: '', // For YouTube
             createdAt: new Date().toISOString(),
             createdBy: user.uid
         }
@@ -129,11 +130,6 @@ export default function BoardPage({ user }) {
         if (action.action === 'create_node') addNode(action.nodeType, action.content)
     }
 
-    const copyInviteLink = () => {
-        navigator.clipboard.writeText(window.location.href)
-        alert("Link copied! Use the 'Invite' button to grant access.")
-    }
-
     if (!hasAccess) {
         return (
             <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20 }}>
@@ -152,29 +148,70 @@ export default function BoardPage({ user }) {
             <motion.div
                 className="glass-panel"
                 style={{
+                    position: 'absolute', top: 20, left: 20, right: 20,
+                    padding: '10px 20px', zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    borderRadius: 50, pointerEvents: 'auto'
+                }}
+                initial={{ y: -100 }} animate={{ y: 0 }}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                    <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }} title="Back to Dashboard"><FiHome /></button>
+                    {isEditingTitle ? (
+                        <input
+                            autoFocus
+                            value={boardTitle}
+                            onChange={(e) => setBoardTitle(e.target.value)}
+                            onBlur={async () => {
+                                setIsEditingTitle(false)
+                                await updateDoc(doc(db, 'boards', boardId), { title: boardTitle })
+                            }}
+                            onKeyDown={async (e) => {
+                                if (e.key === 'Enter') {
+                                    setIsEditingTitle(false)
+                                    await updateDoc(doc(db, 'boards', boardId), { title: boardTitle })
+                                }
+                            }}
+                            style={{ fontSize: '1.2rem', fontWeight: 700, border: '1px solid #ddd', borderRadius: 4, padding: '2px 5px', outline: 'none' }}
+                        />
+                    ) : (
+                        <h1
+                            onClick={() => setIsEditingTitle(true)}
+                            style={{ fontSize: '1.2rem', margin: 0, fontWeight: 700, cursor: 'pointer', border: '1px solid transparent', padding: '2px 5px' }}
+                            title="Click to rename"
+                            onMouseEnter={(e) => e.target.style.border = '1px dashed #ccc'}
+                            onMouseLeave={(e) => e.target.style.border = '1px solid transparent'}
+                        >
+                            {boardTitle}
+                        </h1>
+                    )}
+                </div>
+
+                {/* Collaborators */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ display: 'flex', paddingRight: 10, borderRight: '1px solid #ddd' }}>
+                        {collaborators.map(c => (
                             <img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid white', marginLeft: -10 }} />
                         ))}
                     </div>
                     <button onClick={() => setIsShareOpen(true)} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
                         <FiUserPlus /> Invite
                     </button>
-                </div >
-            </motion.div >
+                </div>
+            </motion.div>
 
-        {/* Canvas */ }
-        < div style = {{ width: '100%', height: '100%' }
-}>
-    <Whiteboard
-        nodes={nodes}
-        onAddNode={addNode}
-        onUpdateNodePosition={updateNodePosition}
-        onUpdateNodeData={updateNodeData}
-        onDeleteNode={deleteNode}
-    />
-            </div >
+            {/* Canvas */}
+            <div style={{ width: '100%', height: '100%' }}>
+                <Whiteboard
+                    nodes={nodes}
+                    onAddNode={addNode}
+                    onUpdateNodePosition={updateNodePosition}
+                    onUpdateNodeData={updateNodeData}
+                    onDeleteNode={deleteNode}
+                />
+            </div>
 
-    {/* Chat */ }
-    < ChatInterface onAction = { handleAIAction } />
-        </div >
+            {/* Chat */}
+            <ChatInterface onAction={handleAIAction} />
+        </div>
     )
 }
