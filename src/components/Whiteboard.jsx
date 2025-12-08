@@ -159,7 +159,7 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode }) => {
 }
 
 // --- Draggable Node (Resizable) ---
-const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart }) => {
+const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onGroupDrag, onGroupDragEnd }) => {
     const x = useMotionValue(node.x); const y = useMotionValue(node.y);
     const [isHovered, setIsHovered] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
@@ -172,11 +172,23 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         const startX = e.clientX; const startY = e.clientY
         const startNodeX = x.get(); const startNodeY = y.get()
         setIsDragging(true); onSelect(e)
-        const onMove = (be) => { const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1); x.set(startNodeX + dx); y.set(startNodeY + dy) }
+        const onMove = (be) => {
+            const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1);
+            if (isSelected && onGroupDrag) {
+                onGroupDrag(dx, dy)
+                x.set(startNodeX + dx); y.set(startNodeY + dy)
+            } else {
+                x.set(startNodeX + dx); y.set(startNodeY + dy)
+            }
+        }
         const onUp = (be) => {
             window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); setIsDragging(false)
-            const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1)
-            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: dx, y: dy })
+            if (isSelected && onGroupDragEnd) {
+                onGroupDragEnd()
+            } else {
+                const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1)
+                if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: dx, y: dy })
+            }
         }
         window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
     }
@@ -234,6 +246,22 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     // Pinch Zoom State
     const [pinchDist, setPinchDist] = useState(null)
     const [startScale, setStartScale] = useState(1)
+
+    // Group Drag State
+    const [dragDelta, setDragDelta] = useState({ x: 0, y: 0 })
+    const handleGroupDrag = (dx, dy) => setDragDelta({ x: dx, y: dy })
+    const handleGroupDragEnd = () => {
+        if (dragDelta.x === 0 && dragDelta.y === 0) return
+        const updates = selectedIds.map(id => {
+            const n = nodes.find(node => node.id === id)
+            if (!n) return null
+            return { id, data: { x: n.x + dragDelta.x, y: n.y + dragDelta.y } }
+        }).filter(Boolean)
+        // Correctly handling both single and batch updates
+        if (onBatchUpdate) onBatchUpdate(updates)
+        else updates.forEach(u => onUpdateNodePosition(u.id, { x: u.data.x - nodes.find(n => n.id === u.id).x, y: u.data.y - nodes.find(n => n.id === u.id).y })) // Fallback if no batch
+        setDragDelta({ x: 0, y: 0 })
+    }
 
     const autoArrange = () => {
         const cols = Math.ceil(Math.sqrt(nodes.length))
@@ -396,9 +424,12 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
             <div className="grid-bg" style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0', opacity: 0.6, pointerEvents: 'none' }} />
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
                 <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} />
-                {nodes.map(node => (
-                    <DraggableNode key={node.id} node={node} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id} onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }} onConnectStart={connectMode ? handleNodeConnect : null} onUpdatePosition={onUpdateNodePosition} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} onContextMenu={(e) => handleNodeContextMenu(e, node.id)} />
-                ))}
+                {nodes.map(node => {
+                    const isSel = selectedIds.includes(node.id)
+                    const dispX = isSel ? node.x + dragDelta.x : node.x
+                    const dispY = isSel ? node.y + dragDelta.y : node.y
+                    return <DraggableNode key={node.id} node={{ ...node, x: dispX, y: dispY }} scale={scale} isSelected={isSel || connectStartId === node.id} onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }} onConnectStart={connectMode ? handleNodeConnect : null} onUpdatePosition={onUpdateNodePosition} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} onContextMenu={(e) => handleNodeContextMenu(e, node.id)} onGroupDrag={handleGroupDrag} onGroupDragEnd={handleGroupDragEnd} />
+                })}
                 {selectionBox && (
                     <div style={{ position: 'absolute', left: Math.min(selectionBox.startX, selectionBox.currentX), top: Math.min(selectionBox.startY, selectionBox.currentY), width: Math.abs(selectionBox.currentX - selectionBox.startX), height: Math.abs(selectionBox.currentY - selectionBox.startY), background: 'rgba(0, 123, 255, 0.2)', border: '1px solid #007bff', pointerEvents: 'none' }} />
                 )}
