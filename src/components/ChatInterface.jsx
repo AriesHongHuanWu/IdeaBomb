@@ -14,7 +14,7 @@ STRICT RULES FOR CONTENT:
    - For 'Calendar': Add realistic events based on the request (e.g. kickoff today, review in 1 week).
 2. PROVIDE RESOURCES (CRITICAL):
    - You HAVE access to Google Search. You MUST Use it.
-   - For 'Link' nodes: Search for the BEST real-world resource (e.g. official docs, viral article) and use the REAL URL. Do NOT valid URLs.
+   - For 'Link' nodes: Search for the BEST real-world resource (e.g. official docs, viral article) and use the REAL URL. If NO valid URL is found, create a Note node instead. Do NOT use fake URLs.
    - For 'YouTube' nodes: Search for a specific, high-quality video (e.g. "SpaceX launch best video") and use the real YouTube URL or ID.
    - Do NOT use placeholder URLs like "example.com". Use real ones found via search.
 
@@ -80,7 +80,7 @@ export default function ChatInterface({ onAction, nodes, collaborators }) {
         try {
             const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
             const model = genAI.getGenerativeModel({
-                model: "models/gemini-2.5-flash",
+                model: "models/gemini-1.5-flash",
                 tools: [{ googleSearch: {} }]
             })
 

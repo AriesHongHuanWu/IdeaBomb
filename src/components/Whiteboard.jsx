@@ -174,7 +174,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
     const [isHovered, setIsHovered] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
     const [size, setSize] = useState({ w: node.w || 320, h: node.h || 240 })
-    useEffect(() => { if (!isDragging) { x.set(node.x); y.set(node.y) } }, [node.x, node.y, x, y, isDragging])
+    useEffect(() => { if (!isDragging) { x.set(node.x); y.set(node.y) } }, [node.x, node.y])
 
     const handleDragStart = (e) => {
         if (onConnectStart || e.button !== 0 || e.target.closest('button') || e.target.closest('input') || e.target.closest('.no-drag') || e.target.classList.contains('handle')) return
@@ -187,7 +187,6 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp);
             const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1)
             if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: dx, y: dy })
-            setTimeout(() => setIsDragging(false), 500)
         }
         window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
     }
