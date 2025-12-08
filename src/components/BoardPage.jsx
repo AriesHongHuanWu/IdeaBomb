@@ -13,9 +13,8 @@ export default function BoardPage({ user }) {
     const { boardId } = useParams()
     const navigate = useNavigate()
     const [nodes, setNodes] = useState([])
-    const [edges, setEdges] = useState([]) // New: Edges State
+    const [edges, setEdges] = useState([])
     const [boardTitle, setBoardTitle] = useState('Loading...')
-    const [isEditingTitle, setIsEditingTitle] = useState(false)
     const [collaborators, setCollaborators] = useState([])
     const [isShareOpen, setIsShareOpen] = useState(false)
     const [hasAccess, setHasAccess] = useState(true)
@@ -46,7 +45,6 @@ export default function BoardPage({ user }) {
         return unsub
     }, [boardId, hasAccess])
 
-    // Sync Edges
     useEffect(() => {
         if (!boardId || !hasAccess) return
         const unsub = onSnapshot(collection(db, 'boards', boardId, 'edges'), (snapshot) => {
@@ -82,7 +80,6 @@ export default function BoardPage({ user }) {
         edges.filter(e => e.from === id || e.to === id).forEach(e => batch.delete(doc(db, 'boards', boardId, 'edges', e.id)))
         await batch.commit()
     }
-
     const batchUpdateNodes = async (updates) => { if (!updates.length) return; const batch = writeBatch(db); updates.forEach(({ id, data }) => batch.update(doc(db, 'boards', boardId, 'nodes', id), data)); await batch.commit() }
     const batchDelete = async (ids) => {
         if (!ids.length || !window.confirm(`Delete ${ids.length} items?`)) return
@@ -112,7 +109,6 @@ export default function BoardPage({ user }) {
         const batch = writeBatch(db)
         const minX = Math.min(...clipboard.nodes.map(n => n.x)); const minY = Math.min(...clipboard.nodes.map(n => n.y))
         const idMap = {}
-
         clipboard.nodes.forEach(node => {
             const newId = uuidv4()
             idMap[node.id] = newId
@@ -121,47 +117,139 @@ export default function BoardPage({ user }) {
             const finalY = atY !== undefined ? atY + offsetY : node.y + 50
             batch.set(doc(db, 'boards', boardId, 'nodes', newId), { ...node, id: newId, page: activePage, x: finalX, y: finalY, createdAt: new Date().toISOString(), createdBy: user.uid })
         })
-
-        // Paste internal edges
         clipboard.edges.forEach(edge => {
             if (idMap[edge.from] && idMap[edge.to]) {
                 const newEdgeId = uuidv4()
-                if (!hasAccess) return <div>Access Denied</div>
-
-                return (
-                    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-                        <ShareModal boardId={boardId} isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
-                        <motion.div className="glass-panel" style={{ position: 'absolute', top: 20, left: 20, right: 20, padding: '10px 20px', zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 50, pointerEvents: 'auto' }} initial={{ y: -100 }} animate={{ y: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}><button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button><h1 style={{ fontSize: '1.2rem', margin: 0 }}>{boardTitle}</h1></div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <div style={{ display: 'flex', paddingRight: 10, borderRight: '1px solid #ddd' }}>{collaborators.map(c => (<img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid white', marginLeft: -10 }} />))}</div>
-                                <button onClick={() => setIsShareOpen(true)} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><FiUserPlus /> Invite</button>
-                            </div>
-                        </motion.div>
-                        {lastAIAction && (<div style={{ position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#333', color: 'white', padding: '10px 20px', borderRadius: 20, display: 'flex', gap: 10, alignItems: 'center' }}><span>AI completed an action. Satisfied?</span><button onClick={() => setLastAIAction(null)} style={{ background: 'green', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>Yes</button><button onClick={undoLastAIAction} style={{ background: 'red', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>No (Undo)</button></div>)}
-                        <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 150, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            <div style={{ display: 'flex', gap: 5, background: 'rgba(0,0,0,0.8)', padding: '8px 12px', borderRadius: 16 }}>{pages.map(p => (<button key={p} onClick={() => setActivePage(p)} style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: activePage === p ? 'var(--primary)' : 'rgba(255,255,255,0.2)', color: 'white', fontWeight: activePage === p ? 'bold' : 'normal', cursor: 'pointer' }}>{p}</button>))}<button onClick={addNewPage} style={{ padding: '8px 12px', borderRadius: 10, border: '1px dashed rgba(255,255,255,0.5)', background: 'transparent', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>+ New Page</button></div>
-                            <div style={{ paddingLeft: 10 }}>
-                                <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(0,0,0,0.4)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}>This site is powered by Netlify</a>
-                            </div>
-                        </div>
-                        <div style={{ width: '100%', height: '100%' }}>
-                            <Whiteboard
-                                nodes={displayNodes}
-                                edges={displayEdges} // Pass edges
-                                pages={pages}
-                                onAddNode={addNode}
-                                onUpdateNodePosition={updateNodePosition}
-                                onUpdateNodeData={updateNodeData}
-                                onDeleteNode={deleteNode}
-                                onBatchDelete={batchDelete}
-                                onBatchUpdate={batchUpdateNodes}
-                                onCopy={copyNodes}
-                                onPaste={pasteNodes}
-                                onMoveToPage={batchMoveToPage}
-                            />
-                        </div>
-                        <ChatInterface onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />
-                    </div>
-                )
+                batch.set(doc(db, 'boards', boardId, 'edges', newEdgeId), { id: newEdgeId, from: idMap[edge.from], to: idMap[edge.to], page: activePage })
             }
+        })
+        await batch.commit()
+    }
+
+    const handleAIAction = async (actions) => {
+        const actionList = Array.isArray(actions) ? actions : [actions]
+        const createdIds = [];
+        const pageNodes = nodes.filter(n => (n.page || 'Page 1') === activePage)
+        const maxX = pageNodes.length > 0 ? Math.max(...pageNodes.map(n => n.x + 320)) : 100
+        const startX = Math.max(100, maxX + 100)
+        const startY = 150
+        const idMap = {}
+        const batch = writeBatch(db)
+
+        // Pass 1: Layout & Nodes
+        // Simple Tree Layout Logic
+        const newNodes = []
+        actionList.forEach(a => {
+            if (a.action === 'create_node' || a.action === 'create_calendar_plan') {
+                const newId = uuidv4(); if (a.id) idMap[a.id] = newId
+                newNodes.push({ ...a, realId: newId })
+            }
+        })
+
+        // Find roots (nodes not pointed to by edges in this batch) & Edges
+        const nodeIds = new Set(newNodes.map(n => n.id))
+        const childNodes = new Set()
+        const edgesList = []
+        actionList.forEach(a => {
+            if (a.action === 'create_edge') {
+                if (nodeIds.has(a.to)) childNodes.add(a.to)
+                edgesList.push(a)
+            }
+        })
+
+        let currentX = startX
+        const processed = new Set()
+
+        // Render Columns based on depth roughly (Naive visualizer)
+        newNodes.forEach((n, i) => {
+            // Just jagged line for now to ensure visibility, smart tree is hard in one batch without recursion
+            // Improved: 
+            const posX = startX + (i * 380)
+            const posY = startY + (i % 2) * 100
+
+            const type = n.nodeType || (n.action === 'create_calendar_plan' ? 'Calendar' : 'Note')
+            const content = n.content || ''; const extra = n.data || (n.action === 'create_calendar_plan' ? { events: n.events } : {})
+            batch.set(doc(db, 'boards', boardId, 'nodes', n.realId), {
+                id: n.realId, type, content, page: activePage, x: posX, y: posY, items: [], events: {}, src: '', videoId: '', ...extra,
+                createdAt: new Date().toISOString(), createdBy: user.uid
+            })
+            createdIds.push(n.realId)
+        })
+
+        edgesList.forEach(action => {
+            const realFrom = idMap[action.from]
+            const realTo = idMap[action.to]
+            if (realFrom && realTo) {
+                const edgeId = uuidv4()
+                batch.set(doc(db, 'boards', boardId, 'edges', edgeId), { id: edgeId, from: realFrom, to: realTo, page: activePage })
+            }
+        })
+
+        if (actionList.some(a => a.action === 'organize_board')) { window.dispatchEvent(new CustomEvent('ai-arrange')) }
+        await batch.commit()
+        if (createdIds.length > 0) setLastAIAction({ type: 'create', ids: createdIds })
+    }
+
+    const undoLastAIAction = async () => {
+        if (lastAIAction?.type === 'create') {
+            const batch = writeBatch(db)
+            lastAIAction.ids.forEach(id => batch.delete(doc(db, 'boards', boardId, 'nodes', id)))
+            const toDelete = lastAIAction.ids
+            edges.filter(e => toDelete.includes(e.from) || toDelete.includes(e.to)).forEach(e => batch.delete(doc(db, 'boards', boardId, 'edges', e.id)))
+            await batch.commit()
+            setLastAIAction(null)
+        }
+    }
+
+    const addNewPage = () => { const p = `Page ${pages.length + 1}`; setPages([...pages, p]); setActivePage(p) }
+    const displayNodes = nodes.filter(n => (n.page || 'Page 1') === activePage)
+    const displayEdges = edges.filter(e => (e.page || 'Page 1') === activePage)
+
+    if (!hasAccess) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white', background: '#111' }}>Access Denied</div>
+
+    return (
+        <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+            <ShareModal boardId={boardId} isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
+
+            <motion.div className="glass-panel" style={{ position: 'absolute', top: 20, left: 20, right: 20, padding: '10px 20px', zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 50, pointerEvents: 'auto' }} initial={{ y: -100 }} animate={{ y: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}><button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button><h1 style={{ fontSize: '1.2rem', margin: 0 }}>{boardTitle}</h1></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ display: 'flex', paddingRight: 10, borderRight: '1px solid #ddd' }}>{collaborators.map(c => (<img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid white', marginLeft: -10 }} />))}</div>
+                    <button onClick={() => setIsShareOpen(true)} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><FiUserPlus /> Invite</button>
+                </div>
+            </motion.div>
+
+            {lastAIAction && (<div style={{ position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#333', color: 'white', padding: '10px 20px', borderRadius: 20, display: 'flex', gap: 10, alignItems: 'center' }}><span>AI completed an action. Satisfied?</span><button onClick={() => setLastAIAction(null)} style={{ background: 'green', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>Yes</button><button onClick={undoLastAIAction} style={{ background: 'red', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>No (Undo)</button></div>)}
+
+            <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 150, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', gap: 5, background: 'rgba(0,0,0,0.8)', padding: '8px 12px', borderRadius: 16 }}>
+                    {pages.map(p => (<button key={p} onClick={() => setActivePage(p)} style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: activePage === p ? 'var(--primary)' : 'rgba(255,255,255,0.2)', color: 'white', fontWeight: activePage === p ? 'bold' : 'normal', cursor: 'pointer' }}>{p}</button>))}
+                    <button onClick={addNewPage} style={{ padding: '8px 12px', borderRadius: 10, border: '1px dashed rgba(255,255,255,0.5)', background: 'transparent', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>+ New Page</button>
+                </div>
+                <div style={{ paddingLeft: 10 }}>
+                    <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(0,0,0,0.4)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}>This site is powered by Netlify</a>
+                </div>
+            </div>
+
+            <div style={{ width: '100%', height: '100%' }}>
+                <Whiteboard
+                    nodes={displayNodes}
+                    edges={displayEdges}
+                    pages={pages}
+                    onAddNode={addNode}
+                    onUpdateNodePosition={updateNodePosition}
+                    onUpdateNodeData={updateNodeData}
+                    onDeleteNode={deleteNode}
+                    onBatchDelete={batchDelete}
+                    onBatchUpdate={batchUpdateNodes}
+                    onCopy={copyNodes}
+                    onPaste={pasteNodes}
+                    onMoveToPage={batchMoveToPage}
+                    onAddEdge={addEdge}
+                    onDeleteEdge={(id) => { const batch = writeBatch(db); batch.delete(doc(db, 'boards', boardId, 'edges', id)); batch.commit() }}
+                />
+            </div>
+            <ChatInterface onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />
+        </div>
+    )
+}
