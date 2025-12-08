@@ -85,7 +85,11 @@ const LinkNode = ({ node, onUpdate }) => {
     )
 }
 
-const NoteNode = ({ node, onUpdate }) => (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, color: '#555', fontWeight: 'bold', fontSize: '0.9rem' }}><FiType /> Note</div> <textarea defaultValue={node.content} onBlur={e => onUpdate(node.id, { content: e.target.value })} onPointerDown={e => e.stopPropagation()} style={{ flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none', fontSize: '1rem', lineHeight: 1.6, color: '#333' }} placeholder="Type something..." /> </div>)
+const NoteNode = ({ node, onUpdate }) => {
+    const taRef = useRef(null)
+    useEffect(() => { if (taRef.current) { taRef.current.style.height = 'auto'; taRef.current.style.height = taRef.current.scrollHeight + 'px' } }, [node.content])
+    return (<div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, color: '#555', fontWeight: 'bold', fontSize: '0.9rem' }}><FiType /> Note</div> <textarea ref={taRef} defaultValue={node.content} onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }} onBlur={e => onUpdate(node.id, { content: e.target.value })} onPointerDown={e => e.stopPropagation()} style={{ flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none', fontSize: '1rem', lineHeight: 1.6, color: '#333', overflow: 'hidden', minHeight: 100 }} placeholder="Type something..." /> </div>)
+}
 
 // --- Connection Layer ---
 // Smart Anchor Logic: Connects the nearest/most logical sides of two nodes
@@ -208,10 +212,10 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             onClick={(e) => { e.stopPropagation(); if (onConnectStart) { onConnectStart(node.id) } else { onSelect(e) } }}
             onContextMenu={(e) => { onSelect(e) }}
             onHoverStart={() => setIsHovered(true)} onHoverEnd={() => setIsHovered(false)}
-            style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isSelected || isDragging ? 50 : 10, width: size.w, height: size.h }}
+            style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isSelected || isDragging ? 50 : 10, width: size.w, minHeight: size.h }}
         >
             <div className="glass-panel" style={{
-                width: '100%', height: '100%', padding: 25, borderRadius: 24, display: 'flex', flexDirection: 'column',
+                width: '100%', minHeight: '100%', padding: 25, borderRadius: 24, display: 'flex', flexDirection: 'column',
                 background: node.color || 'rgba(255,255,255,0.65)',
                 border: isSelected ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.4)',
                 boxShadow: isSelected || isDragging ? '0 15px 40px rgba(0,0,0,0.15)' : '0 10px 30px rgba(0,0,0,0.05)',
@@ -231,10 +235,10 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             {(isHovered || isDragging || isSelected) && !scale /* Hide handles if zooming out too much? No */ && (
                 <>
                     {/* Handles */}
-                    <div className="handle" onPointerDown={(e) => { e.stopPropagation(); onEdgeStart(node.id) }} style={{ ...handleStyle, top: -7, left: '50%', transform: 'translateX(-50%)' }} />
-                    <div className="handle" onPointerDown={(e) => { e.stopPropagation(); onEdgeStart(node.id) }} style={{ ...handleStyle, bottom: -7, left: '50%', transform: 'translateX(-50%)' }} />
-                    <div className="handle" onPointerDown={(e) => { e.stopPropagation(); onEdgeStart(node.id) }} style={{ ...handleStyle, left: -7, top: '50%', transform: 'translateY(-50%)' }} />
-                    <div className="handle" onPointerDown={(e) => { e.stopPropagation(); onEdgeStart(node.id) }} style={{ ...handleStyle, right: -7, top: '50%', transform: 'translateY(-50%)' }} />
+                    <div className="handle" onPointerDown={(e) => { e.stopPropagation(); onEdgeStart(node.id, e) }} style={{ ...handleStyle, top: -7, left: '50%', transform: 'translateX(-50%)' }} />
+                    <div className="handle" onPointerDown={(e) => { e.stopPropagation(); onEdgeStart(node.id, e) }} style={{ ...handleStyle, bottom: -7, left: '50%', transform: 'translateX(-50%)' }} />
+                    <div className="handle" onPointerDown={(e) => { e.stopPropagation(); onEdgeStart(node.id, e) }} style={{ ...handleStyle, left: -7, top: '50%', transform: 'translateY(-50%)' }} />
+                    <div className="handle" onPointerDown={(e) => { e.stopPropagation(); onEdgeStart(node.id, e) }} style={{ ...handleStyle, right: -7, top: '50%', transform: 'translateY(-50%)' }} />
                 </>
             )}
 
@@ -444,19 +448,40 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     }
 
     return (
+    return (
         <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={(e) => { handlePointerMove(e); handleGlobalMouseMove(e) }} onPointerUp={handlePointerUp} onContextMenu={handleBgContextMenu} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f8f9fa', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
             <div className="grid-bg" style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0', opacity: 0.6, pointerEvents: 'none' }} />
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
                 <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} tempEdge={tempEdge} />
                 {nodes.map(node => (
-                    <DraggableNode key={node.id} node={node} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id} onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }} onConnectStart={connectMode ? handleNodeConnect : null} onUpdatePosition={handleNodeUpdatePos} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} onContextMenu={(e) => handleNodeContextMenu(e, node.id)} onEdgeStart={(id) => { setTempEdge({ from: id, to: { x: 0, y: 0 } }); const { left, top } = containerRef.current.getBoundingClientRect(); setTempEdge({ from: id, to: { x: (mousePos.current.x), y: (mousePos.current.y) } }) }} />
+                    <DraggableNode key={node.id} node={node} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id}
+                        onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }}
+                        onConnectStart={connectMode ? ((id) => { if (connectStartId) { onAddEdge(connectStartId, id); setConnectStartId(null); setConnectMode(false) } else { setConnectStartId(id) } }) : null}
+                        onEdgeStart={(id, e) => {
+                            const startX = (e.clientX - offset.x) / scale; const startY = (e.clientY - offset.y) / scale
+                            const { left, top } = containerRef.current.getBoundingClientRect()
+                            setTempEdge({ from: id, to: { x: (e.clientX - left - offset.x) / scale, y: (e.clientY - top - offset.y) / scale } })
+                            const onEdgeMove = (me) => {
+                                const mx = (me.clientX - left - offset.x) / scale; const my = (me.clientY - top - offset.y) / scale
+                                setTempEdge(prev => prev ? ({ ...prev, to: { x: mx, y: my } }) : null)
+                            }
+                            const onEdgeUp = (ue) => {
+                                window.removeEventListener('pointermove', onEdgeMove); window.removeEventListener('pointerup', onEdgeUp)
+                                const ux = (ue.clientX - left - offset.x) / scale; const uy = (ue.clientY - top - offset.y) / scale
+                                const hitNode = nodes.find(n => ux >= n.x && ux <= n.x + (n.w || 320) && uy >= n.y && uy <= n.y + (n.h || 240))
+                                if (hitNode && hitNode.id !== id) { onAddEdge(id, hitNode.id) }
+                                setTempEdge(null)
+                            }
+                            window.addEventListener('pointermove', onEdgeMove); window.addEventListener('pointerup', onEdgeUp)
+                        }}
+                        onUpdatePosition={handleNodeUpdatePos} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} onContextMenu={(e) => handleNodeContextMenu(e, node.id)}
+                    />
                 ))}
                 {selectionBox && (
                     <div style={{ position: 'absolute', left: Math.min(selectionBox.startX, selectionBox.currentX), top: Math.min(selectionBox.startY, selectionBox.currentY), width: Math.abs(selectionBox.currentX - selectionBox.startX), height: Math.abs(selectionBox.currentY - selectionBox.startY), background: 'rgba(0, 123, 255, 0.2)', border: '1px solid #007bff', pointerEvents: 'none' }} />
                 )}
             </motion.div>
 
-            {/* Context Menu */}
             {contextMenu && (
                 <div style={{ position: 'fixed', top: contextMenu.y, left: contextMenu.x, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 12, boxShadow: '0 10px 30px rgba(0,0,0,0.15)', zIndex: 1000, padding: 6, minWidth: 180, display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {contextMenu.type === 'node' ? (
@@ -484,8 +509,6 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                     )}
                 </div>
             )}
-
-
 
             <motion.div className="glass-panel" style={{ position: 'absolute', bottom: 30, left: '50%', x: '-50%', padding: '12px 24px', display: 'flex', gap: 20, borderRadius: 24, zIndex: 100, pointerEvents: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.1)' }} initial={{ y: 100 }} animate={{ y: 0 }}>
                 <ToolBtn icon={<FiType />} label="Note" onClick={() => onAddNode('Note')} />
