@@ -1,0 +1,62 @@
+:root {
+  /* Google Fonts - Inter is standard professional */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Liquid Glass Palette */
+  --bg-gradient: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
+  --glass-bg: rgba(255, 255, 255, 0.45);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  --backdrop-blur: blur(16px);
+  --glass-radius: 20px;
+
+  /* Google Professional Colors */
+  --primary: #1a73e8;
+  --success: #34a853;
+  --danger: #ea4335;
+  --warning: #fbbc04;
+  
+  --text-main: #202124;
+  --text-secondary: #5f6368;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  background: var(--bg-gradient);
+  color: var(--text-main);
+  min-height: 100vh;
+  overflow: hidden; /* App-like feel */
+  user-select: none; /* Whiteboard feel */
+}
+
+/* Glassmorphism Class */
+.glass-panel {
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: var(--glass-border);
+  border-radius: var(--glass-radius);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 99px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+}
+
+* {
+  box-sizing: border-box;
+}
