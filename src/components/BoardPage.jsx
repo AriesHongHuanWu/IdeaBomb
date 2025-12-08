@@ -140,165 +140,133 @@ export default function BoardPage({ user }) {
         if (!window.confirm("Delete this item?")) return
         try {
             await deleteDoc(doc(db, 'boards', boardId, 'nodes', id))
-        } catch (e) {
-            console.error("Error deleting node:", e)
+            await deleteDoc(doc(db, 'boards', boardId, 'nodes', id))
         }
-    }
-
-    // AI Action Handler with Undo
-    const handleAIAction = async (action) => {
-        if (action.action === 'create_node') {
-            const id = await addNode(action.nodeType, action.content, action.data || {})
-            if (id) setLastAIAction({ type: 'create', ids: [id] })
-        }
-        if (action.action === 'organize_board') {
-            // Trigger auto-arrange for current page
-            // We need to pass this down or handle it via a ref/event. 
-            // For now, we'll signal Whiteboard via a custom event or context.
-            // Simpler: Just randomizing locally or handled in Whiteboard? 
-            // Actually, Whiteboard has the 'autoArrange' function. 
-            // We can expose it, but for now let's just use the Grid button.
-            // Let's create a special "AI Arrange" node or toast?
-            alert("AI: Organizing layout...")
-            window.dispatchEvent(new CustomEvent('ai-arrange'))
-        }
-        if (action.action === 'create_calendar_plan') {
-            const id = await addNode('Calendar', 'AI Plan', { events: action.events })
-            if (id) setLastAIAction({ type: 'create', ids: [id] })
-        }
-    }
-
-    const undoLastAIAction = async () => {
-        if (!lastAIAction) return
-        if (lastAIAction.type === 'create') {
-            for (const id of lastAIAction.ids) {
-                await deleteDoc(doc(db, 'boards', boardId, 'nodes', id))
-            }
             alert("AI Action Undone.")
-            setLastAIAction(null)
-        }
+        setLastAIAction(null)
     }
+}
 
-    // Page Management
-    const addNewPage = () => {
-        const newPage = `Page ${pages.length + 1}`
-        setPages([...pages, newPage])
-        setActivePage(newPage)
-    }
+// Page Management
+const addNewPage = () => {
+    const newPage = `Page ${pages.length + 1}`
+    setPages([...pages, newPage])
+    setActivePage(newPage)
+}
 
-    // Filter nodes for display
-    const displayNodes = nodes.filter(n => (n.page || 'Page 1') === activePage)
+// Filter nodes for display
+const displayNodes = nodes.filter(n => (n.page || 'Page 1') === activePage)
 
-    if (!hasAccess) {
-        return (
-            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20 }}>
-                <h1>Access Denied</h1>
-                <p>You do not have permission to view this whiteboard.</p>
-                <button onClick={() => navigate('/')} style={{ padding: '10px 20px', cursor: 'pointer' }}>Back to Dashboard</button>
-            </div>
-        )
-    }
-
+if (!hasAccess) {
     return (
-        <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-            <ShareModal boardId={boardId} isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
-
-            {/* Top Navbar */}
-            <motion.div
-                className="glass-panel"
-                style={{
-                    position: 'absolute', top: 20, left: 20, right: 20,
-                    padding: '10px 20px', zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    borderRadius: 50, pointerEvents: 'auto'
-                }}
-                initial={{ y: -100 }} animate={{ y: 0 }}
-            >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                    <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }} title="Back to Dashboard"><FiHome /></button>
-                    {isEditingTitle ? (
-                        <input
-                            autoFocus
-                            value={boardTitle}
-                            onChange={(e) => setBoardTitle(e.target.value)}
-                            onBlur={async () => {
-                                setIsEditingTitle(false)
-                                await updateDoc(doc(db, 'boards', boardId), { title: boardTitle })
-                            }}
-                            onKeyDown={async (e) => {
-                                if (e.key === 'Enter') {
-                                    setIsEditingTitle(false)
-                                    await updateDoc(doc(db, 'boards', boardId), { title: boardTitle })
-                                }
-                            }}
-                            style={{ fontSize: '1.2rem', fontWeight: 700, border: '1px solid #ddd', borderRadius: 4, padding: '2px 5px', outline: 'none' }}
-                        />
-                    ) : (
-                        <h1
-                            onClick={() => setIsEditingTitle(true)}
-                            style={{ fontSize: '1.2rem', margin: 0, fontWeight: 700, cursor: 'pointer', border: '1px solid transparent', padding: '2px 5px' }}
-                            title="Click to rename"
-                            onMouseEnter={(e) => e.target.style.border = '1px dashed #ccc'}
-                            onMouseLeave={(e) => e.target.style.border = '1px solid transparent'}
-                        >
-                            {boardTitle}
-                        </h1>
-                    )}
-                </div>
-
-                {/* Collaborators */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ display: 'flex', paddingRight: 10, borderRight: '1px solid #ddd' }}>
-                        {collaborators.map(c => (
-                            <img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid white', marginLeft: -10 }} />
-                        ))}
-                    </div>
-                    <button onClick={() => setIsShareOpen(true)} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <FiUserPlus /> Invite
-                    </button>
-                </div>
-            </motion.div>
-
-            {/* Undo Toast */}
-            {lastAIAction && (
-                <div style={{ position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#333', color: 'white', padding: '10px 20px', borderRadius: 20, display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <span>AI completed an action. Satisfied?</span>
-                    <button onClick={() => setLastAIAction(null)} style={{ background: 'green', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>Yes</button>
-                    <button onClick={undoLastAIAction} style={{ background: 'red', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>No (Undo)</button>
-                </div>
-            )}
-
-            {/* Page Tabs */}
-            <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 110, display: 'flex', gap: 5 }}>
-                {pages.map(p => (
-                    <button
-                        key={p}
-                        onClick={() => setActivePage(p)}
-                        style={{
-                            padding: '8px 16px', borderRadius: '12px 12px 0 0', border: 'none',
-                            background: activePage === p ? 'white' : 'rgba(255,255,255,0.5)',
-                            fontWeight: activePage === p ? 'bold' : 'normal',
-                            cursor: 'pointer', boxShadow: '0 -2px 5px rgba(0,0,0,0.05)'
-                        }}
-                    >
-                        {p}
-                    </button>
-                ))}
-                <button onClick={addNewPage} style={{ padding: '8px 12px', borderRadius: '12px 12px 0 0', border: 'none', background: 'rgba(255,255,255,0.3)', cursor: 'pointer' }}>+</button>
-            </div>
-
-            {/* Canvas */}
-            <div style={{ width: '100%', height: '100%' }}>
-                <Whiteboard
-                    nodes={displayNodes} // Pass filtered nodes
-                    onAddNode={addNode}
-                    onUpdateNodePosition={updateNodePosition}
-                    onUpdateNodeData={updateNodeData}
-                    onDeleteNode={deleteNode}
-                />
-            </div>
-
-            {/* Chat */}
-            <ChatInterface onAction={handleAIAction} />
+        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20 }}>
+            <h1>Access Denied</h1>
+            <p>You do not have permission to view this whiteboard.</p>
+            <button onClick={() => navigate('/')} style={{ padding: '10px 20px', cursor: 'pointer' }}>Back to Dashboard</button>
         </div>
     )
+}
+
+return (
+    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+        <ShareModal boardId={boardId} isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
+
+        {/* Top Navbar */}
+        <motion.div
+            className="glass-panel"
+            style={{
+                position: 'absolute', top: 20, left: 20, right: 20,
+                padding: '10px 20px', zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                borderRadius: 50, pointerEvents: 'auto'
+            }}
+            initial={{ y: -100 }} animate={{ y: 0 }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }} title="Back to Dashboard"><FiHome /></button>
+                {isEditingTitle ? (
+                    <input
+                        autoFocus
+                        value={boardTitle}
+                        onChange={(e) => setBoardTitle(e.target.value)}
+                        onBlur={async () => {
+                            setIsEditingTitle(false)
+                            await updateDoc(doc(db, 'boards', boardId), { title: boardTitle })
+                        }}
+                        onKeyDown={async (e) => {
+                            if (e.key === 'Enter') {
+                                setIsEditingTitle(false)
+                                await updateDoc(doc(db, 'boards', boardId), { title: boardTitle })
+                            }
+                        }}
+                        style={{ fontSize: '1.2rem', fontWeight: 700, border: '1px solid #ddd', borderRadius: 4, padding: '2px 5px', outline: 'none' }}
+                    />
+                ) : (
+                    <h1
+                        onClick={() => setIsEditingTitle(true)}
+                        style={{ fontSize: '1.2rem', margin: 0, fontWeight: 700, cursor: 'pointer', border: '1px solid transparent', padding: '2px 5px' }}
+                        title="Click to rename"
+                        onMouseEnter={(e) => e.target.style.border = '1px dashed #ccc'}
+                        onMouseLeave={(e) => e.target.style.border = '1px solid transparent'}
+                    >
+                        {boardTitle}
+                    </h1>
+                )}
+            </div>
+
+            {/* Collaborators */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', paddingRight: 10, borderRight: '1px solid #ddd' }}>
+                    {collaborators.map(c => (
+                        <img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid white', marginLeft: -10 }} />
+                    ))}
+                </div>
+                <button onClick={() => setIsShareOpen(true)} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <FiUserPlus /> Invite
+                </button>
+            </div>
+        </motion.div>
+
+        {/* Undo Toast */}
+        {lastAIAction && (
+            <div style={{ position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#333', color: 'white', padding: '10px 20px', borderRadius: 20, display: 'flex', gap: 10, alignItems: 'center' }}>
+                <span>AI completed an action. Satisfied?</span>
+                <button onClick={() => setLastAIAction(null)} style={{ background: 'green', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>Yes</button>
+                <button onClick={undoLastAIAction} style={{ background: 'red', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>No (Undo)</button>
+            </div>
+        )}
+
+        {/* Page Tabs */}
+        <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 110, display: 'flex', gap: 5 }}>
+            {pages.map(p => (
+                <button
+                    key={p}
+                    onClick={() => setActivePage(p)}
+                    style={{
+                        padding: '8px 16px', borderRadius: '12px 12px 0 0', border: 'none',
+                        background: activePage === p ? 'white' : 'rgba(255,255,255,0.5)',
+                        fontWeight: activePage === p ? 'bold' : 'normal',
+                        cursor: 'pointer', boxShadow: '0 -2px 5px rgba(0,0,0,0.05)'
+                    }}
+                >
+                    {p}
+                </button>
+            ))}
+            <button onClick={addNewPage} style={{ padding: '8px 12px', borderRadius: '12px 12px 0 0', border: 'none', background: 'rgba(255,255,255,0.3)', cursor: 'pointer' }}>+</button>
+        </div>
+
+        {/* Canvas */}
+        <div style={{ width: '100%', height: '100%' }}>
+            <Whiteboard
+                nodes={displayNodes} // Pass filtered nodes
+                onAddNode={addNode}
+                onUpdateNodePosition={updateNodePosition}
+                onUpdateNodeData={updateNodeData}
+                onDeleteNode={deleteNode}
+            />
+        </div>
+
+        {/* Chat */}
+        <ChatInterface onAction={handleAIAction} />
+    </div>
+)
 }

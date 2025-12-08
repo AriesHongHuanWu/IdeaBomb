@@ -8,34 +8,31 @@ const API_KEY_STORAGE = 'gemini_api_key'
 
 // System prompt to guide Gemini to output JSON for actions
 const SYSTEM_PROMPT = `
-You are an AI assistant for a collaborative whiteboard.
-You can control the board by outputting JSON actions.
+You are an advanced AI assistant for a collaborative whiteboard.
+You can control the board by outputting JSON actions. 
+You can output a SINGLE JSON object OR a JSON ARRAY of objects to perform multiple actions at once.
+
 Commands:
 1. "create_node": { "action": "create_node", "nodeType": "Todo"|"Note"|"Calendar"|"YouTube", "content": "..." }
-2. "organize_board": { "action": "organize_board" } (Use when user asks to arrange/organize)
-3. "create_calendar_plan": { "action": "create_calendar_plan", "events": { "1": "Meeting", "5": "Launch" } } (Map day number to string)
-4. "search_video": { "action": "create_node", "nodeType": "YouTube", "content": "Search: [query]" } (If user asks for video)
+2. "organize_board": { "action": "organize_board" }
+3. "create_calendar_plan": { "action": "create_calendar_plan", "events": { ... } }
+4. "search_video": { "action": "create_node", "nodeType": "YouTube", "content": "Search: [query]" }
+
+Example: Create a project plan
+\`\`\`json
+[
+  { "action": "create_node", "nodeType": "Note", "content": "# Project Alpha\\nGoal: Launch MVP" },
+  { "action": "create_node", "nodeType": "Todo", "content": "- [ ] Design\\n- [ ] Dev" },
+  { "action": "create_node", "nodeType": "Calendar", "content": "Timeline", "data": { "events": { "1": "Start" } } }
+]
+\`\`\`
 
 If no action is needed, just reply with text.
 Short and concise.
 `
 
 export default function ChatInterface({ onAction }) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [apiKey, setApiKey] = useState(localStorage.getItem(API_KEY_STORAGE) || import.meta.env.VITE_GEMINI_API_KEY || '')
-  const [input, setInput] = useState('')
-  const [messages, setMessages] = useState([
-    { role: 'model', text: 'Hi! I can help you manage your board. Try "Create a todo list for launch".' }
-  ])
-  const [isListening, setIsListening] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-
-  const bottomRef = useRef(null)
-
-  // Audio notification reference (optional)
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isOpen])
+  // ... (state unchanged) ...
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -51,7 +48,7 @@ export default function ChatInterface({ onAction }) {
 
     try {
       const genAI = new GoogleGenerativeAI(apiKey)
-      // Updated to requested model
+      // Updated to requested model and API version
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" }, { apiVersion: 'v1beta' })
 
       // Construct prompt with context
@@ -61,14 +58,20 @@ export default function ChatInterface({ onAction }) {
       const response = await result.response
       const text = response.text()
 
-      // Parse for JSON actions
-      const jsonMatch = text.match(/```json\s*(\{[\s\S]*?\})\s*```/) || text.match(/(\{[\s\S]*?"action":[\s\S]*?\})/)
+      // Parse for JSON (Single or Array)
+      const jsonMatch = text.match(/```json\s*([\[\{][\s\S]*?[\]\}])\s*```/) || text.match(/([\[\{][\s\S]*?"action":[\s\S]*?[\]\}])/)
 
       if (jsonMatch) {
         try {
-          const action = JSON.parse(jsonMatch[1])
-          if (action.action && onAction) {
-            onAction(action)
+          const parsed = JSON.parse(jsonMatch[1])
+
+          if (Array.isArray(parsed)) {
+            // Handle Array of Actions
+            onAction(parsed)
+            setMessages(p => [...p, { role: 'model', text: `I've created ${parsed.length} items for you.` }])
+          } else if (parsed.action) {
+            // Handle Single Action
+            onAction([parsed]) // Wrap in array for consistency
             setMessages(p => [...p, { role: 'model', text: "I've added that to your whiteboard." }])
           }
         } catch (e) {
@@ -84,7 +87,7 @@ export default function ChatInterface({ onAction }) {
     } finally {
       setIsLoading(false)
     }
-  }
+  } // End handleSend
 
   // Voice Logic
   const toggleListening = () => {
