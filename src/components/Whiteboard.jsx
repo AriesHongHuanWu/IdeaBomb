@@ -77,48 +77,17 @@ const CalendarNode = ({ node, onUpdate }) => {
         const newEvents = { ...events, [selectedDate]: eventText }
         if (!eventText) delete newEvents[selectedDate] // Delete if empty
         onUpdate(node.id, { events: newEvents })
-        setSelectedDate(null)
-    }
-
-    return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '1rem', borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: 5, color: 'var(--primary)' }}>Calendar</h3>
-            {!selectedDate ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, flex: 1, overflowY: 'auto' }}>
-                    {days.map(d => (
-                        <div
-                            key={d}
-                            onClick={() => handleDateClick(d)}
-                            onPointerDown={e => e.stopPropagation()}
-                            style={{
-                                padding: 2, textAlign: 'center', borderRadius: 4,
-                                background: events[d] ? 'var(--primary-light)' : 'rgba(255,255,255,0.5)',
-                                border: events[d] ? '1px solid var(--primary)' : '1px solid transparent',
-                                cursor: 'pointer', fontSize: '0.8rem', minHeight: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
-                            }}
-                        >
-                            <span style={{ fontWeight: events[d] ? 'bold' : 'normal' }}>{d}</span>
-                            {events[d] && <div style={{ width: 4, height: 4, background: 'var(--primary)', borderRadius: '50%', margin: '2px auto' }}></div>}
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div onPointerDown={e => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                        <strong>Editing Day {selectedDate}</strong>
-                        <button onClick={() => setSelectedDate(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#888' }}><FiX /></button>
-                    </div>
-                    <textarea
-                        value={eventText}
-                        onChange={e => setEventText(e.target.value)}
-                        style={{ flex: 1, width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ddd', resize: 'none', outline: 'none', fontFamily: 'inherit' }}
-                        placeholder="Type event here..."
-                        autoFocus
-                    />
-                    <button onClick={saveEvent} style={{ width: '100%', marginTop: 8, background: 'var(--primary)', color: 'white', border: 'none', padding: '8px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Save Event</button>
-                </div>
+            < textarea
+        value = { eventText }
+        onChange = { e => setEventText(e.target.value)}
+style = {{ flex: 1, width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ddd', resize: 'none', outline: 'none', fontFamily: 'inherit' }}
+placeholder = "Type event here..."
+autoFocus
+    />
+    <button onClick={saveEvent} style={{ width: '100%', marginTop: 8, background: 'var(--primary)', color: 'white', border: 'none', padding: '8px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Save Event</button>
+                </div >
             )}
-        </div>
+        </div >
     )
 }
 
