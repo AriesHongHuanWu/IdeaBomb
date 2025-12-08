@@ -23,7 +23,7 @@ const TodoNode = ({ node, onUpdate }) => {
 }
 const CalendarNode = ({ node, onUpdate }) => {
     const events = node.events || {}; const [date, setDate] = useState(''); const [text, setText] = useState(''); const addEvent = () => { if (date && text) { onUpdate(node.id, { events: { ...events, [date]: text } }); setText(''); setDate('') } }; const sortedEvents = Object.entries(events).sort((a, b) => new Date(a[0]) - new Date(b[0]))
-    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#e67e22', fontWeight: 'bold' }}><FiCalendar size={18} /> Calendar</div> <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}> {sortedEvents.length === 0 && <div style={{ textAlign: 'center', color: '#ccc', marginTop: 20 }}>No events scheduled</div>} {sortedEvents.map(([d, t]) => (<div key={d} style={{ background: 'rgba(255,255,255,0.6)', padding: '8px 12px', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}> <div> <div style={{ fontSize: '0.75rem', color: '#888', fontWeight: 600 }}>{d}</div> <div style={{ fontSize: '0.9rem', color: '#333' }}>{t}</div> </div> <FiX onClick={() => { const n = { ...events }; delete n[d]; onUpdate(node.id, { events: n }) }} style={{ cursor: 'pointer', color: '#ff6b6b' }} onPointerDown={e => e.stopPropagation()} /> </div>))} </div> <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 5 }} onPointerDown={e => e.stopPropagation()}> <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd', width: '100%' }} /> <div style={{ display: 'flex', gap: 5 }}> <Input placeholder="Event name..." value={text} onChange={e => setText(e.target.value)} /> <Button onClick={addEvent} style={{ width: 40, padding: 0 }}><FiPlus /></Button> </div> </div> </div>)
+    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#e67e22', fontWeight: 'bold' }}><FiCalendar size={18} /> Calendar</div> <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}> {sortedEvents.length === 0 && <div style={{ textAlign: 'center', color: '#ccc', marginTop: 20 }}>No events scheduled</div>} {sortedEvents.map(([d, t]) => (<div key={d} style={{ background: 'rgba(255,255,255,0.6)', padding: '8px 12px', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}> <div> <div style={{ fontSize: '0.75rem', color: '#888', fontWeight: 600 }}>{d}</div> <div style={{ fontSize: '0.9rem', color: '#333' }}>{(typeof t === 'object' && t !== null) ? (t.text || t.title || t.content || JSON.stringify(t)) : t}</div> </div> <FiX onClick={() => { const n = { ...events }; delete n[d]; onUpdate(node.id, { events: n }) }} style={{ cursor: 'pointer', color: '#ff6b6b' }} onPointerDown={e => e.stopPropagation()} /> </div>))} </div> <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 5 }} onPointerDown={e => e.stopPropagation()}> <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd', width: '100%' }} /> <div style={{ display: 'flex', gap: 5 }}> <Input placeholder="Event name..." value={text} onChange={e => setText(e.target.value)} /> <Button onClick={addEvent} style={{ width: 40, padding: 0 }}><FiPlus /></Button> </div> </div> </div>)
 }
 const ImageNode = ({ node, onUpdate }) => {
     const up = (e) => { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onloadend = () => onUpdate(node.id, { src: r.result }); r.readAsDataURL(f) } }
@@ -33,15 +33,18 @@ const ImageNode = ({ node, onUpdate }) => {
 const LinkNode = ({ node, onUpdate }) => {
     const [url, setUrl] = useState(node.url || '');
     const saveUrl = () => { if (url) onUpdate(node.id, { url, content: url }) }
+    let hostname = ''; let isValid = false
+    try { if (node.content) { hostname = new URL(node.content).hostname; isValid = true } } catch (e) { }
+
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#3498db', fontWeight: 'bold' }}><FiGlobe size={18} /> Web Link</div>
-            {node.content ? (
+            {isValid ? (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
                     <a href={node.content} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, background: 'rgba(255,255,255,0.5)', borderRadius: 12, textDecoration: 'none', color: '#333', border: '1px solid rgba(0,0,0,0.1)' }}>
-                        <img src={`https://www.google.com/s2/favicons?domain=${new URL(node.content).hostname}&sz=64`} style={{ width: 32, height: 32, borderRadius: 4 }} onError={(e) => e.target.style.display = 'none'} />
+                        <img src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=64`} style={{ width: 32, height: 32, borderRadius: 4 }} onError={(e) => e.target.style.display = 'none'} />
                         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
-                            <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{new URL(node.content).hostname}</div>
+                            <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{hostname}</div>
                             <div style={{ fontSize: '0.75rem', color: '#666' }}>{node.content}</div>
                         </div>
                         <FiArrowRight style={{ marginLeft: 'auto' }} />
@@ -49,9 +52,12 @@ const LinkNode = ({ node, onUpdate }) => {
                     <button onClick={() => onUpdate(node.id, { content: '' })} style={{ background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', alignSelf: 'center', fontSize: '0.8rem' }}>Edit URL</button>
                 </div>
             ) : (
-                <div style={{ display: 'flex', gap: 5, marginTop: 'auto' }}>
-                    <Input placeholder="https://example.com" value={url} onChange={e => setUrl(e.target.value)} />
-                    <Button onClick={saveUrl}>Save</Button>
+                <div style={{ display: 'flex', gap: 5, marginTop: 'auto', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                    {node.content && <p style={{ fontSize: '0.8rem', color: 'red', wordBreak: 'break-all' }}>Invalid URL: {node.content}</p>}
+                    <div style={{ display: 'flex', gap: 5, width: '100%' }}>
+                        <Input placeholder="https://example.com" value={url} onChange={e => setUrl(e.target.value)} />
+                        <Button onClick={saveUrl}>Save</Button>
+                    </div>
                 </div>
             )}
         </div>
