@@ -232,22 +232,17 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
                 {(!['Todo', 'Calendar', 'Image', 'YouTube', 'Link'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
             </div>
 
-            {(isHovered || isDragging || isSelected) && !scale /* Hide handles if zooming out too much? No */ && (
-                <>
-                    {/* Handles */}
-                    <div className="handle" onPointerDown={(e) => { e.stopPropagation(); onEdgeStart(node.id, e) }} style={{ ...handleStyle, top: -7, left: '50%', transform: 'translateX(-50%)' }} />
-                    <div className="handle" onPointerDown={(e) => { e.stopPropagation(); onEdgeStart(node.id, e) }} style={{ ...handleStyle, bottom: -7, left: '50%', transform: 'translateX(-50%)' }} />
-                    <div className="handle" onPointerDown={(e) => { e.stopPropagation(); onEdgeStart(node.id, e) }} style={{ ...handleStyle, left: -7, top: '50%', transform: 'translateY(-50%)' }} />
-                    <div className="handle" onPointerDown={(e) => { e.stopPropagation(); onEdgeStart(node.id, e) }} style={{ ...handleStyle, right: -7, top: '50%', transform: 'translateY(-50%)' }} />
-                </>
+            {(isHovered || isSelected) && !isDragging && (
+                <div style={{ position: 'absolute', top: -45, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8, zIndex: 200, padding: 8, background: 'white', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', border: '1px solid rgba(0,0,0,0.05)' }}>
+                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); onEdgeStart(node.id, e) }} title="Connect" style={{ width: 32, height: 32, borderRadius: 8, background: '#4facfe', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiLink size={16} /></motion.button>
+                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); onDelete(node.id) }} title="Delete" style={{ width: 32, height: 32, borderRadius: 8, background: '#ff4d4f', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiTrash2 size={16} /></motion.button>
+                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); onCopy([node.id]) }} title="Copy" style={{ width: 32, height: 32, borderRadius: 8, background: '#fdda6e', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiCopy size={16} /></motion.button>
+                </div>
             )}
-
-            <AnimatePresence>{isHovered && !onConnectStart && !isDragging && (
-                <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} onClick={() => onDelete(node.id)} style={{ position: 'absolute', top: -12, right: -10, width: 32, height: 32, borderRadius: '50%', background: '#ff4d4f', color: 'white', border: '2px solid white', cursor: 'pointer', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }} onPointerDown={e => e.stopPropagation()}><FiTrash2 /></motion.button>
-            )}</AnimatePresence>
         </motion.div>
     )
 }
+
 
 export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge }) {
     const [scale, setScale] = useState(1); const [offset, setOffset] = useState({ x: 0, y: 0 })
@@ -385,7 +380,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     }, [])
 
     // Context Menu State
-    const [contextMenu, setContextMenu] = useState(null) // { x, y, type, targetId }
+    const [contextMenu, setContextMenu] = useState(null) // {x, y, type, targetId}
 
     const handleNodeContextMenu = (e, id) => {
         e.preventDefault()
