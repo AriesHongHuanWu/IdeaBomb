@@ -201,7 +201,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         const onUp = (be) => {
             window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); setIsDragging(false)
             const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1)
-            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: startNodeX + dx, y: startNodeY + dy })
+            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: dx, y: dy })
         }
         window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
     }
@@ -255,7 +255,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
 }
 
 
-export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge }) {
+export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge, cursors, onCursorMove }) {
     const [scale, setScale] = useState(1); const [offset, setOffset] = useState({ x: 0, y: 0 })
     const [selectedIds, setSelectedIds] = useState([])
     const containerRef = useRef()
@@ -450,7 +450,9 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     const mousePos = useRef({ x: 0, y: 0 })
     const handleGlobalMouseMove = (e) => {
         const { left, top } = containerRef.current ? containerRef.current.getBoundingClientRect() : { left: 0, top: 0 }
-        mousePos.current = { x: (e.clientX - left - offset.x) / scale, y: (e.clientY - top - offset.y) / scale }
+        const wx = (e.clientX - left - offset.x) / scale; const wy = (e.clientY - top - offset.y) / scale
+        mousePos.current = { x: wx, y: wy }
+        if (onCursorMove) onCursorMove(wx, wy)
     }
 
     return (
@@ -482,6 +484,12 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                         }}
                         onUpdatePosition={handleNodeUpdatePos} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} onContextMenu={(e) => handleNodeContextMenu(e, node.id)}
                     />
+                ))}
+                {cursors && Object.values(cursors).map(c => (
+                    <div key={c.uid} style={{ position: 'absolute', left: c.x, top: c.y, pointerEvents: 'none', zIndex: 9999, transition: 'all 0.1s linear' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill={c.color || '#f00'} stroke="white" strokeWidth="2" style={{ transform: 'rotate(-15deg)', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}><path d="M4 4l11 4-5 2 4 8-3 2-4-8-3 4z" /></svg>
+                        <div style={{ background: c.color || '#f00', color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', marginTop: 4, whiteSpace: 'nowrap', transform: 'translateX(10px)' }}>{c.displayName || 'User'}</div>
+                    </div>
                 ))}
                 {selectionBox && (
                     <div style={{ position: 'absolute', left: Math.min(selectionBox.startX, selectionBox.currentX), top: Math.min(selectionBox.startY, selectionBox.currentY), width: Math.abs(selectionBox.currentX - selectionBox.startX), height: Math.abs(selectionBox.currentY - selectionBox.startY), background: 'rgba(0, 123, 255, 0.2)', border: '1px solid #007bff', pointerEvents: 'none' }} />
