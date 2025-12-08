@@ -23,7 +23,28 @@ const TodoNode = ({ node, onUpdate }) => {
 }
 const CalendarNode = ({ node, onUpdate }) => {
     const events = node.events || {}; const [date, setDate] = useState(''); const [text, setText] = useState(''); const addEvent = () => { if (date && text) { onUpdate(node.id, { events: { ...events, [date]: text } }); setText(''); setDate('') } }; const sortedEvents = Object.entries(events).sort((a, b) => new Date(a[0]) - new Date(b[0]))
-    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#e67e22', fontWeight: 'bold' }}><FiCalendar size={18} /> Calendar</div> <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}> {sortedEvents.length === 0 && <div style={{ textAlign: 'center', color: '#ccc', marginTop: 20 }}>No events scheduled</div>} {sortedEvents.map(([d, t]) => (<div key={d} style={{ background: 'rgba(255,255,255,0.6)', padding: '8px 12px', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}> <div> <div style={{ fontSize: '0.75rem', color: '#888', fontWeight: 600 }}>{d}</div> <div style={{ fontSize: '0.9rem', color: '#333' }}>{(typeof t === 'object' && t !== null) ? (t.text || t.title || t.content || JSON.stringify(t)) : t}</div> </div> <FiX onClick={() => { const n = { ...events }; delete n[d]; onUpdate(node.id, { events: n }) }} style={{ cursor: 'pointer', color: '#ff6b6b' }} onPointerDown={e => e.stopPropagation()} /> </div>))} </div> <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 5 }} onPointerDown={e => e.stopPropagation()}> <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd', width: '100%' }} /> <div style={{ display: 'flex', gap: 5 }}> <Input placeholder="Event name..." value={text} onChange={e => setText(e.target.value)} /> <Button onClick={addEvent} style={{ width: 40, padding: 0 }}><FiPlus /></Button> </div> </div> </div>)
+    return (
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#e67e22', fontWeight: 800, fontSize: '1.1rem' }}><FiCalendar size={20} /> Calendar</div>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 4 }}>
+                {sortedEvents.length === 0 && <div style={{ textAlign: 'center', color: '#aaa', marginTop: 20, fontSize: '0.9rem' }}>No events planned</div>}
+                {sortedEvents.map(([d, t]) => (
+                    <div key={d} style={{ background: 'white', padding: '10px', borderRadius: 10, position: 'relative', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderLeft: '4px solid #e67e22' }}>
+                        <div style={{ fontSize: '0.8rem', color: '#e67e22', fontWeight: 700, marginBottom: 2 }}>{d}</div>
+                        <div style={{ fontSize: '0.95rem', color: '#444', lineHeight: 1.4 }}>{(typeof t === 'object' && t !== null) ? (t.text || t.title || t.content || JSON.stringify(t)) : t}</div>
+                        <FiX onClick={() => { const n = { ...events }; delete n[d]; onUpdate(node.id, { events: n }) }} style={{ position: 'absolute', top: 5, right: 5, cursor: 'pointer', color: '#ccc', fontSize: 14 }} onPointerDown={e => e.stopPropagation()} />
+                    </div>
+                ))}
+            </div>
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }} onPointerDown={e => e.stopPropagation()}>
+                <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #eee', width: '100%', fontWeight: 500, fontSize: '0.9rem' }} />
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <Input placeholder="Add event..." value={text} onChange={e => setText(e.target.value)} style={{ flex: 1, fontSize: '0.9rem' }} />
+                    <Button onClick={addEvent} style={{ width: 40, height: 40, padding: 0, borderRadius: 12 }}><FiPlus /></Button>
+                </div>
+            </div>
+        </div>
+    )
 }
 const ImageNode = ({ node, onUpdate }) => {
     const up = (e) => { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onloadend = () => onUpdate(node.id, { src: r.result }); r.readAsDataURL(f) } }
@@ -120,14 +141,15 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode }) => {
                         <path d={pathD} stroke="transparent" strokeWidth="20" fill="none" />
                         <motion.path
                             d={pathD}
-                            stroke={mode === 'delete' ? '#ff4d4f' : 'url(#glass-gradient)'}
+                            stroke="#5ac8fa"
                             strokeWidth="3"
-                            strokeDasharray={mode === 'delete' ? "0" : "0"}
+                            strokeDasharray="10 10"
                             fill="none"
                             markerEnd={mode === 'delete' ? "url(#arrowhead-del)" : "url(#arrowhead)"}
-                            initial={{ pathLength: 0, opacity: 0 }}
-                            animate={{ pathLength: 1, opacity: 1 }}
-                            style={{ filter: mode === 'delete' ? 'none' : 'url(#glow)', strokeLinecap: 'round' }}
+                            initial={{ strokeDashoffset: 0 }}
+                            animate={{ strokeDashoffset: [-20, 0] }}
+                            transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                            style={{ filter: mode === 'delete' ? 'none' : 'drop-shadow(0 0 4px #5ac8fa)', strokeLinecap: 'round' }}
                         />
                     </g>
                 )

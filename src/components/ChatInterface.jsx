@@ -9,7 +9,7 @@ Today is {{TODAY}}. Your goal is to create COMPREHENSIVE, ACTIONABLE, and VISUAL
 
 STRICT RULES FOR CONTENT:
 1. NEVER create empty nodes. Content MUST be rich and detailed.
-   - For 'Todo' nodes: You MUST populate 'data.items' with at least 3-5 specific, actionable subtasks. Example: {"text": "Research competitor pricing models", "done": false}.
+   - For 'Todo' nodes: Aggregate ALL tasks into ONE single Todo Node for each phase. Do NOT split tasks into multiple nodes. Populate 'data.items' with 5+ items.
    - For 'Note' nodes: Use markdown for headers and bullet points.
    - For 'Calendar': Add realistic events based on the request (e.g. kickoff today, review in 1 week).
 2. PROVIDE RESOURCES (CRITICAL):
@@ -80,7 +80,7 @@ export default function ChatInterface({ onAction, nodes, collaborators }) {
         try {
             const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
             const model = genAI.getGenerativeModel({
-                model: "models/gemini-2.5-flash-lite",
+                model: "gemini-1.5-flash",
                 tools: [{ googleSearch: {} }]
             })
 
