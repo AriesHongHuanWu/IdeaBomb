@@ -188,9 +188,9 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         setIsDragging(true); onSelect(e)
         const onMove = (be) => { const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1); x.set(startNodeX + dx); y.set(startNodeY + dy) }
         const onUp = (be) => {
-            window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp);
+            window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); setIsDragging(false)
             const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1)
-            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: dx, y: dy })
+            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: startNodeX + dx, y: startNodeY + dy })
         }
         window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
     }
