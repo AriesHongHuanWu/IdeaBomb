@@ -205,6 +205,21 @@ export default function BoardPage({ user }) {
     const displayNodes = nodes.filter(n => (n.page || 'Page 1') === activePage)
     const displayEdges = edges.filter(e => (e.page || 'Page 1') === activePage)
 
+    const renamePage = async (oldName, newName) => {
+        if (!newName.trim() || newName === oldName) return
+        if (pages.includes(newName)) { alert('Page name already exists'); return }
+        const batch = writeBatch(db)
+        const pageNodes = nodes.filter(n => (n.page || 'Page 1') === oldName)
+        pageNodes.forEach(n => batch.update(doc(db, 'boards', boardId, 'nodes', n.id), { page: newName }))
+        edges.filter(e => (e.page || 'Page 1') === oldName).forEach(e => batch.update(doc(db, 'boards', boardId, 'edges', e.id), { page: newName }))
+        await batch.commit()
+        setPages(prev => prev.map(p => p === oldName ? newName : p))
+        setActivePage(newName)
+    }
+
+    const [editingPage, setEditingPage] = useState(null)
+    const [editName, setEditName] = useState('')
+
     if (!hasAccess) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white', background: '#111' }}>Access Denied</div>
 
     return (
@@ -223,7 +238,28 @@ export default function BoardPage({ user }) {
 
             <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 150, display: 'flex', flexDirection: 'column', gap: 10, pointerEvents: 'none' }}>
                 <div style={{ display: 'flex', gap: 5, background: 'rgba(0,0,0,0.8)', padding: '8px 12px', borderRadius: 16, pointerEvents: 'auto' }}>
-                    {pages.map(p => (<button key={p} onClick={() => setActivePage(p)} style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: activePage === p ? 'var(--primary)' : 'rgba(255,255,255,0.2)', color: 'white', fontWeight: activePage === p ? 'bold' : 'normal', cursor: 'pointer' }}>{p}</button>))}
+                    {pages.map(p => (
+                        editingPage === p ? (
+                            <input
+                                key={p}
+                                autoFocus
+                                value={editName}
+                                onChange={e => setEditName(e.target.value)}
+                                onBlur={() => { renamePage(p, editName); setEditingPage(null) }}
+                                onKeyDown={e => { if (e.key === 'Enter') { renamePage(p, editName); setEditingPage(null) } }}
+                                style={{ width: 80, padding: '8px', borderRadius: 10, border: 'none' }}
+                            />
+                        ) : (
+                            <button
+                                key={p}
+                                onClick={() => setActivePage(p)}
+                                onDoubleClick={() => { setEditingPage(p); setEditName(p) }}
+                                style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: activePage === p ? 'var(--primary)' : 'rgba(255,255,255,0.2)', color: 'white', fontWeight: activePage === p ? 'bold' : 'normal', cursor: 'pointer' }}
+                            >
+                                {p}
+                            </button>
+                        )
+                    ))}
                     <button onClick={addNewPage} style={{ padding: '8px 12px', borderRadius: 10, border: '1px dashed rgba(255,255,255,0.5)', background: 'transparent', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>+ New Page</button>
                 </div>
                 <div style={{ pointerEvents: 'auto', alignSelf: 'flex-start', background: 'white', padding: '6px 12px', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>

@@ -59,8 +59,16 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode }) => {
             {edges.map(edge => {
                 const f = nodes.find(n => n.id === edge.from); const t = nodes.find(n => n.id === edge.to)
                 if (!f || !t) return null
-                const { sx, sy, ex, ey, c1x, c1y, c2x, c2y } = getAnchors(f, t)
-                const pathD = `M ${sx} ${sy} C ${sx + c1x} ${sy + c1y}, ${ex + c2x} ${ey + c2y}, ${ex} ${ey}`
+                const { sx, sy, ex, ey, c1x, c1y } = getAnchors(f, t)
+                // Orthogonal Step Logic (Workflow Style)
+                let pathD = ''
+                if (Math.abs(c1x) > Math.abs(c1y)) { // Horizontal Flow
+                    const midX = (sx + ex) / 2
+                    pathD = `M ${sx} ${sy} L ${midX} ${sy} L ${midX} ${ey} L ${ex} ${ey}`
+                } else { // Vertical Flow
+                    const midY = (sy + ey) / 2
+                    pathD = `M ${sx} ${sy} L ${sx} ${midY} L ${ex} ${midY} L ${ex} ${ey}`
+                }
                 return (
                     <g key={edge.id} style={{ pointerEvents: 'auto', cursor: mode === 'delete' ? 'not-allowed' : 'pointer' }} onClick={() => onDeleteEdge(edge.id)}>
                         <path d={pathD} stroke="transparent" strokeWidth="20" fill="none" />
