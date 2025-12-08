@@ -77,17 +77,54 @@ const CalendarNode = ({ node, onUpdate }) => {
         const newEvents = { ...events, [selectedDate]: eventText }
         if (!eventText) delete newEvents[selectedDate] // Delete if empty
         onUpdate(node.id, { events: newEvents })
-            < textarea
-        value = { eventText }
-        onChange = { e => setEventText(e.target.value)}
-style = {{ flex: 1, width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ddd', resize: 'none', outline: 'none', fontFamily: 'inherit' }}
-placeholder = "Type event here..."
-autoFocus
-    />
-    <button onClick={saveEvent} style={{ width: '100%', marginTop: 8, background: 'var(--primary)', color: 'white', border: 'none', padding: '8px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Save Event</button>
-                </div >
+        setSelectedDate(null)
+    }
+
+    return (
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '1rem', borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: 5, color: 'var(--primary)' }}>Calendar</h3>
+            {!selectedDate ? (
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <p style={{ fontSize: '0.8rem', color: '#888', margin: '0 0 5px 0', textAlign: 'center' }}>Click a day to add event</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, flex: 1, overflowY: 'auto' }}>
+                        {days.map(d => (
+                            <div
+                                key={d}
+                                onClick={() => handleDateClick(d)}
+                                onPointerDown={e => e.stopPropagation()}
+                                style={{
+                                    padding: 2, textAlign: 'center', borderRadius: 4,
+                                    background: events[d] ? 'var(--primary-light)' : 'rgba(255,255,255,0.5)',
+                                    border: events[d] ? '1px solid var(--primary)' : '1px solid transparent',
+                                    cursor: 'pointer', fontSize: '0.8rem', minHeight: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                    transition: 'background 0.2s'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'var(--primary-light)'}
+                                onMouseLeave={e => e.currentTarget.style.background = events[d] ? 'var(--primary-light)' : 'rgba(255,255,255,0.5)'}
+                            >
+                                <span style={{ fontWeight: events[d] ? 'bold' : 'normal' }}>{d}</span>
+                                {events[d] && <div style={{ width: 4, height: 4, background: 'var(--primary)', borderRadius: '50%', margin: '2px auto' }}></div>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                <div onPointerDown={e => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                        <strong>Editing Day {selectedDate}</strong>
+                        <button onClick={() => setSelectedDate(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#888' }}><FiX /></button>
+                    </div>
+                    <textarea
+                        value={eventText}
+                        onChange={e => setEventText(e.target.value)}
+                        style={{ flex: 1, width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ddd', resize: 'none', outline: 'none', fontFamily: 'inherit' }}
+                        placeholder="Type event here..."
+                        autoFocus
+                    />
+                    <button onClick={saveEvent} style={{ width: '100%', marginTop: 8, background: 'var(--primary)', color: 'white', border: 'none', padding: '8px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Save Event</button>
+                </div>
             )}
-        </div >
+        </div>
     )
 }
 
@@ -140,120 +177,218 @@ const NoteNode = ({ node, onUpdate }) => (
             resize: 'none', outline: 'none', fontSize: '1rem', fontFamily: 'inherit',
             lineHeight: 1.5, color: '#444'
         }}
+        placeholder="Type your ideas..."
+    />
+)
 
-        export default function Whiteboard({ nodes, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode }) {
-            const [scale, setScale] = useState(1)
+// --- Main Draggable Item ---
+
+const DraggableNode = ({ node, onUpdatePosition, onUpdateData, onDelete }) => {
+    const x = useMotionValue(node.x)
+    const y = useMotionValue(node.y)
+    const [isHovered, setIsHovered] = useState(false)
+
+    useEffect(() => { x.set(node.x); y.set(node.y) }, [node.x, node.y, x, y])
+
+    const colors = ['#ffffeb', '#e6f7ff', '#fff0f5', '#f0fff0', '#f5f5f5']
+
+    return (
+        <motion.div
+            drag
+            dragMomentum={false}
+            dragElastic={0}
+            onDragEnd={(e, info) => onUpdatePosition(node.id, info.offset)}
+            style={{ x, y, position: 'absolute', pointerEvents: 'auto' }}
+            className="node-container"
+        >
+            <div
+                className="glass-panel"
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+                style={{
+                    width: node.type === 'Image' ? 320 : 300,
+                    height: node.type === 'Calendar' ? 320 : (node.type === 'Image' ? 'auto' : 250),
+                    minHeight: 200,
+                    background: node.color || (node.type === 'Note' ? '#ffffeb' : 'rgba(255,255,255,0.95)'),
+                    borderRadius: 24, padding: 25,
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.08)',
+                    display: 'flex', flexDirection: 'column',
+                    position: 'relative',
+                    border: '1px solid rgba(255,255,255,0.8)',
+                    transition: 'background 0.3s'
+                }}
+            >
+                {/* Delete Button - Only visible on hover */}
+                <div
+                    style={{
+                        position: 'absolute', top: -12, right: -12, zIndex: 20,
+                        opacity: isHovered ? 1 : 0,
+                        transform: isHovered ? 'scale(1)' : 'scale(0.8)',
+                        transition: 'all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
+                        pointerEvents: isHovered ? 'auto' : 'none'
+                    }}
+                >
+                    <button
+                        onClick={() => onDelete(node.id)}
+                        className="delete-btn"
+                        title="Delete Node"
+                        style={{
+                            width: 32, height: 32, borderRadius: '50%',
+                            background: '#ff4d4f', color: 'white', border: '2px solid white',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        }}
+                        onPointerDown={e => e.stopPropagation()}
+                    >
+                        <FiTrash2 size={16} />
+                    </button>
+                </div>
+
+                {/* Color Picker (Only for Note/Todo) */}
+                {isHovered && ['Note', 'Todo'].includes(node.type) && (
+                    <div style={{ position: 'absolute', top: -10, left: 10, display: 'flex', gap: 5, zIndex: 20 }}>
+                        {colors.map(c => (
+                            <div
+                                key={c}
+                                onClick={() => onUpdateData(node.id, { color: c })}
+                                onPointerDown={e => e.stopPropagation()}
+                                style={{
+                                    width: 20, height: 20, borderRadius: '50%', background: c,
+                                    border: '1px solid #ddd', cursor: 'pointer',
+                                    boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                                }}
+                            />
+                        ))}
+                    </div>
+                )}
+
+                {/* Content */}
+                <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                    {node.type === 'Todo' && <TodoNode node={node} onUpdate={onUpdateData} />}
+                    {node.type === 'Calendar' && <CalendarNode node={node} onUpdate={onUpdateData} />}
+                    {node.type === 'Image' && <ImageNode node={node} onUpdate={onUpdateData} />}
+                    {(node.type === 'Note' || !['Todo', 'Calendar', 'Image'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
+                </div>
+            </div>
+        </motion.div>
+    )
+}
+
+// --- Whiteboard Container ---
+
+export default function Whiteboard({ nodes, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode }) {
+    const [scale, setScale] = useState(1)
     const [offset, setOffset] = useState({ x: 0, y: 0 })
     const containerRef = useRef()
     const [isDraggingCanvas, setIsDraggingCanvas] = useState(false)
 
     // Zoom (Wheel) & Pan (Wheel)
     useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-    const handleWheel = (e) => {
-        if (e.ctrlKey) {
-            e.preventDefault()
-            const s = Math.exp(-e.deltaY * 0.01)
-            setScale(prev => Math.min(Math.max(0.1, prev * s), 5))
-        } else {
-            e.preventDefault()
-            setOffset(prev => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }))
+        const container = containerRef.current
+        if (!container) return
+        const handleWheel = (e) => {
+            if (e.ctrlKey) {
+                e.preventDefault()
+                const s = Math.exp(-e.deltaY * 0.01)
+                setScale(prev => Math.min(Math.max(0.1, prev * s), 5))
+            } else {
+                e.preventDefault()
+                setOffset(prev => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }))
+            }
+        }
+        container.addEventListener('wheel', handleWheel, { passive: false })
+        return () => container.removeEventListener('wheel', handleWheel)
+    }, [])
+
+    // Pan (Drag)
+    const handlePointerDown = (e) => {
+        // Only pan if clicking on background (not a node/button)
+        if (e.target === containerRef.current || e.target.classList.contains('grid-bg')) {
+            setIsDraggingCanvas(true)
+            e.target.setPointerCapture(e.pointerId)
         }
     }
-    container.addEventListener('wheel', handleWheel, { passive: false })
-    return () => container.removeEventListener('wheel', handleWheel)
-}, [])
 
-// Pan (Drag)
-const handlePointerDown = (e) => {
-    // Only pan if clicking on background (not a node/button)
-    if (e.target === containerRef.current || e.target.classList.contains('grid-bg')) {
-        setIsDraggingCanvas(true)
-        e.target.setPointerCapture(e.pointerId)
+    const handlePointerMove = (e) => {
+        if (!isDraggingCanvas) return
+        setOffset(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }))
     }
-}
 
-const handlePointerMove = (e) => {
-    if (!isDraggingCanvas) return
-    setOffset(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }))
-}
+    const handlePointerUp = (e) => {
+        setIsDraggingCanvas(false)
+        if (e.target) e.target.releasePointerCapture(e.pointerId)
+    }
 
-const handlePointerUp = (e) => {
-    setIsDraggingCanvas(false)
-    if (e.target) e.target.releasePointerCapture(e.pointerId)
-}
+    // Auto Arrange
+    const autoArrange = () => {
+        const cols = Math.ceil(Math.sqrt(nodes.length))
+        const gap = 350
+        nodes.forEach((node, i) => {
+            const col = i % cols
+            const row = Math.floor(i / cols)
 
-// Auto Arrange
-const autoArrange = () => {
-    const cols = Math.ceil(Math.sqrt(nodes.length))
-    const gap = 350
-    nodes.forEach((node, i) => {
-        const col = i % cols
-        const row = Math.floor(i / cols)
+            const targetX = 100 + col * gap
+            const targetY = 100 + row * gap
 
-        const targetX = 100 + col * gap
-        const targetY = 100 + row * gap
+            onUpdateNodeData(node.id, { x: targetX, y: targetY })
+        })
+    }
 
-        onUpdateNodeData(node.id, { x: targetX, y: targetY })
-    })
-}
-
-return (
-    <div
-        ref={containerRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f0f2f5', position: 'relative', touchAction: 'none', cursor: isDraggingCanvas ? 'grabbing' : 'grab' }}
-    >
-
-        {/* Background Grid */}
-        <div className="grid-bg" style={{
-            position: 'absolute', inset: 0,
-            backgroundImage: 'radial-gradient(#ccc 1px, transparent 1px)',
-            backgroundSize: '20px 20px',
-            transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-            transformOrigin: '0 0',
-            opacity: 0.5,
-            pointerEvents: 'none'
-        }} />
-
-        <motion.div style={{
-            width: '100%', height: '100%',
-            x: offset.x, y: offset.y, scale,
-            transformOrigin: '0 0',
-            pointerEvents: 'none' // Nodes have pointerEvents: auto
-        }}>
-            {nodes.map(node => (
-                <DraggableNode
-                    key={node.id}
-                    node={node}
-                    onUpdatePosition={onUpdateNodePosition}
-                    onUpdateData={onUpdateNodeData}
-                    onDelete={onDeleteNode}
-                />
-            ))}
-        </motion.div>
-
-        <motion.div
-            className="glass-panel"
-            style={{
-                position: 'absolute', bottom: 30, left: '50%', x: '-50%',
-                padding: '10px 20px', display: 'flex', gap: 15, borderRadius: 50,
-                zIndex: 100, pointerEvents: 'auto'
-            }}
-            initial={{ y: 100 }} animate={{ y: 0 }}
+    return (
+        <div
+            ref={containerRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f0f2f5', position: 'relative', touchAction: 'none', cursor: isDraggingCanvas ? 'grabbing' : 'grab' }}
         >
-            <ToolBtn icon={<FiType />} label="Note" onClick={() => onAddNode('Note')} />
-            <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => onAddNode('Todo')} />
-            <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode('Calendar')} />
-            <ToolBtn icon={<FiImage />} label="Image" onClick={() => onAddNode('Image')} />
-            <div style={{ width: 1, height: 40, background: '#eee', margin: '0 10px' }}></div>
-            <ToolBtn icon={<FiGrid />} label="Auto Arrange" onClick={autoArrange} />
-        </motion.div>
-    </div>
-)
+
+            {/* Background Grid */}
+            <div className="grid-bg" style={{
+                position: 'absolute', inset: 0,
+                backgroundImage: 'radial-gradient(#ccc 1px, transparent 1px)',
+                backgroundSize: '20px 20px',
+                transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+                transformOrigin: '0 0',
+                opacity: 0.5,
+                pointerEvents: 'none'
+            }} />
+
+            <motion.div style={{
+                width: '100%', height: '100%',
+                x: offset.x, y: offset.y, scale,
+                transformOrigin: '0 0',
+                pointerEvents: 'none' // Nodes have pointerEvents: auto
+            }}>
+                {nodes.map(node => (
+                    <DraggableNode
+                        key={node.id}
+                        node={node}
+                        onUpdatePosition={onUpdateNodePosition}
+                        onUpdateData={onUpdateNodeData}
+                        onDelete={onDeleteNode}
+                    />
+                ))}
+            </motion.div>
+
+            <motion.div
+                className="glass-panel"
+                style={{
+                    position: 'absolute', bottom: 30, left: '50%', x: '-50%',
+                    padding: '10px 20px', display: 'flex', gap: 15, borderRadius: 50,
+                    zIndex: 100, pointerEvents: 'auto'
+                }}
+                initial={{ y: 100 }} animate={{ y: 0 }}
+            >
+                <ToolBtn icon={<FiType />} label="Note" onClick={() => onAddNode('Note')} />
+                <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => onAddNode('Todo')} />
+                <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode('Calendar')} />
+                <ToolBtn icon={<FiImage />} label="Image" onClick={() => onAddNode('Image')} />
+                <div style={{ width: 1, height: 40, background: '#eee', margin: '0 10px' }}></div>
+                <ToolBtn icon={<FiGrid />} label="Auto Arrange" onClick={autoArrange} />
+            </motion.div>
+        </div>
+    )
 }
 
 const ToolBtn = ({ icon, label, onClick }) => (
