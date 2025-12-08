@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../firebase'
 import { signOut } from 'firebase/auth'
-import { collection, addDoc, query, where, onSnapshot, orderBy } from 'firebase/firestore'
+import { collection, addDoc, query, where, onSnapshot } from 'firebase/firestore'
 import { FiPlus, FiLogOut, FiLayout } from 'react-icons/fi'
 
 export default function Dashboard({ user }) {
@@ -12,14 +12,20 @@ export default function Dashboard({ user }) {
 
     useEffect(() => {
         if (!user) return
-        // Simple query: Boards created by me. (Future: Shared with me)
+        // Query: Boards owner created OR is invited to (allowedEmails contains my email)
+        // To support both efficiently without composite index issues immediately, 
+        // we'll just check 'allowedEmails' array-contains user.email.
+        // (Assuming creating a board adds owner to allowedEmails)
+
         const q = query(
             collection(db, 'boards'),
-            where('createdBy', '==', user.uid)
-            // orderBy requires index, skipping for now or catching error
+            where('allowedEmails', 'array-contains', user.email)
         )
+
         const unsubscribe = onSnapshot(q, (snapshot) => {
             setBoards(snapshot.docs.map(d => ({ id: d.id, ...d.data() })))
+        }, (error) => {
+            console.error("Dashboard Query Error:", error)
         })
         return unsubscribe
     }, [user])
@@ -30,11 +36,13 @@ export default function Dashboard({ user }) {
                 title: 'Untitled Board',
                 createdBy: user.uid,
                 createdAt: new Date().toISOString(),
-                members: [user.uid]
+                allowedEmails: [user.email], // Add self to permission list
+                members: [user.uid] // Start with self as member (legacy support)
             })
             navigate(`/board/${docRef.id}`)
         } catch (e) {
             console.error("Error creating board", e)
+            alert("Error creating board: " + e.message)
         }
     }
 
@@ -45,10 +53,12 @@ export default function Dashboard({ user }) {
                     <FiLayout /> IdeaBomb Dashboard
                 </h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <img src={user.photoURL} alt="User" style={{ width: 32, height: 32, borderRadius: '50%' }} />
-                        <span>{user.displayName}</span>
-                    </div>
+                    {user && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <img src={user.photoURL} alt="User" style={{ width: 32, height: 32, borderRadius: '50%' }} />
+                            <span>{user.displayName}</span>
+                        </div>
+                    )}
                     <button onClick={() => signOut(auth)} style={{ background: 'white', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
                         <FiLogOut /> Sign Out
                     </button>
@@ -88,6 +98,9 @@ export default function Dashboard({ user }) {
                         <h3 style={{ margin: 0, fontSize: '1.4rem' }}>{board.title}</h3>
                         <div style={{ color: '#888', fontSize: '0.9rem' }}>
                             Created: {new Date(board.createdAt).toLocaleDateString()}
+                        </div>
+                        <div style={{ color: '#888', fontSize: '0.8rem' }}>
+                            Members: {board.allowedEmails?.length || 1}
                         </div>
                     </motion.div>
                 ))}
