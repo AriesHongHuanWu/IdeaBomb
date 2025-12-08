@@ -35,18 +35,28 @@ const CalendarNode = ({ node, onUpdate }) => {
             {node.content && <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: 10, padding: '6px 8px', background: 'rgba(0,0,0,0.03)', borderRadius: 6, fontStyle: 'italic' }}>{node.content}</div>}
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 4 }}>
                 {sortedEvents.length === 0 && <div style={{ textAlign: 'center', color: '#aaa', marginTop: 20, fontSize: '0.9rem' }}>No events planned</div>}
-                {sortedEvents.map(([d, t]) => (
-                    <div key={d} style={{ background: 'white', padding: '12px', borderRadius: 10, position: 'relative', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderLeft: '4px solid #e67e22', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#fff0e6', padding: '4px 8px', borderRadius: 8, minWidth: 50 }}>
-                            <span style={{ fontSize: '0.7rem', color: '#e67e22', fontWeight: 700, textTransform: 'uppercase' }}>{new Date(d).toLocaleString('default', { month: 'short' })}</span>
-                            <span style={{ fontSize: '1.1rem', color: '#d35400', fontWeight: 800 }}>{new Date(d).getDate()}</span>
+                {sortedEvents.map(([d, t]) => {
+                    const isTime = d.match(/^\d{1,2}:\d{2}$/);
+                    const isDate = !isTime && !isNaN(new Date(d).getTime());
+                    return (
+                        <div key={d} style={{ background: 'white', padding: '12px', borderRadius: 10, position: 'relative', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderLeft: '4px solid #e67e22', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#fff0e6', padding: '4px 8px', borderRadius: 8, minWidth: 50, justifyContent: 'center' }}>
+                                {isTime ? (
+                                    <span style={{ fontSize: '0.9rem', color: '#d35400', fontWeight: 800 }}>{d}</span>
+                                ) : (
+                                    <>
+                                        <span style={{ fontSize: '0.7rem', color: '#e67e22', fontWeight: 700, textTransform: 'uppercase' }}>{isDate ? new Date(d).toLocaleString('default', { month: 'short' }) : ''}</span>
+                                        <span style={{ fontSize: '1.1rem', color: '#d35400', fontWeight: 800 }}>{isDate ? new Date(d).getDate() : '?'}</span>
+                                    </>
+                                )}
+                            </div>
+                            <div style={{ flex: 1, fontSize: '0.95rem', color: '#333', lineHeight: 1.4, marginTop: 2 }}>
+                                {(typeof t === 'object' && t !== null) ? (t.text || t.title || t.content || JSON.stringify(t)) : t}
+                            </div>
+                            <FiX onClick={() => { const n = { ...events }; delete n[d]; onUpdate(node.id, { events: n }) }} style={{ cursor: 'pointer', color: '#ccc', fontSize: 16, marginTop: 4 }} onPointerDown={e => e.stopPropagation()} />
                         </div>
-                        <div style={{ flex: 1, fontSize: '0.95rem', color: '#333', lineHeight: 1.4, marginTop: 2 }}>
-                            {(typeof t === 'object' && t !== null) ? (t.text || t.title || t.content || JSON.stringify(t)) : t}
-                        </div>
-                        <FiX onClick={() => { const n = { ...events }; delete n[d]; onUpdate(node.id, { events: n }) }} style={{ cursor: 'pointer', color: '#ccc', fontSize: 16, marginTop: 4 }} onPointerDown={e => e.stopPropagation()} />
-                    </div>
-                ))}
+                    )
+                })}
             </div>
             <div style={{ marginTop: 12, display: 'flex', gap: 8, paddingTop: 10, borderTop: '1px solid #eee' }} onPointerDown={e => e.stopPropagation()}>
                 <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid #eee', width: 130, fontWeight: 500, fontSize: '0.9rem', outline: 'none', background: '#f9f9f9' }} />
