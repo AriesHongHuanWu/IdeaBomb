@@ -79,8 +79,9 @@ export default function ChatInterface({ onAction, nodes, collaborators }) {
 
         try {
             const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
+            console.log("Initializing Gemini 2.5 Flash...")
             const model = genAI.getGenerativeModel({
-                model: "models/gemini-1.5-flash",
+                model: "models/gemini-2.5-flash",
                 tools: [{ googleSearch: {} }]
             })
 
