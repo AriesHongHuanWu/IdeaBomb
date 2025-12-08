@@ -186,7 +186,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         const onUp = (be) => {
             window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); setIsDragging(false)
             const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1)
-            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: startNodeX + dx, y: startNodeY + dy })
+            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: dx, y: dy })
         }
         window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
     }
@@ -200,7 +200,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
     }
 
-    const handleStyle = { position: 'absolute', width: 14, height: 14, background: '#007bff', borderRadius: '50%', cursor: 'crosshair', opacity: 0.8, transition: 'transform 0.2s', border: '2px solid white', boxShadow: '0 0 5px rgba(0,0,0,0.2)' }
+    const handleStyle = { position: 'absolute', width: 16, height: 16, background: '#007bff', borderRadius: '50%', cursor: 'crosshair', opacity: 1, zIndex: 200, transition: 'transform 0.2s', border: '2px solid white', boxShadow: '0 0 5px rgba(0,0,0,0.3)' }
 
     return (
         <motion.div
@@ -321,21 +321,16 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
         if (e.target) e.target.releasePointerCapture(e.pointerId)
     }
 
-    const handleNodeUpdatePos = (id, newPos) => {
-        const draggedNode = nodes.find(n => n.id === id)
-        if (!draggedNode) return
-        const dx = newPos.x - draggedNode.x
-        const dy = newPos.y - draggedNode.y
-
+    const handleNodeUpdatePos = (id, delta) => {
         if (selectedIds.includes(id) && selectedIds.length > 1) {
             const updates = selectedIds.map(sId => {
                 const n = nodes.find(n => n.id === sId)
                 if (!n) return null
-                return { id: sId, data: { x: n.x + dx, y: n.y + dy } }
+                return { id: sId, data: { x: n.x + delta.x, y: n.y + delta.y } }
             }).filter(Boolean)
             if (onBatchUpdate) onBatchUpdate(updates)
         } else {
-            onUpdateNodePosition(id, newPos)
+            onUpdateNodePosition(id, delta)
         }
     }
 
