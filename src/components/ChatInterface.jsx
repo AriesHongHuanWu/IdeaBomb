@@ -50,8 +50,8 @@ export default function ChatInterface({ onAction }) {
 
     try {
       const genAI = new GoogleGenerativeAI(apiKey)
-      // Updated to stable model
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+      // Updated to requested model
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" }, { apiVersion: 'v1beta' })
 
       // Construct prompt with context
       const prompt = `${SYSTEM_PROMPT}\n\nUser: ${userText}`
