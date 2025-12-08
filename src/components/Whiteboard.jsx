@@ -25,190 +25,163 @@ const CalendarNode = ({ node, onUpdate }) => {
     return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#e67e22', fontWeight: 'bold' }}><FiCalendar size={18} /> Calendar</div> <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}> {sortedEvents.length === 0 && <div style={{ textAlign: 'center', color: '#ccc', marginTop: 20 }}>No events scheduled</div>} {sortedEvents.map(([d, t]) => (<div key={d} style={{ background: 'rgba(255,255,255,0.6)', padding: '8px 12px', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}> <div> <div style={{ fontSize: '0.75rem', color: '#888', fontWeight: 600 }}>{d}</div> <div style={{ fontSize: '0.9rem', color: '#333' }}>{t}</div> </div> <FiX onClick={() => { const n = { ...events }; delete n[d]; onUpdate(node.id, { events: n }) }} style={{ cursor: 'pointer', color: '#ff6b6b' }} onPointerDown={e => e.stopPropagation()} /> </div>))} </div> <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 5 }} onPointerDown={e => e.stopPropagation()}> <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd', width: '100%' }} /> <div style={{ display: 'flex', gap: 5 }}> <Input placeholder="Event name..." value={text} onChange={e => setText(e.target.value)} /> <Button onClick={addEvent} style={{ width: 40, padding: 0 }}><FiPlus /></Button> </div> </div> </div>)
 }
 const ImageNode = ({ node, onUpdate }) => {
-    const up = (e) => { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onloadend = () => onUpdate(node.id, { src: r.result }); r.readAsDataURL(f) } }
-    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#9b59b6', fontWeight: 'bold' }}><FiImage size={18} /> Image</div> <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.03)', borderRadius: 12, overflow: 'hidden', position: 'relative' }}> {node.src ? (<> <img src={node.src} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> <button onClick={() => onUpdate(node.id, { src: '' })} style={{ position: 'absolute', bottom: 10, right: 10, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 30, height: 30, cursor: 'pointer' }} onPointerDown={e => e.stopPropagation()}><FiX /></button> </>) : (<div style={{ textAlign: 'center' }} onPointerDown={e => e.stopPropagation()}> <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Upload Image</p> <input type="file" onChange={up} style={{ maxWidth: 180, marginTop: 10 }} /> </div>)} </div> </div>)
-}
-const NoteNode = ({ node, onUpdate }) => (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, color: '#555', fontWeight: 'bold', fontSize: '0.9rem' }}><FiType /> Note</div> <textarea defaultValue={node.content} onBlur={e => onUpdate(node.id, { content: e.target.value })} onPointerDown={e => e.stopPropagation()} style={{ flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none', fontSize: '1rem', lineHeight: 1.6, color: '#333' }} placeholder="Type something..." /> </div>)
 
-// --- Connection Layer ---
-const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode }) => {
-    return (
-        <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'visible', pointerEvents: 'none' }}>
-            {edges.map(edge => {
-                const f = nodes.find(n => n.id === edge.from); const t = nodes.find(n => n.id === edge.to)
-                if (!f || !t) return null
-                const w1 = f.w || 320; const h1 = f.h || 240; const w2 = t.w || 320; const h2 = t.h || 240
-                const sx = f.x + w1 / 2; const sy = f.y + h1 / 2; const ex = t.x + w2 / 2; const ey = t.y + h2 / 2
+    // --- Draggable Node (Resizable) ---
+    const DraggableNode = ({ node, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart }) => {
+        const x = useMotionValue(node.x); const y = useMotionValue(node.y);
+        const [isHovered, setIsHovered] = useState(false)
+        const [size, setSize] = useState({ w: node.w || 320, h: node.h || 240 })
+        useEffect(() => { x.set(node.x); y.set(node.y) }, [node.x, node.y, x, y])
 
-                return (
-                    <g key={edge.id} style={{ pointerEvents: 'auto', cursor: mode === 'delete' ? 'crosshair' : 'pointer' }} onClick={() => onDeleteEdge(edge.id)}>
-                        {/* Thick Invisible Line for Hit Area */}
-                        <path d={`M ${sx} ${sy} L ${ex} ${ey}`} stroke="transparent" strokeWidth="20" fill="none" />
-                        {/* Visible Line */}
-                        <motion.path d={`M ${sx} ${sy} C ${sx + (ex - sx) * 0.5} ${sy}, ${ex - (ex - sx) * 0.5} ${ey}, ${ex} ${ey}`} stroke={mode === 'delete' ? '#ff4d4f' : '#b0b0b0'} strokeWidth="3" strokeDasharray="5 5" fill="none" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} />
-                    </g>
-                )
-            })}
-        </svg>
-    )
-}
+        const handleResize = (e) => {
+            e.stopPropagation();
+            const startX = e.clientX; const startY = e.clientY
+            const startW = size.w; const startH = size.h
+            const onMove = (mv) => { setSize({ w: Math.max(200, startW + (mv.clientX - startX)), h: Math.max(150, startH + (mv.clientY - startY)) }) }
+            const onUp = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); onUpdateData(node.id, { w: size.w, h: size.h }) }
+            window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
+        }
 
-// --- Draggable Node (Resizable) ---
-const DraggableNode = ({ node, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart }) => {
-    const x = useMotionValue(node.x); const y = useMotionValue(node.y);
-    const [isHovered, setIsHovered] = useState(false)
-    const [size, setSize] = useState({ w: node.w || 320, h: node.h || 240 })
-    useEffect(() => { x.set(node.x); y.set(node.y) }, [node.x, node.y, x, y])
+        return (
+            <motion.div
+                drag dragMomentum={false} dragElastic={0} onDragEnd={(e, i) => onUpdatePosition(node.id, i.offset)}
+                onClick={(e) => { e.stopPropagation(); if (onConnectStart) { onConnectStart(node.id) } else { onSelect(e) } }}
+                onContextMenu={(e) => { onSelect(e) }}
+                onHoverStart={() => setIsHovered(true)} onHoverEnd={() => setIsHovered(false)}
+                style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isSelected ? 50 : 10, width: size.w, height: size.h }}
+            >
+                <div className="glass-panel" style={{
+                    width: '100%', height: '100%', padding: 25, borderRadius: 24, display: 'flex', flexDirection: 'column',
+                    background: node.color || 'rgba(255,255,255,0.9)',
+                    border: isSelected ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.8)',
+                    boxShadow: isSelected ? '0 15px 40px rgba(0,0,0,0.15)' : '0 10px 30px rgba(0,0,0,0.08)',
+                    backdropFilter: 'blur(20px)', transition: 'box-shadow 0.2s'
+                }}>
+                    {/* Resize Handle */}
+                    <div onPointerDown={handleResize} style={{ position: 'absolute', bottom: 5, right: 5, width: 20, height: 20, cursor: 'nwse-resize', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiMaximize2 size={12} color="#aaa" /></div>
 
-    const handleResize = (e) => {
-        e.stopPropagation();
-        const startX = e.clientX; const startY = e.clientY
-        const startW = size.w; const startH = size.h
-        const onMove = (mv) => { setSize({ w: Math.max(200, startW + (mv.clientX - startX)), h: Math.max(150, startH + (mv.clientY - startY)) }) }
-        const onUp = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); onUpdateData(node.id, { w: size.w, h: size.h }) }
-        window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
+                    {/* Controls */}
+                    <AnimatePresence>{isHovered && !onConnectStart && (
+                        <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} onClick={() => onDelete(node.id)} style={{ position: 'absolute', top: -12, right: -10, width: 32, height: 32, borderRadius: '50%', background: '#ff4d4f', color: 'white', border: '2px solid white', cursor: 'pointer', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onPointerDown={e => e.stopPropagation()}><FiTrash2 /></motion.button>
+                    )}</AnimatePresence>
+
+                    {node.type === 'Todo' && <TodoNode node={node} onUpdate={onUpdateData} />}
+                    {node.type === 'Calendar' && <CalendarNode node={node} onUpdate={onUpdateData} />}
+                    {node.type === 'Image' && <ImageNode node={node} onUpdate={onUpdateData} />}
+                    {node.type === 'YouTube' && <YouTubeNode node={node} onUpdate={onUpdateData} />}
+                    {(!['Todo', 'Calendar', 'Image', 'YouTube'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
+                </div>
+            </motion.div>
+        )
     }
 
-    return (
-        <motion.div
-            drag dragMomentum={false} dragElastic={0} onDragEnd={(e, i) => onUpdatePosition(node.id, i.offset)}
-            onClick={(e) => { e.stopPropagation(); if (onConnectStart) { onConnectStart(node.id) } else { onSelect(e) } }}
-            onContextMenu={(e) => { onSelect(e) }}
-            onHoverStart={() => setIsHovered(true)} onHoverEnd={() => setIsHovered(false)}
-            style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isSelected ? 50 : 10, width: size.w, height: size.h }}
-        >
-            <div className="glass-panel" style={{
-                width: '100%', height: '100%', padding: 25, borderRadius: 24, display: 'flex', flexDirection: 'column',
-                background: node.color || 'rgba(255,255,255,0.9)',
-                border: isSelected ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.8)',
-                boxShadow: isSelected ? '0 15px 40px rgba(0,0,0,0.15)' : '0 10px 30px rgba(0,0,0,0.08)',
-                backdropFilter: 'blur(20px)', transition: 'box-shadow 0.2s'
-            }}>
-                {/* Resize Handle */}
-                <div onPointerDown={handleResize} style={{ position: 'absolute', bottom: 5, right: 5, width: 20, height: 20, cursor: 'nwse-resize', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiMaximize2 size={12} color="#aaa" /></div>
+    export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge }) {
+        const [scale, setScale] = useState(1); const [offset, setOffset] = useState({ x: 0, y: 0 })
+        const [selectedIds, setSelectedIds] = useState([])
+        const containerRef = useRef()
+        const [isDraggingCanvas, setIsDraggingCanvas] = useState(false)
+        const [connectMode, setConnectMode] = useState(false) // Manual connect mode
+        const [connectStartId, setConnectStartId] = useState(null)
 
-                {/* Controls */}
-                <AnimatePresence>{isHovered && !onConnectStart && (
-                    <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} onClick={() => onDelete(node.id)} style={{ position: 'absolute', top: -12, right: -10, width: 32, height: 32, borderRadius: '50%', background: '#ff4d4f', color: 'white', border: '2px solid white', cursor: 'pointer', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onPointerDown={e => e.stopPropagation()}><FiTrash2 /></motion.button>
-                )}</AnimatePresence>
+        // Box Selection State
+        const [selectionBox, setSelectionBox] = useState(null) // { startX, startY, currentX, currentY }
 
-                {node.type === 'Todo' && <TodoNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Calendar' && <CalendarNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Image' && <ImageNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'YouTube' && <YouTubeNode node={node} onUpdate={onUpdateData} />}
-                {(!['Todo', 'Calendar', 'Image', 'YouTube'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
-            </div>
-        </motion.div>
-    )
-}
+        const autoArrange = () => {
+            const cols = Math.ceil(Math.sqrt(nodes.length))
+            const updates = nodes.map((node, i) => ({ id: node.id, data: { x: 150 + (i % cols) * 360, y: 150 + Math.floor(i / cols) * 360 } }))
+            if (onBatchUpdate) onBatchUpdate(updates)
+        }
 
-export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge }) {
-    const [scale, setScale] = useState(1); const [offset, setOffset] = useState({ x: 0, y: 0 })
-    const [selectedIds, setSelectedIds] = useState([])
-    const containerRef = useRef()
-    const [isDraggingCanvas, setIsDraggingCanvas] = useState(false)
-    const [connectMode, setConnectMode] = useState(false) // Manual connect mode
-    const [connectStartId, setConnectStartId] = useState(null)
-
-    // Box Selection State
-    const [selectionBox, setSelectionBox] = useState(null) // { startX, startY, currentX, currentY }
-
-    const autoArrange = () => {
-        const cols = Math.ceil(Math.sqrt(nodes.length))
-        const updates = nodes.map((node, i) => ({ id: node.id, data: { x: 150 + (i % cols) * 360, y: 150 + Math.floor(i / cols) * 360 } }))
-        if (onBatchUpdate) onBatchUpdate(updates)
-    }
-
-    // Input Handling
-    const handlePointerDown = (e) => {
-        if (connectMode) return // Don't drag canvas in connect mode (optional)
-        if (e.target === containerRef.current) {
-            if (e.shiftKey) {
-                // Start Box Selection
-                const { left, top } = containerRef.current.getBoundingClientRect()
-                const x = (e.clientX - left - offset.x) / scale
-                const y = (e.clientY - top - offset.y) / scale
-                setSelectionBox({ startX: x, startY: y, currentX: x, currentY: y })
-                e.target.setPointerCapture(e.pointerId)
-            } else {
-                // Pan Canvas
-                setIsDraggingCanvas(true); e.target.setPointerCapture(e.pointerId)
-                if (!e.ctrlKey) setSelectedIds([])
+        // Input Handling
+        const handlePointerDown = (e) => {
+            if (connectMode) return // Don't drag canvas in connect mode (optional)
+            if (e.target === containerRef.current) {
+                if (e.shiftKey) {
+                    // Start Box Selection
+                    const { left, top } = containerRef.current.getBoundingClientRect()
+                    const x = (e.clientX - left - offset.x) / scale
+                    const y = (e.clientY - top - offset.y) / scale
+                    setSelectionBox({ startX: x, startY: y, currentX: x, currentY: y })
+                    e.target.setPointerCapture(e.pointerId)
+                } else {
+                    // Pan Canvas
+                    setIsDraggingCanvas(true); e.target.setPointerCapture(e.pointerId)
+                    if (!e.ctrlKey) setSelectedIds([])
+                }
             }
         }
-    }
 
-    const handlePointerMove = (e) => {
-        if (selectionBox) {
-            const { left, top } = containerRef.current.getBoundingClientRect()
-            const x = (e.clientX - left - offset.x) / scale; const y = (e.clientY - top - offset.y) / scale
-            setSelectionBox(prev => ({ ...prev, currentX: x, currentY: y }))
-        } else if (isDraggingCanvas) {
-            setOffset(p => ({ x: p.x + e.movementX, y: p.y + e.movementY }))
+        const handlePointerMove = (e) => {
+            if (selectionBox) {
+                const { left, top } = containerRef.current.getBoundingClientRect()
+                const x = (e.clientX - left - offset.x) / scale; const y = (e.clientY - top - offset.y) / scale
+                setSelectionBox(prev => ({ ...prev, currentX: x, currentY: y }))
+            } else if (isDraggingCanvas) {
+                setOffset(p => ({ x: p.x + e.movementX, y: p.y + e.movementY }))
+            }
         }
-    }
 
-    const handlePointerUp = (e) => {
-        if (selectionBox) {
-            // Transform box to proper rect
-            const minX = Math.min(selectionBox.startX, selectionBox.currentX); const maxX = Math.max(selectionBox.startX, selectionBox.currentX)
-            const minY = Math.min(selectionBox.startY, selectionBox.currentY); const maxY = Math.max(selectionBox.startY, selectionBox.currentY)
+        const handlePointerUp = (e) => {
+            if (selectionBox) {
+                // Transform box to proper rect
+                const minX = Math.min(selectionBox.startX, selectionBox.currentX); const maxX = Math.max(selectionBox.startX, selectionBox.currentX)
+                const minY = Math.min(selectionBox.startY, selectionBox.currentY); const maxY = Math.max(selectionBox.startY, selectionBox.currentY)
 
-            const hitIds = nodes.filter(n => {
-                const nw = n.w || 320; const nh = n.h || 240
-                // Check intersection
-                return (n.x < maxX && n.x + nw > minX && n.y < maxY && n.y + nh > minY)
-            }).map(n => n.id)
+                const hitIds = nodes.filter(n => {
+                    const nw = n.w || 320; const nh = n.h || 240
+                    // Check intersection
+                    return (n.x < maxX && n.x + nw > minX && n.y < maxY && n.y + nh > minY)
+                }).map(n => n.id)
 
-            setSelectedIds(hitIds)
-            setSelectionBox(null)
+                setSelectedIds(hitIds)
+                setSelectionBox(null)
+            }
+            setIsDraggingCanvas(false)
+            if (e.target) e.target.releasePointerCapture(e.pointerId)
         }
-        setIsDraggingCanvas(false)
-        if (e.target) e.target.releasePointerCapture(e.pointerId)
-    }
 
-    // Manual Connection
-    const handleNodeConnect = (id) => {
-        if (!connectMode) {
-            if (selectedIds.includes(id) && e.ctrlKey) return // Selection logic fallback
-            setSelectedIds([id]) // select logic
-            return
+        // Manual Connection
+        const handleNodeConnect = (id) => {
+            if (!connectMode) {
+                if (selectedIds.includes(id) && e.ctrlKey) return // Selection logic fallback
+                setSelectedIds([id]) // select logic
+                return
+            }
+            if (!connectStartId) { setConnectStartId(id) } // Start
+            else {
+                if (connectStartId !== id) { onAddEdge(connectStartId, id); setConnectMode(false); setConnectStartId(null) } // Finish
+                else { setConnectStartId(null) } // Cancel if same node
+            }
         }
-        if (!connectStartId) { setConnectStartId(id) } // Start
-        else {
-            if (connectStartId !== id) { onAddEdge(connectStartId, id); setConnectMode(false); setConnectStartId(null) } // Finish
-            else { setConnectStartId(null) } // Cancel if same node
-        }
+
+        return (
+            <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f8f9fa', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
+                <div className="grid-bg" style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0', opacity: 0.6, pointerEvents: 'none' }} />
+                <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
+                    <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} />
+                    {nodes.map(node => (
+                        <DraggableNode key={node.id} node={node} isSelected={selectedIds.includes(node.id) || connectStartId === node.id} onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }} onConnectStart={connectMode ? handleNodeConnect : null} onUpdatePosition={onUpdateNodePosition} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} />
+                    ))}
+                    {/* Selection Box Visual */}
+                    {selectionBox && (
+                        <div style={{ position: 'absolute', left: Math.min(selectionBox.startX, selectionBox.currentX), top: Math.min(selectionBox.startY, selectionBox.currentY), width: Math.abs(selectionBox.currentX - selectionBox.startX), height: Math.abs(selectionBox.currentY - selectionBox.startY), background: 'rgba(0, 123, 255, 0.2)', border: '1px solid #007bff', pointerEvents: 'none' }} />
+                    )}
+                </motion.div>
+
+                {/* Toolbar */}
+                <motion.div className="glass-panel" style={{ position: 'absolute', bottom: 30, left: '50%', x: '-50%', padding: '12px 24px', display: 'flex', gap: 20, borderRadius: 24, zIndex: 100, pointerEvents: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.1)' }} initial={{ y: 100 }} animate={{ y: 0 }}>
+                    <ToolBtn icon={<FiType />} label="Note" onClick={() => onAddNode('Note')} />
+                    <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => onAddNode('Todo')} />
+                    <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode('Calendar')} />
+                    <ToolBtn icon={<FiImage />} label="Image" onClick={() => onAddNode('Image')} />
+                    <ToolBtn icon={<FiYoutube />} label="YouTube" onClick={() => onAddNode('YouTube')} />
+                    <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
+                    <ToolBtn icon={<FiLink />} label="Connect" active={connectMode} onClick={() => { setConnectMode(!connectMode); setConnectStartId(null) }} />
+                    <ToolBtn icon={<FiGrid />} label="Auto Arrange" onClick={autoArrange} />
+                </motion.div>
+
+                {connectMode && <div style={{ position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', background: '#007bff', color: 'white', padding: '10px 20px', borderRadius: 20, fontWeight: 'bold' }}>Select two nodes to connect</div>}
+            </div>
+        )
     }
-
-    return (
-        <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f8f9fa', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
-            <div className="grid-bg" style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0', opacity: 0.6, pointerEvents: 'none' }} />
-            <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
-                <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} />
-                {nodes.map(node => (
-                    <DraggableNode key={node.id} node={node} isSelected={selectedIds.includes(node.id) || connectStartId === node.id} onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }} onConnectStart={connectMode ? handleNodeConnect : null} onUpdatePosition={onUpdateNodePosition} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} />
-                ))}
-                {/* Selection Box Visual */}
-                {selectionBox && (
-                    <div style={{ position: 'absolute', left: Math.min(selectionBox.startX, selectionBox.currentX), top: Math.min(selectionBox.startY, selectionBox.currentY), width: Math.abs(selectionBox.currentX - selectionBox.startX), height: Math.abs(selectionBox.currentY - selectionBox.startY), background: 'rgba(0, 123, 255, 0.2)', border: '1px solid #007bff', pointerEvents: 'none' }} />
-                )}
-            </motion.div>
-
-            {/* Toolbar */}
-            <motion.div className="glass-panel" style={{ position: 'absolute', bottom: 30, left: '50%', x: '-50%', padding: '12px 24px', display: 'flex', gap: 20, borderRadius: 24, zIndex: 100, pointerEvents: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.1)' }} initial={{ y: 100 }} animate={{ y: 0 }}>
-                <ToolBtn icon={<FiType />} label="Note" onClick={() => onAddNode('Note')} />
-                <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => onAddNode('Todo')} />
-                <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode('Calendar')} />
-                <ToolBtn icon={<FiImage />} label="Image" onClick={() => onAddNode('Image')} />
-                <ToolBtn icon={<FiYoutube />} label="YouTube" onClick={() => onAddNode('YouTube')} />
-                <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
-                <ToolBtn icon={<FiLink />} label="Connect" active={connectMode} onClick={() => { setConnectMode(!connectMode); setConnectStartId(null) }} />
-                <ToolBtn icon={<FiGrid />} label="Auto Arrange" onClick={autoArrange} />
-            </motion.div>
-
-            {connectMode && <div style={{ position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', background: '#007bff', color: 'white', padding: '10px 20px', borderRadius: 20, fontWeight: 'bold' }}>Select two nodes to connect</div>}
-        </div>
-    )
-}
-const ToolBtn = ({ icon, label, onClick, active }) => (<motion.button whileHover={{ y: -5 }} whileTap={{ scale: 0.95 }} onClick={onClick} title={label} style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: active ? '#007bff' : 'white', color: active ? 'white' : '#444', fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>{icon}</motion.button>)
+    const ToolBtn = ({ icon, label, onClick, active }) => (<motion.button whileHover={{ y: -5 }} whileTap={{ scale: 0.95 }} onClick={onClick} title={label} style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: active ? '#007bff' : 'white', color: active ? 'white' : '#444', fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>{icon}</motion.button>)
