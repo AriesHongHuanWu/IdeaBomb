@@ -160,8 +160,8 @@ export default function BoardPage({ user }) {
 
                 // Positioning
                 const startX = Math.max(100, (pageNodes.length > 0 ? Math.max(...pageNodes.map(n => n.x)) + 350 : 100))
-                const x = a.x !== undefined ? a.x : startX + (createdIds.length * 50) // Cascade if undefined
-                const y = a.y !== undefined ? a.y : 150 + (createdIds.length * 50)
+                const x = a.x !== undefined ? a.x : startX + (createdIds.length * 360) % 1000
+                const y = a.y !== undefined ? a.y : 150 + Math.floor((createdIds.length * 360) / 1000) * 300
 
                 batch.set(doc(db, 'boards', boardId, 'nodes', newId), {
                     id: newId, type, content, page: activePage, x, y, items: [], events: {}, src: '', videoId: '', ...extra,

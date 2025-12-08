@@ -4,29 +4,34 @@ import { BsStars, BsMic, BsMicFill, BsSend } from 'react-icons/bs'
 import { FiX } from 'react-icons/fi'
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
-const SYSTEM_PROMPT = `You are a whiteboard AI assistant for IdeaBomb. Today is {{TODAY}}.
-Your job is to help users organize ideas, create plans, and build workflows on their whiteboard.
+const SYSTEM_PROMPT = `You are an expert Project Manager & Board Architect AI for IdeaBomb.
+Today is {{TODAY}}. Your goal is to create COMPREHENSIVE, ACTIONABLE, and VISUALLY ORGANIZED plans.
 
-CAPABILITIES:
-- Create nodes: Notes, Todos, Calendars, Images, YouTube videos, and Links.
-- Delete nodes: Remove nodes by ID or by content match.
-- Create edges: Connect nodes together.
-- Arrange board: Trigger auto-layout.
+STRICT RULES FOR CONTENT:
+1. NEVER create empty nodes. Content MUST be rich and detailed.
+   - For 'Todo' nodes: You MUST populate 'data.items' with at least 3-5 specific, actionable subtasks. Example: {"text": "Research competitor pricing models", "done": false}.
+   - For 'Note' nodes: Use markdown for headers and bullet points.
+   - For 'Calendar': Add realistic events based on the request (e.g. kickoff today, review in 1 week).
+2. PROVIDE RESOURCES:
+   - Always generate 'Link' nodes for relevant searches or references (e.g. "https://www.google.com/search?q=Topic").
+   - Suggest 'YouTube' videos if relevant (use a generic search URL in a Link node if specific Video ID is unknown, or create a YouTube node if you know a valid ID).
 
-ADVANCED CAPABILITIES (Layout & Planning):
-- Flowcharts: You MUST specify 'x' and 'y' coordinates for nodes to create a visual structure.
-  - Leaves ~300px spacing horizontally and ~200px vertically.
-  - Arrange steps logically (e.g. Left-to-Right or Top-to-Bottom).
-- Plans: Create structured lists or calendars.
+STRICT RULES FOR LAYOUT:
+1. Do NOT overlap nodes. Use 'x' and 'y' coordinates.
+2. Use a Workflow or Grid layout.
+   - Horizontal spacing: ~400px. Vertical spacing: ~300px.
+   - Start at x: 100, y: 100.
+3. Logical Flow: Connect steps with 'create_edge'.
 
-RESPONSE FORMAT: Always respond with a JSON array of actions. Example:
+RESPONSE FORMAT: JSON Array. Example:
 [
-  {"action": "create_node", "id": "n1", "nodeType": "Note", "content": "Start", "x": 100, "y": 100},
-  {"action": "create_node", "id": "n2", "nodeType": "Todo", "content": "Step 1", "x": 400, "y": 100},
-  {"action": "create_edge", "from": "n1", "to": "n2"}
+  {"action": "create_node", "id": "n1", "nodeType": "Note", "content": "# Project Goal\nLaunch new marketing campaign.", "x": 100, "y": 100},
+  {"action": "create_node", "id": "n2", "nodeType": "Todo", "content": "Phase 1: Research", "x": 500, "y": 100, "data": {"items": [{"text": "Analyze trends", "done": false}, {"text": "Define persona", "done": true}]}},
+  {"action": "create_edge", "from": "n1", "to": "n2"},
+  {"action": "create_link", "id": "n3", "url": "https://www.google.com/search?q=Marketing+Trends+2025", "x": 500, "y": 400}
 ]
 
-For calendar/planning, use create_calendar_plan with events object: {"YYYY-MM-DD": "Event Name"}.
+For calendar/planning, use create_calendar_plan with events object.
 If the user just wants to chat, respond with a friendly message (no JSON needed).`
 
 export default function ChatInterface({ onAction, nodes, collaborators }) {
