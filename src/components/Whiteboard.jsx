@@ -140,188 +140,120 @@ const NoteNode = ({ node, onUpdate }) => (
             resize: 'none', outline: 'none', fontSize: '1rem', fontFamily: 'inherit',
             lineHeight: 1.5, color: '#444'
         }}
-        placeholder="Type your ideas..."
-    />
-)
 
-// --- Main Draggable Item ---
-
-const DraggableNode = ({ node, onUpdatePosition, onUpdateData, onDelete }) => {
-    const x = useMotionValue(node.x)
-    const y = useMotionValue(node.y)
-    const [isHovered, setIsHovered] = useState(false)
-
-    useEffect(() => { x.set(node.x); y.set(node.y) }, [node.x, node.y, x, y])
-
-    return (
-        <motion.div
-            drag
-            dragMomentum={false}
-            dragElastic={0}
-            onDragEnd={(e, info) => onUpdatePosition(node.id, info.offset)}
-            style={{ x, y, position: 'absolute', pointerEvents: 'auto' }}
-            className="node-container"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-        >
-            <div className="glass-panel" style={{
-                width: node.type === 'Image' ? 320 : 300,
-                height: node.type === 'Calendar' ? 320 : (node.type === 'Image' ? 'auto' : 250),
-                minHeight: 200,
-                background: node.type === 'Note' ? '#ffffeb' : 'rgba(255,255,255,0.95)',
-                borderRadius: 24, padding: 25,
-                boxShadow: '0 20px 50px rgba(0,0,0,0.08)',
-                display: 'flex', flexDirection: 'column',
-                position: 'relative',
-                border: '1px solid rgba(255,255,255,0.8)'
-            }}>
-                {/* Delete Button */}
-                <button
-                    onClick={() => onDelete(node.id)}
-                    className="delete-btn"
-                    style={{
-                        position: 'absolute', top: -10, right: -10,
-                        width: 30, height: 30, borderRadius: '50%',
-                        background: '#ff6b6b', color: 'white', border: 'none',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 5px 15px rgba(255, 107, 107, 0.4)',
-                        zIndex: 10,
-                        opacity: isHovered ? 1 : 0,
-                        transition: 'opacity 0.2s ease',
-                        pointerEvents: isHovered ? 'auto' : 'none'
-                    }}
-                    onPointerDown={e => e.stopPropagation()}
-                >
-                    <FiTrash2 size={14} />
-                </button>
-
-                {/* Content */}
-                <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                    {node.type === 'Todo' && <TodoNode node={node} onUpdate={onUpdateData} />}
-                    {node.type === 'Calendar' && <CalendarNode node={node} onUpdate={onUpdateData} />}
-                    {node.type === 'Image' && <ImageNode node={node} onUpdate={onUpdateData} />}
-                    {(node.type === 'Note' || !['Todo', 'Calendar', 'Image'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
-                </div>
-            </div>
-        </motion.div>
-    )
-}
-
-// --- Whiteboard Container ---
-
-export default function Whiteboard({ nodes, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode }) {
-    const [scale, setScale] = useState(1)
+        export default function Whiteboard({ nodes, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode }) {
+            const [scale, setScale] = useState(1)
     const [offset, setOffset] = useState({ x: 0, y: 0 })
     const containerRef = useRef()
     const [isDraggingCanvas, setIsDraggingCanvas] = useState(false)
 
     // Zoom (Wheel) & Pan (Wheel)
     useEffect(() => {
-        const container = containerRef.current
-        if (!container) return
-        const handleWheel = (e) => {
-            if (e.ctrlKey) {
-                e.preventDefault()
-                const s = Math.exp(-e.deltaY * 0.01)
-                setScale(prev => Math.min(Math.max(0.1, prev * s), 5))
-            } else {
-                e.preventDefault()
-                setOffset(prev => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }))
-            }
-        }
-        container.addEventListener('wheel', handleWheel, { passive: false })
-        return () => container.removeEventListener('wheel', handleWheel)
-    }, [])
-
-    // Pan (Drag)
-    const handlePointerDown = (e) => {
-        // Only pan if clicking on background (not a node/button)
-        if (e.target === containerRef.current || e.target.classList.contains('grid-bg')) {
-            setIsDraggingCanvas(true)
-            e.target.setPointerCapture(e.pointerId)
+    const container = containerRef.current
+    if (!container) return
+    const handleWheel = (e) => {
+        if (e.ctrlKey) {
+            e.preventDefault()
+            const s = Math.exp(-e.deltaY * 0.01)
+            setScale(prev => Math.min(Math.max(0.1, prev * s), 5))
+        } else {
+            e.preventDefault()
+            setOffset(prev => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }))
         }
     }
+    container.addEventListener('wheel', handleWheel, { passive: false })
+    return () => container.removeEventListener('wheel', handleWheel)
+}, [])
 
-    const handlePointerMove = (e) => {
-        if (!isDraggingCanvas) return
-        setOffset(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }))
+// Pan (Drag)
+const handlePointerDown = (e) => {
+    // Only pan if clicking on background (not a node/button)
+    if (e.target === containerRef.current || e.target.classList.contains('grid-bg')) {
+        setIsDraggingCanvas(true)
+        e.target.setPointerCapture(e.pointerId)
     }
+}
 
-    const handlePointerUp = (e) => {
-        setIsDraggingCanvas(false)
-        if (e.target) e.target.releasePointerCapture(e.pointerId)
-    }
+const handlePointerMove = (e) => {
+    if (!isDraggingCanvas) return
+    setOffset(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }))
+}
 
-    // Auto Arrange
-    const autoArrange = () => {
-        const cols = Math.ceil(Math.sqrt(nodes.length))
-        const gap = 350
-        nodes.forEach((node, i) => {
-            const col = i % cols
-            const row = Math.floor(i / cols)
+const handlePointerUp = (e) => {
+    setIsDraggingCanvas(false)
+    if (e.target) e.target.releasePointerCapture(e.pointerId)
+}
 
-            const targetX = 100 + col * gap
-            const targetY = 100 + row * gap
+// Auto Arrange
+const autoArrange = () => {
+    const cols = Math.ceil(Math.sqrt(nodes.length))
+    const gap = 350
+    nodes.forEach((node, i) => {
+        const col = i % cols
+        const row = Math.floor(i / cols)
 
-            onUpdateNodeData(node.id, { x: targetX, y: targetY })
-        })
-    }
+        const targetX = 100 + col * gap
+        const targetY = 100 + row * gap
 
-    return (
-        <div
-            ref={containerRef}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f0f2f5', position: 'relative', touchAction: 'none', cursor: isDraggingCanvas ? 'grabbing' : 'grab' }}
+        onUpdateNodeData(node.id, { x: targetX, y: targetY })
+    })
+}
+
+return (
+    <div
+        ref={containerRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f0f2f5', position: 'relative', touchAction: 'none', cursor: isDraggingCanvas ? 'grabbing' : 'grab' }}
+    >
+
+        {/* Background Grid */}
+        <div className="grid-bg" style={{
+            position: 'absolute', inset: 0,
+            backgroundImage: 'radial-gradient(#ccc 1px, transparent 1px)',
+            backgroundSize: '20px 20px',
+            transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+            transformOrigin: '0 0',
+            opacity: 0.5,
+            pointerEvents: 'none'
+        }} />
+
+        <motion.div style={{
+            width: '100%', height: '100%',
+            x: offset.x, y: offset.y, scale,
+            transformOrigin: '0 0',
+            pointerEvents: 'none' // Nodes have pointerEvents: auto
+        }}>
+            {nodes.map(node => (
+                <DraggableNode
+                    key={node.id}
+                    node={node}
+                    onUpdatePosition={onUpdateNodePosition}
+                    onUpdateData={onUpdateNodeData}
+                    onDelete={onDeleteNode}
+                />
+            ))}
+        </motion.div>
+
+        <motion.div
+            className="glass-panel"
+            style={{
+                position: 'absolute', bottom: 30, left: '50%', x: '-50%',
+                padding: '10px 20px', display: 'flex', gap: 15, borderRadius: 50,
+                zIndex: 100, pointerEvents: 'auto'
+            }}
+            initial={{ y: 100 }} animate={{ y: 0 }}
         >
-
-            {/* Background Grid */}
-            <div className="grid-bg" style={{
-                position: 'absolute', inset: 0,
-                backgroundImage: 'radial-gradient(#ccc 1px, transparent 1px)',
-                backgroundSize: '20px 20px',
-                transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-                transformOrigin: '0 0',
-                opacity: 0.5,
-                pointerEvents: 'none'
-            }} />
-
-            <motion.div style={{
-                width: '100%', height: '100%',
-                x: offset.x, y: offset.y, scale,
-                transformOrigin: '0 0',
-                pointerEvents: 'none' // Nodes have pointerEvents: auto
-            }}>
-                {nodes.map(node => (
-                    <DraggableNode
-                        key={node.id}
-                        node={node}
-                        onUpdatePosition={onUpdateNodePosition}
-                        onUpdateData={onUpdateNodeData}
-                        onDelete={onDeleteNode}
-                    />
-                ))}
-            </motion.div>
-
-            <motion.div
-                className="glass-panel"
-                style={{
-                    position: 'absolute', bottom: 30, left: '50%', x: '-50%',
-                    padding: '10px 20px', display: 'flex', gap: 15, borderRadius: 50,
-                    zIndex: 100, pointerEvents: 'auto'
-                }}
-                initial={{ y: 100 }} animate={{ y: 0 }}
-            >
-                <ToolBtn icon={<FiType />} label="Note" onClick={() => onAddNode('Note')} />
-                <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => onAddNode('Todo')} />
-                <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode('Calendar')} />
-                <ToolBtn icon={<FiImage />} label="Image" onClick={() => onAddNode('Image')} />
-                <div style={{ width: 1, height: 40, background: '#eee', margin: '0 10px' }}></div>
-                <ToolBtn icon={<FiGrid />} label="Auto Arrange" onClick={autoArrange} />
-            </motion.div>
-        </div>
-    )
+            <ToolBtn icon={<FiType />} label="Note" onClick={() => onAddNode('Note')} />
+            <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => onAddNode('Todo')} />
+            <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode('Calendar')} />
+            <ToolBtn icon={<FiImage />} label="Image" onClick={() => onAddNode('Image')} />
+            <div style={{ width: 1, height: 40, background: '#eee', margin: '0 10px' }}></div>
+            <ToolBtn icon={<FiGrid />} label="Auto Arrange" onClick={autoArrange} />
+        </motion.div>
+    </div>
+)
 }
 
 const ToolBtn = ({ icon, label, onClick }) => (
