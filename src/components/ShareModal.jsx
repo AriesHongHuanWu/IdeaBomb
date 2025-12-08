@@ -6,6 +6,40 @@ import { db } from '../firebase'
 
 export default function ShareModal({ boardId, isOpen, onClose }) {
     const [email, setEmail] = useState('')
+    const [loading, setLoading] = useState(false)
+
+    const handleInvite = async (e) => {
+        e.preventDefault()
+        if (!email.trim() || !boardId) return
+
+        setLoading(true)
+        try {
+            // Add email to allowedEmails array in board document
+            const boardRef = doc(db, 'boards', boardId)
+            await updateDoc(boardRef, {
+                allowedEmails: arrayUnion(email.trim())
+            })
+
+            // Create mailto link
+            const subject = encodeURIComponent("You're invited to my Whiteboard")
+            const body = encodeURIComponent(`Hi,\n\nI've invited you to collaborate on my whiteboard. Please log in with this Google Email (${email}) to access it.\n\nLink: ${window.location.href}\n\nThanks!`)
+
+            if (window.confirm(`User ${email} has been given access!\n\nDo you want to open your email app to send them the link now?`)) {
+                window.open(`mailto:${email}?subject=${subject}&body=${body}`)
+            }
+
+            setEmail('')
+            onClose()
+        } catch (error) {
+            console.error("Invite failed", error)
+            alert("Failed to invite: " + error.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    if (!isOpen) return null
+
     return (
         <div style={{
             position: 'fixed', inset: 0, zIndex: 1000,
