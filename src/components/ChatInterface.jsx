@@ -98,7 +98,9 @@ export default function ChatInterface({ onAction, nodes, collaborators }) {
             }
         } catch (error) {
             console.error(error)
-            setMessages(prev => [...prev, { role: 'ai', content: "Sorry, I had trouble processing that. (Check API Key)" }])
+            let msg = `Sorry, error: ${error.message}`
+            if (error.message.includes('API key')) msg += " (Please check VITE_GEMINI_API_KEY in Netlify)"
+            setMessages(prev => [...prev, { role: 'ai', content: msg }])
         }
         setIsLoading(false)
     }

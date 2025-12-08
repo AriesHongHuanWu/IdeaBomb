@@ -131,27 +131,40 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode }) => {
 }
 
 // --- Draggable Node (Resizable) ---
-const DraggableNode = ({ node, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart }) => {
+const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart }) => {
     const x = useMotionValue(node.x); const y = useMotionValue(node.y);
     const [isHovered, setIsHovered] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
     const [size, setSize] = useState({ w: node.w || 320, h: node.h || 240 })
     useEffect(() => { if (!isDragging) { x.set(node.x); y.set(node.y) } }, [node.x, node.y, x, y, isDragging])
 
+    const handleDragStart = (e) => {
+        if (onConnectStart || e.button !== 0 || e.target.closest('button') || e.target.closest('input') || e.target.closest('.no-drag')) return
+        e.stopPropagation();
+        const startX = e.clientX; const startY = e.clientY
+        const startNodeX = x.get(); const startNodeY = y.get()
+        setIsDragging(true); onSelect(e)
+        const onMove = (be) => { const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1); x.set(startNodeX + dx); y.set(startNodeY + dy) }
+        const onUp = (be) => {
+            window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); setIsDragging(false)
+            const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1)
+            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: dx, y: dy })
+        }
+        window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
+    }
+
     const handleResize = (e) => {
         e.stopPropagation();
         const startX = e.clientX; const startY = e.clientY
         const startW = size.w; const startH = size.h
-        const onMove = (mv) => { setSize({ w: Math.max(200, startW + (mv.clientX - startX)), h: Math.max(150, startH + (mv.clientY - startY)) }) }
+        const onMove = (mv) => { setSize({ w: Math.max(200, startW + (mv.clientX - startX) / (scale || 1)), h: Math.max(150, startH + (mv.clientY - startY) / (scale || 1)) }) }
         const onUp = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); onUpdateData(node.id, { w: size.w, h: size.h }) }
         window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
     }
 
     return (
         <motion.div
-            drag dragMomentum={false} dragElastic={0}
-            onDragStart={() => setIsDragging(true)}
-            onDragEnd={(e, i) => { setIsDragging(false); onUpdatePosition(node.id, i.offset) }}
+            onPointerDown={handleDragStart}
             onClick={(e) => { e.stopPropagation(); if (onConnectStart) { onConnectStart(node.id) } else { onSelect(e) } }}
             onContextMenu={(e) => { onSelect(e) }}
             onHoverStart={() => setIsHovered(true)} onHoverEnd={() => setIsHovered(false)}
@@ -356,7 +369,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
                 <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} />
                 {nodes.map(node => (
-                    <DraggableNode key={node.id} node={node} isSelected={selectedIds.includes(node.id) || connectStartId === node.id} onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }} onConnectStart={connectMode ? handleNodeConnect : null} onUpdatePosition={onUpdateNodePosition} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} onContextMenu={(e) => handleNodeContextMenu(e, node.id)} />
+                    <DraggableNode key={node.id} node={node} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id} onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }} onConnectStart={connectMode ? handleNodeConnect : null} onUpdatePosition={onUpdateNodePosition} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} onContextMenu={(e) => handleNodeContextMenu(e, node.id)} />
                 ))}
                 {selectionBox && (
                     <div style={{ position: 'absolute', left: Math.min(selectionBox.startX, selectionBox.currentX), top: Math.min(selectionBox.startY, selectionBox.currentY), width: Math.abs(selectionBox.currentX - selectionBox.startX), height: Math.abs(selectionBox.currentY - selectionBox.startY), background: 'rgba(0, 123, 255, 0.2)', border: '1px solid #007bff', pointerEvents: 'none' }} />
