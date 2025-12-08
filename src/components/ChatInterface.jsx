@@ -12,9 +12,11 @@ STRICT RULES FOR CONTENT:
    - For 'Todo' nodes: You MUST populate 'data.items' with at least 3-5 specific, actionable subtasks. Example: {"text": "Research competitor pricing models", "done": false}.
    - For 'Note' nodes: Use markdown for headers and bullet points.
    - For 'Calendar': Add realistic events based on the request (e.g. kickoff today, review in 1 week).
-2. PROVIDE RESOURCES:
-   - Always generate 'Link' nodes for relevant searches or references (e.g. "https://www.google.com/search?q=Topic").
-   - Suggest 'YouTube' videos if relevant (use a generic search URL in a Link node if specific Video ID is unknown, or create a YouTube node if you know a valid ID).
+2. PROVIDE RESOURCES (CRITICAL):
+   - You HAVE access to Google Search. You MUST Use it.
+   - For 'Link' nodes: Search for the BEST real-world resource (e.g. official docs, viral article) and use the REAL URL. Do NOT valid URLs.
+   - For 'YouTube' nodes: Search for a specific, high-quality video (e.g. "SpaceX launch best video") and use the real YouTube URL or ID.
+   - Do NOT use placeholder URLs like "example.com". Use real ones found via search.
 
 STRICT RULES FOR LAYOUT:
 1. Do NOT overlap nodes. Use 'x' and 'y' coordinates.
@@ -77,7 +79,10 @@ export default function ChatInterface({ onAction, nodes, collaborators }) {
 
         try {
             const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
-            const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash-lite" })
+            const model = genAI.getGenerativeModel({
+                model: "models/gemini-2.5-flash-lite",
+                tools: [{ googleSearch: {} }]
+            })
 
             // Context
             const boardContext = nodes.map(n => `- ${n.type}: ${n.content} (at ${Math.round(n.x)},${Math.round(n.y)})`).join('\n').slice(0, 2000)
