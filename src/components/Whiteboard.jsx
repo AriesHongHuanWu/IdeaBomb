@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
-import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe } from 'react-icons/fi'
+import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers } from 'react-icons/fi'
 
 // --- Utilities ---
 const useDebounce = (callback, delay) => {
@@ -406,23 +406,28 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
 
             {/* Context Menu */}
             {contextMenu && (
-                <div style={{ position: 'fixed', top: contextMenu.y, left: contextMenu.x, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 12, boxShadow: '0 10px 30px rgba(0,0,0,0.15)', zIndex: 1000, padding: 5, minWidth: 150 }}>
+                <div style={{ position: 'fixed', top: contextMenu.y, left: contextMenu.x, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 12, boxShadow: '0 10px 30px rgba(0,0,0,0.15)', zIndex: 1000, padding: 6, minWidth: 180, display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {contextMenu.type === 'node' ? (
                         <>
-                            <button onClick={() => { onCopy(getTargets()); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiCopy /> Copy {getTargets().length > 1 && `(${getTargets().length})`}</button>
-                            <button onClick={() => { const t = getTargets(); if (onBatchDelete) onBatchDelete(t); else t.forEach(id => onDeleteNode(id)); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#ff4d4f' }} onMouseEnter={e => e.target.style.background = '#fff1f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiTrash2 /> Delete {getTargets().length > 1 && `(${getTargets().length})`}</button>
+                            <button onClick={() => { onCopy(getTargets()); if (onBatchDelete) onBatchDelete(getTargets()); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiScissors /> Cut</button>
+                            <button onClick={() => { onCopy(getTargets()); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiCopy /> Copy</button>
+                            <button onClick={() => { onCopy(getTargets()); setTimeout(() => onPaste(contextMenu.x + 20, contextMenu.y + 20), 100); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiLayers /> Duplicate</button>
+                            <button onClick={() => { const t = getTargets(); if (onBatchDelete) onBatchDelete(t); else t.forEach(id => onDeleteNode(id)); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#ff4d4f' }} onMouseEnter={e => e.target.style.background = '#fff1f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiTrash2 /> Delete {getTargets().length > 1 && `(${getTargets().length})`}</button>
+
                             <div style={{ height: 1, background: '#eee', margin: '4px 0' }} />
                             <div style={{ padding: '4px 12px', fontSize: '0.75rem', color: '#999', fontWeight: 'bold' }}>MOVE TO PAGE</div>
-                            {pages.map(p => (
-                                <button key={p} onClick={() => { onMoveToPage(getTargets(), p); closeMenu() }} style={{ display: 'block', width: '100%', padding: '6px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#555' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}>
-                                    {p}
-                                </button>
-                            ))}
+                            <div style={{ maxHeight: 150, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                {pages.map(p => (
+                                    <button key={p} onClick={() => { onMoveToPage(getTargets(), p); closeMenu() }} style={{ display: 'block', width: '100%', padding: '6px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#555' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}>
+                                        <FiArrowRight style={{ marginRight: 5, verticalAlign: 'middle' }} /> {p}
+                                    </button>
+                                ))}
+                            </div>
                         </>
                     ) : (
                         <>
-                            <button onClick={() => { onPaste(contextMenu.x, contextMenu.y); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiCopy /> Paste Here</button>
-                            <button onClick={() => { autoArrange(); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiGrid /> Auto Arrange</button>
+                            <button onClick={() => { onPaste(contextMenu.x, contextMenu.y); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiClipboard /> Paste Here</button>
+                            <button onClick={() => { autoArrange(); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiGrid /> Auto Arrange</button>
                         </>
                     )}
                 </div>
