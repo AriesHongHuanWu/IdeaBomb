@@ -1,199 +1,287 @@
-import React, { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { FiCalendar, FiCheckSquare, FiMessageSquare, FiImage, FiZoomIn, FiZoomOut, FiMaximize, FiUserPlus, FiLayers } from 'react-icons/fi'
+import React, { useState, useRef, useEffect } from 'react'
+import { motion, useMotionValue } from 'framer-motion'
+import { FiMove, FiTrash2, FiMaximize2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX } from 'react-icons/fi'
 
-const NODE_TYPES = {
-    NOTE: 'Note',
-    TODO: 'Todo',
-    CALENDAR: 'Calendar',
-    MARKETING: 'Marketing'
-}
+// --- Node Components ---
 
-export default function Whiteboard({ nodes, onAddNode, onUpdateNodePosition }) {
-    const [scale, setScale] = useState(1)
-    const [pan, setPan] = useState({ x: 0, y: 0 })
+const TodoNode = ({ node, onUpdate }) => {
+    const items = node.items || []
+    const [newItem, setNewItem] = useState('')
 
-    const handleZoom = (delta) => {
-        setScale(s => Math.min(Math.max(0.5, s + delta), 2))
+    const toggleItem = (index) => {
+        const newItems = [...items]
+        newItems[index].done = !newItems[index].done
+        onUpdate(node.id, { items: newItems })
+    }
+
+    const addItem = (e) => {
+        e.preventDefault()
+        if (!newItem.trim()) return
+        const newItems = [...items, { text: newItem, done: false }]
+        onUpdate(node.id, { items: newItems })
+        setNewItem('')
+    }
+
+    const deleteItem = (index) => {
+        const newItems = items.filter((_, i) => i !== index)
+        onUpdate(node.id, { items: newItems })
     }
 
     return (
-        <div className="whiteboard-container" style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', background: '#f8f9fa' }}>
-            {/* Controls */}
-            <div className="glass-panel" style={{ position: 'absolute', top: 20, left: 20, zIndex: 100, display: 'flex', flexDirection: 'column', gap: 10, padding: 8, borderRadius: 12 }}>
-                <ControlBtn onClick={() => handleZoom(0.1)} icon={<FiZoomIn />} tooltip="Zoom In" />
-                <ControlBtn onClick={() => handleZoom(-0.1)} icon={<FiZoomOut />} tooltip="Zoom Out" />
-                <ControlBtn onClick={() => { setScale(1); setPan({ x: 0, y: 0 }) }} icon={<FiMaximize />} tooltip="Reset View" />
-            </div>
-
-            {/* Room/Auth Placeholder (Future) */}
-            <div className="glass-panel" style={{ position: 'absolute', top: 20, right: 20, zIndex: 100, display: 'flex', gap: 10, padding: 8, borderRadius: 12 }}>
-                <ControlBtn icon={<FiUserPlus />} tooltip="Invite (Coming Soon)" />
-                <ControlBtn icon={<FiLayers />} tooltip="Rooms (Coming Soon)" />
-            </div>
-
-            {/* Infinite Canvas Container */}
-            <motion.div
-                onWheel={(e) => {
-                    if (e.ctrlKey) {
-                        handleZoom(e.deltaY * -0.005)
-                    } else {
-                        setPan(p => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }))
-                    }
-                }}
-                style={{
-                    width: '100%', height: '100%',
-                    cursor: 'grab', touchAction: 'none'
-                }}
-                drag
-                dragConstraints={{ left: -3000, right: 3000, top: -3000, bottom: 3000 }}
-                dragElastic={0}
-                dragMomentum={false}
-                onDragEnd={(e, info) => setPan(p => ({ x: p.x + info.offset.x, y: p.y + info.offset.y }))}
-                animate={{ x: pan.x, y: pan.y, scale: scale }}
-                transition={{ type: 'tween', duration: 0 }}
-            >
-                {/* Grid Pattern */}
-                <div style={{
-                    position: 'absolute', top: -5000, left: -5000, width: 10000, height: 10000,
-                    backgroundImage: 'radial-gradient(rgba(0,0,0,0.15) 1.5px, transparent 1.5px)',
-                    backgroundSize: '40px 40px', opacity: 0.6, pointerEvents: 'none'
-                }} />
-
-                {/* Nodes */}
-                {nodes.map(node => (
-                    <DraggableNode
-                        key={node.id}
-                        node={node}
-                        scale={scale}
-                        onDragEnd={(offset) => onUpdateNodePosition(node.id, offset)}
-                    />
+        <div style={{ width: '100%' }}>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '1rem', borderBottom: '1px solid #eee', paddingBottom: 5 }}>To-Do List</h3>
+            <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                {items.map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                        <input
+                            type="checkbox"
+                            checked={item.done}
+                            onChange={() => toggleItem(i)}
+                            onPointerDown={e => e.stopPropagation()} // Prevent drag start
+                        />
+                        <span style={{ textDecoration: item.done ? 'line-through' : 'none', flex: 1, color: item.done ? '#aaa' : '#333' }}>{item.text}</span>
+                        <button onClick={() => deleteItem(i)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ccc' }} onPointerDown={e => e.stopPropagation()}><FiX /></button>
+                    </div>
                 ))}
-            </motion.div>
-
-            {/* Minimalist Floating Toolbar */}
-            <motion.div
-                className="glass-panel"
-                style={{
-                    position: 'absolute', bottom: 40, left: '50%', x: '-50%',
-                    padding: '8px 12px', display: 'flex', gap: 12, zIndex: 100,
-                    borderRadius: 50, background: 'rgba(255, 255, 255, 0.6)',
-                    backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.4)',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.1)'
-                }}
-                initial={{ y: 100 }} animate={{ y: 0 }}
-            >
-                <ToolButton icon={<FiMessageSquare />} label="Note" onClick={() => onAddNode(NODE_TYPES.NOTE)} />
-                <ToolButton icon={<FiCheckSquare />} label="Todo" onClick={() => onAddNode(NODE_TYPES.TODO)} />
-                <ToolButton icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode(NODE_TYPES.CALENDAR)} />
-                <ToolButton icon={<FiImage />} label="Idea" onClick={() => onAddNode(NODE_TYPES.MARKETING)} />
-            </motion.div>
+            </div>
+            <form onSubmit={addItem} style={{ display: 'flex', gap: 5, marginTop: 10 }}>
+                <input
+                    type="text"
+                    value={newItem}
+                    onChange={e => setNewItem(e.target.value)}
+                    placeholder="Add task..."
+                    style={{ flex: 1, padding: 5, borderRadius: 4, border: '1px solid #ddd' }}
+                    onPointerDown={e => e.stopPropagation()}
+                />
+                <button type="submit" style={{ border: 'none', background: 'var(--primary)', color: 'white', borderRadius: 4, cursor: 'pointer' }} onPointerDown={e => e.stopPropagation()}><FiPlus /></button>
+            </form>
         </div>
     )
 }
 
-function DraggableNode({ node, onDragEnd, scale }) {
+const CalendarNode = ({ node, onUpdate }) => {
+    const events = node.events || {} // { "2023-10-01": "Meeting" }
+    const [selectedDate, setSelectedDate] = useState(null)
+    const [eventText, setEventText] = useState('')
+
+    // Simple Calendar Grid Generation
+    const daysInMonth = 30 // Simplified
+    const days = Array.from({ length: 30 }, (_, i) => i + 1)
+
+    const handleDateClick = (day) => {
+        setSelectedDate(day)
+        setEventText(events[day] || '')
+    }
+
+    const saveEvent = () => {
+        const newEvents = { ...events, [selectedDate]: eventText }
+        onUpdate(node.id, { events: newEvents })
+        setSelectedDate(null)
+    }
+
+    return (
+        <div style={{ width: '100%' }}>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '1rem', borderBottom: '1px solid #eee', paddingBottom: 5 }}>Calendar</h3>
+            {!selectedDate ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5 }}>
+                    {days.map(d => (
+                        <div
+                            key={d}
+                            onClick={() => handleDateClick(d)}
+                            onPointerDown={e => e.stopPropagation()}
+                            style={{
+                                padding: 5, textAlign: 'center', borderRadius: 4,
+                                background: events[d] ? 'var(--primary-light)' : '#f0f0f0',
+                                border: events[d] ? '1px solid var(--primary)' : '1px solid transparent',
+                                cursor: 'pointer', fontSize: '0.8rem'
+                            }}
+                        >
+                            {d}
+                            {events[d] && <div style={{ width: 4, height: 4, background: 'var(--primary)', borderRadius: '50%', margin: '2px auto' }}></div>}
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div onPointerDown={e => e.stopPropagation()}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                        <strong>Day {selectedDate}</strong>
+                        <button onClick={() => setSelectedDate(null)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}><FiX /></button>
+                    </div>
+                    <textarea
+                        value={eventText}
+                        onChange={e => setEventText(e.target.value)}
+                        style={{ width: '100%', height: 60, padding: 5, borderRadius: 4, border: '1px solid #ddd', resize: 'none' }}
+                        placeholder="Event details..."
+                    />
+                    <button onClick={saveEvent} style={{ width: '100%', marginTop: 5, background: 'var(--primary)', color: 'white', border: 'none', padding: 5, borderRadius: 4, cursor: 'pointer' }}>Save</button>
+                </div>
+            )}
+        </div>
+    )
+}
+
+const ImageNode = ({ node, onUpdate }) => {
+    const handleUpload = (e) => {
+        const file = e.target.files[0]
+        if (!file) return
+
+        const reader = new FileReader()
+        reader.onloadend = () => {
+            onUpdate(node.id, { src: reader.result })
+        }
+        reader.readAsDataURL(file)
+    }
+
+    return (
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+            {node.src ? (
+                <img src={node.src} alt="Upload" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, pointerEvents: 'none' }} />
+            ) : (
+                <div style={{ border: '2px dashed #ccc', padding: 20, borderRadius: 12, textAlign: 'center', width: '100%' }} onPointerDown={e => e.stopPropagation()}>
+                    <FiImage size={24} style={{ color: '#ccc' }} />
+                    <p style={{ margin: '10px 0', fontSize: '0.9rem', color: '#666' }}>Upload Image</p>
+                    <input type="file" accept="image/*" onChange={handleUpload} style={{ maxWidth: '100%' }} />
+                </div>
+            )}
+        </div>
+    )
+}
+
+const NoteNode = ({ node, onUpdate }) => (
+    <textarea
+        defaultValue={node.content}
+        onBlur={(e) => onUpdate(node.id, { content: e.target.value })}
+        onPointerDown={(e) => e.stopPropagation()}
+        style={{
+            width: '100%', height: '100%', border: 'none', background: 'transparent',
+            resize: 'none', outline: 'none', fontSize: '1rem', fontFamily: 'inherit'
+        }}
+        placeholder="Type your note here..."
+    />
+)
+
+// --- Main Draggable Item ---
+
+const DraggableNode = ({ node, onUpdatePosition, onUpdateData }) => {
+    const x = useMotionValue(node.x)
+    const y = useMotionValue(node.y)
+
+    // Sync external state updates to motion values
+    useEffect(() => { x.set(node.x); y.set(node.y) }, [node.x, node.y, x, y])
+
     return (
         <motion.div
             drag
             dragMomentum={false}
             dragElastic={0}
-            onDragEnd={(e, info) => {
-                onDragEnd({ x: info.offset.x / scale, y: info.offset.y / scale })
-            }}
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ x: node.x, y: node.y, scale: 1, opacity: 1 }}
-            whileHover={{ scale: 1.02, zIndex: 10, boxShadow: '0 20px 50px rgba(0,0,0,0.15)' }}
-            whileDrag={{ scale: 1.05, zIndex: 100, cursor: 'grabbing' }}
-            className="glass-panel"
-            style={{
-                position: 'absolute',
-                top: 0, left: 0,
-                width: 320, minHeight: 200, padding: 0,
-                display: 'flex', flexDirection: 'column',
-                background: 'rgba(255, 255, 255, 0.85)',
-                backdropFilter: 'blur(20px)',
-                borderRadius: 24, margin: 0
-            }}
+            onDragEnd={(e, info) => onUpdatePosition(node.id, info.offset)}
+            style={{ x, y, position: 'absolute' }}
+            className={`node node-${node.type.toLowerCase()}`}
         >
-            <div style={{
-                padding: '12px 20px',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                borderBottom: '1px solid rgba(0,0,0,0.06)'
+            <div className="glass-panel" style={{
+                width: node.type === 'Image' ? 300 : 280,
+                minHeight: node.type === 'Calendar' ? 280 : 180,
+                background: node.type === 'Note' ? '#ffffeb' : 'rgba(255,255,255,0.9)',
+                borderRadius: 24, padding: 20,
+                boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+                display: 'flex', flexDirection: 'column'
             }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {node.type}
-                </span>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fab005' }} />
-            </div>
-            <div style={{ padding: 0, flex: 1 }}>
-                {node.type === NODE_TYPES.CALENDAR ? <CalendarContent /> : (
-                    <div
-                        style={{ padding: 20, outline: 'none', lineHeight: '1.6', minHeight: 120, fontSize: '1rem', color: '#333' }}
-                        contentEditable suppressContentEditableWarning
-                    >
-                        {node.content}
-                    </div>
-                )}
+                {/* Header Logic could go here */}
+                <div style={{ flex: 1, display: 'flex' }}>
+                    {node.type === 'Todo' && <TodoNode node={node} onUpdate={onUpdateData} />}
+                    {node.type === 'Calendar' && <CalendarNode node={node} onUpdate={onUpdateData} />}
+                    {node.type === 'Image' && <ImageNode node={node} onUpdate={onUpdateData} />}
+                    {(node.type === 'Note' || !['Todo', 'Calendar', 'Image'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
+                </div>
             </div>
         </motion.div>
     )
 }
 
-function CalendarContent() {
+// --- Whiteboard Container ---
+
+export default function Whiteboard({ nodes, onAddNode, onUpdateNodePosition, onUpdateNodeData }) {
+    // Zoom/Pan State
+    const [scale, setScale] = useState(1)
+    const [offset, setOffset] = useState({ x: 0, y: 0 })
+    const containerRef = useRef()
+
+    // Zoom Handler (Wheel)
+    useEffect(() => {
+        const container = containerRef.current
+        if (!container) return
+        const handleWheel = (e) => {
+            if (e.ctrlKey) {
+                e.preventDefault()
+                const s = Math.exp(-e.deltaY * 0.01)
+                setScale(prev => Math.min(Math.max(0.1, prev * s), 5))
+            } else {
+                e.preventDefault()
+                setOffset(prev => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }))
+            }
+        }
+        container.addEventListener('wheel', handleWheel, { passive: false })
+        return () => container.removeEventListener('wheel', handleWheel)
+    }, [])
+
     return (
-        <div style={{ padding: 20 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 5, marginBottom: 15 }}>
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => <div key={d} style={{ textAlign: 'center', fontSize: '0.7rem', color: '#999', fontWeight: 600 }}>{d}</div>)}
-                {Array.from({ length: 30 }, (_, i) => (
-                    <motion.div key={i} whileHover={{ scale: 1.2, background: 'var(--primary)', color: 'white' }} style={{
-                        textAlign: 'center', padding: 5, borderRadius: 8, cursor: 'pointer',
-                        fontSize: '0.9rem', transition: 'background 0.2s'
-                    }}>{i + 1}</motion.div>
+        <div ref={containerRef} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f0f2f5', position: 'relative', touchAction: 'none' }}>
+
+            {/* Background Grid */}
+            <div style={{
+                position: 'absolute', inset: 0,
+                backgroundImage: 'radial-gradient(#ccc 1px, transparent 1px)',
+                backgroundSize: '20px 20px',
+                transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+                transformOrigin: '0 0',
+                opacity: 0.5
+            }} />
+
+            {/* Nodes Layer */}
+            <motion.div style={{
+                width: '100%', height: '100%',
+                x: offset.x, y: offset.y, scale
+            }}>
+                {nodes.map(node => (
+                    <DraggableNode
+                        key={node.id}
+                        node={node}
+                        onUpdatePosition={onUpdateNodePosition}
+                        onUpdateData={onUpdateNodeData}
+                    />
                 ))}
-            </div>
-            <a href="https://calendar.google.com/calendar/r" target="_blank" rel="noreferrer" style={{ display: 'block', textAlign: 'center', fontSize: '0.8rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>
-                Open Google Calendar &rarr;
-            </a>
+            </motion.div>
+
+            {/* Toolbar */}
+            <motion.div
+                className="glass-panel"
+                style={{
+                    position: 'absolute', bottom: 30, left: '50%', x: '-50%',
+                    padding: '10px 20px', display: 'flex', gap: 15, borderRadius: 50
+                }}
+                initial={{ y: 100 }} animate={{ y: 0 }}
+            >
+                <ToolBtn icon={<FiType />} label="Note" onClick={() => onAddNode('Note')} />
+                <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => onAddNode('Todo')} />
+                <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode('Calendar')} />
+                <ToolBtn icon={<FiImage />} label="Image" onClick={() => onAddNode('Image')} />
+            </motion.div>
         </div>
     )
 }
 
-// Updated Minimalist ToolButton (No Text)
-function ToolButton({ icon, onClick, label }) {
-    return (
-        <motion.button
-            whileHover={{ scale: 1.1, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onClick}
-            title={label}
-            style={{
-                background: 'transparent', border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: 0
-            }}
-        >
-            <div style={{
-                width: 48, height: 48, borderRadius: '50%',
-                background: 'white',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                color: '#444', fontSize: '1.4rem',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-                {icon}
-            </div>
-        </motion.button>
-    )
-}
-
-function ControlBtn({ onClick, icon, tooltip }) {
-    return (
-        <button onClick={onClick} title={tooltip} style={{
-            width: 36, height: 36, borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.8)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.1rem', color: '#555'
-        }}>
-            {icon}
-        </button>
-    )
-}
+const ToolBtn = ({ icon, label, onClick }) => (
+    <motion.button
+        whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+        onClick={onClick}
+        title={label}
+        style={{
+            width: 50, height: 50, borderRadius: '50%',
+            border: 'none', background: 'white', color: 'var(--primary)',
+            fontSize: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', boxShadow: '0 5px 15px rgba(0,0,0,0.1)'
+        }}
+    >
+        {icon}
+    </motion.button>
+)
