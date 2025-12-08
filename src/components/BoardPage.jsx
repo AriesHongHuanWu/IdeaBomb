@@ -262,10 +262,8 @@ export default function BoardPage({ user }) {
                     ))}
                     <button onClick={addNewPage} style={{ padding: '8px 12px', borderRadius: 10, border: '1px dashed rgba(255,255,255,0.5)', background: 'transparent', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>+ New Page</button>
                 </div>
-                <div style={{ pointerEvents: 'auto', alignSelf: 'flex-start', background: 'white', padding: '6px 12px', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                    <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer" style={{ color: '#222', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <span style={{ fontSize: '1rem', color: '#00C7B7' }}>♦</span> Powered by Netlify
-                    </a>
+                <div style={{ pointerEvents: 'auto', alignSelf: 'flex-start', background: 'transparent' }}>
+                    {/* Badge removed by user request */}
                 </div>
             </div>
 

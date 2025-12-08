@@ -114,11 +114,11 @@ export default function ChatInterface({ onAction, nodes, collaborators }) {
         <div style={{ position: 'absolute', bottom: 20, right: 20, zIndex: 200 }}>
             {isOpen && (
                 <div className="glass-panel" style={{ width: 350, height: 500, marginBottom: 20, display: 'flex', flexDirection: 'column', background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)', borderRadius: 24, overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.5)' }}>
-                    <div style={{ padding: '15px 20px', background: 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ padding: '15px 20px', background: 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <BsStars /> <span>Gemini AI</span>
                         </div>
-                        <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
+                        <button onClick={() => setIsOpen(false)} style={{ position: 'absolute', right: 15, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.2rem', padding: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                     </div>
 
                     <div style={{ flex: 1, padding: 15, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>

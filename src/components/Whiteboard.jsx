@@ -213,18 +213,65 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
         return () => container.removeEventListener('wheel', onWheel)
     }, [])
 
+    // Context Menu State
+    const [contextMenu, setContextMenu] = useState(null) // { x, y, type, targetId }
+
+    const handleNodeContextMenu = (e, id) => {
+        e.preventDefault()
+        e.stopPropagation()
+        setContextMenu({ x: e.clientX, y: e.clientY, type: 'node', targetId: id })
+        setSelectedIds([id])
+    }
+
+    const handleBgContextMenu = (e) => {
+        e.preventDefault()
+        setContextMenu({ x: e.clientX, y: e.clientY, type: 'bg' })
+    }
+
+    const closeMenu = () => setContextMenu(null)
+
+    // Close menu on click elsewhere
+    useEffect(() => {
+        const h = () => closeMenu()
+        window.addEventListener('click', h)
+        return () => window.removeEventListener('click', h)
+    }, [])
+
     return (
-        <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f8f9fa', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
+        <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onContextMenu={handleBgContextMenu} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f8f9fa', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
             <div className="grid-bg" style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0', opacity: 0.6, pointerEvents: 'none' }} />
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
                 <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} />
                 {nodes.map(node => (
-                    <DraggableNode key={node.id} node={node} isSelected={selectedIds.includes(node.id) || connectStartId === node.id} onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }} onConnectStart={connectMode ? handleNodeConnect : null} onUpdatePosition={onUpdateNodePosition} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} />
+                    <DraggableNode key={node.id} node={node} isSelected={selectedIds.includes(node.id) || connectStartId === node.id} onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }} onConnectStart={connectMode ? handleNodeConnect : null} onUpdatePosition={onUpdateNodePosition} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} onContextMenu={(e) => handleNodeContextMenu(e, node.id)} />
                 ))}
                 {selectionBox && (
                     <div style={{ position: 'absolute', left: Math.min(selectionBox.startX, selectionBox.currentX), top: Math.min(selectionBox.startY, selectionBox.currentY), width: Math.abs(selectionBox.currentX - selectionBox.startX), height: Math.abs(selectionBox.currentY - selectionBox.startY), background: 'rgba(0, 123, 255, 0.2)', border: '1px solid #007bff', pointerEvents: 'none' }} />
                 )}
             </motion.div>
+
+            {/* Context Menu */}
+            {contextMenu && (
+                <div style={{ position: 'fixed', top: contextMenu.y, left: contextMenu.x, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 12, boxShadow: '0 10px 30px rgba(0,0,0,0.15)', zIndex: 1000, padding: 5, minWidth: 150 }}>
+                    {contextMenu.type === 'node' ? (
+                        <>
+                            <button onClick={() => { onCopy([contextMenu.targetId]); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiCopy /> Copy</button>
+                            <button onClick={() => { onDeleteNode(contextMenu.targetId); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#ff4d4f' }} onMouseEnter={e => e.target.style.background = '#fff1f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiTrash2 /> Delete</button>
+                            <div style={{ height: 1, background: '#eee', margin: '4px 0' }} />
+                            <div style={{ padding: '4px 12px', fontSize: '0.75rem', color: '#999', fontWeight: 'bold' }}>MOVE TO PAGE</div>
+                            {pages.map(p => (
+                                <button key={p} onClick={() => { onMoveToPage([contextMenu.targetId], p); closeMenu() }} style={{ display: 'block', width: '100%', padding: '6px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#555' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}>
+                                    {p}
+                                </button>
+                            ))}
+                        </>
+                    ) : (
+                        <>
+                            <button onClick={() => { onPaste(contextMenu.x, contextMenu.y); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiCopy /> Paste Here</button>
+                        </>
+                    )}
+                </div>
+            )}
 
             {/* Zoom Controls */}
             <div style={{ position: 'absolute', top: 20, right: 20, display: 'flex', flexDirection: 'column', gap: 5, zIndex: 100 }}>
