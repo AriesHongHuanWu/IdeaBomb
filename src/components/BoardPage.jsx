@@ -221,13 +221,15 @@ export default function BoardPage({ user }) {
 
             {lastAIAction && (<div style={{ position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#333', color: 'white', padding: '10px 20px', borderRadius: 20, display: 'flex', gap: 10, alignItems: 'center' }}><span>AI completed an action. Satisfied?</span><button onClick={() => setLastAIAction(null)} style={{ background: 'green', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>Yes</button><button onClick={undoLastAIAction} style={{ background: 'red', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>No (Undo)</button></div>)}
 
-            <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 150, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ display: 'flex', gap: 5, background: 'rgba(0,0,0,0.8)', padding: '8px 12px', borderRadius: 16 }}>
+            <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 150, display: 'flex', flexDirection: 'column', gap: 10, pointerEvents: 'none' }}>
+                <div style={{ display: 'flex', gap: 5, background: 'rgba(0,0,0,0.8)', padding: '8px 12px', borderRadius: 16, pointerEvents: 'auto' }}>
                     {pages.map(p => (<button key={p} onClick={() => setActivePage(p)} style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: activePage === p ? 'var(--primary)' : 'rgba(255,255,255,0.2)', color: 'white', fontWeight: activePage === p ? 'bold' : 'normal', cursor: 'pointer' }}>{p}</button>))}
                     <button onClick={addNewPage} style={{ padding: '8px 12px', borderRadius: 10, border: '1px dashed rgba(255,255,255,0.5)', background: 'transparent', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>+ New Page</button>
                 </div>
-                <div style={{ paddingLeft: 10 }}>
-                    <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(0,0,0,0.4)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}>This site is powered by Netlify</a>
+                <div style={{ pointerEvents: 'auto', alignSelf: 'flex-start', background: 'white', padding: '6px 12px', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                    <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer" style={{ color: '#222', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <span style={{ fontSize: '1rem', color: '#00C7B7' }}>♦</span> Powered by Netlify
+                    </a>
                 </div>
             </div>
 
