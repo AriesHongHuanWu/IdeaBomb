@@ -6,32 +6,6 @@ import { db } from '../firebase'
 
 export default function ShareModal({ boardId, isOpen, onClose }) {
     const [email, setEmail] = useState('')
-    const [loading, setLoading] = useState(false)
-
-    const handleInvite = async (e) => {
-        e.preventDefault()
-        if (!email.trim() || !boardId) return
-
-        setLoading(true)
-        try {
-            // Add email to allowedEmails array in board document
-            const boardRef = doc(db, 'boards', boardId)
-            await updateDoc(boardRef, {
-                allowedEmails: arrayUnion(email.trim())
-            })
-            alert(`Invited ${email}!`)
-            setEmail('')
-            onClose()
-        } catch (error) {
-            console.error("Invite failed", error)
-            alert("Failed to invite: " + error.message)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    if (!isOpen) return null
-
     return (
         <div style={{
             position: 'fixed', inset: 0, zIndex: 1000,
