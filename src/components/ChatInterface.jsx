@@ -18,6 +18,7 @@ STRICT RULES FOR CONTENT:
    - For 'Link' nodes: Search for the BEST real-world resource (e.g. official docs, viral article) and use the REAL URL. If NO valid URL is found, create a Note node instead. Do NOT use fake URLs.
    - For 'YouTube' nodes: Search for a specific, high-quality video (e.g. "SpaceX launch best video") and use the real YouTube URL or ID.
    - Do NOT use placeholder URLs like "example.com". Use real ones found via search.
+   - **IMPORTANT**: If you cannot find a valid URL or Video ID, set the content to "Search: [Query]" (e.g. "Search: SpaceX Launch") so the user can search. DO NOT HALLUCINATE IDs.
 
 STRICT RULES FOR LAYOUT:
 1. Do NOT overlap nodes. Use 'x' and 'y' coordinates.

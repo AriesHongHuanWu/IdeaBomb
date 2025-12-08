@@ -86,11 +86,20 @@ const LinkNode = ({ node, onUpdate }) => {
                 </div>
             ) : (
                 <div style={{ display: 'flex', gap: 5, marginTop: 'auto', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                    {node.content && <p style={{ fontSize: '0.8rem', color: 'red', wordBreak: 'break-all' }}>Invalid URL: {node.content}</p>}
-                    <div style={{ display: 'flex', gap: 5, width: '100%' }}>
-                        <Input placeholder="https://example.com" value={url} onChange={e => setUrl(e.target.value)} />
-                        <Button onClick={saveUrl}>Save</Button>
-                    </div>
+                    {node.content && node.content.startsWith('Search:') ? (
+                        <div style={{ textAlign: 'center' }}>
+                            <p style={{ margin: '0 0 10px 0', color: '#666' }}>Suggested: <strong>{node.content.replace('Search:', '')}</strong></p>
+                            <Button onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(node.content.replace('Search:', ''))}`, '_blank')}>Search Google</Button>
+                        </div>
+                    ) : (
+                        <>
+                            {node.content && <p style={{ fontSize: '0.8rem', color: 'red', wordBreak: 'break-all' }}>Invalid URL: {node.content}</p>}
+                            <div style={{ display: 'flex', gap: 5, width: '100%' }}>
+                                <Input placeholder="https://example.com" value={url} onChange={e => setUrl(e.target.value)} />
+                                <Button onClick={saveUrl}>Save</Button>
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
         </div>
@@ -132,7 +141,7 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode, tempEdge }) => {
                         <feMergeNode in="SourceGraphic" />
                     </feMerge>
                 </filter>
-                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="7" refY="3.5" orient="auto">
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="5" refY="3.5" orient="auto">
                     <polygon points="0 0, 10 3.5, 0 7" fill="#00f2fe" style={{ filter: 'drop-shadow(0 0 5px #00f2fe)' }} />
                 </marker>
                 <marker id="arrowhead-del" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -227,7 +236,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isSelected || isDragging ? 50 : 10, width: size.w, minHeight: size.h }}
         >
             <div className="glass-panel" style={{
-                width: '100%', minHeight: '100%', padding: 25, borderRadius: 24, display: 'flex', flexDirection: 'column',
+                width: '100%', minHeight: '100%', padding: 25, borderRadius: 16, display: 'flex', flexDirection: 'column',
                 background: node.color || 'rgba(255,255,255,0.65)',
                 border: isSelected ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.4)',
                 boxShadow: isSelected || isDragging ? '0 15px 40px rgba(0,0,0,0.15)' : '0 10px 30px rgba(0,0,0,0.05)',
