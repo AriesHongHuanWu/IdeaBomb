@@ -1,3 +1,5 @@
+import React, { useState, useRef, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { BsStars, BsMic, BsMicFill, BsSend } from 'react-icons/bs'
 import { FiX } from 'react-icons/fi'
 import { GoogleGenerativeAI } from "@google/generative-ai"
