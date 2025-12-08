@@ -69,7 +69,7 @@ export default function ChatInterface({ onAction, nodes, collaborators }) {
 
         try {
             const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" })
+            const model = genAI.getGenerativeModel({ model: "models/gemini-flash-lite-latest" })
 
             // Context
             const boardContext = nodes.map(n => `- ${n.type}: ${n.content} (at ${Math.round(n.x)},${Math.round(n.y)})`).join('\n').slice(0, 2000)
