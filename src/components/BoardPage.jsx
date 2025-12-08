@@ -6,7 +6,7 @@ import Whiteboard from './Whiteboard'
 import ChatInterface from './ChatInterface'
 import ShareModal from './ShareModal'
 import { db } from '../firebase'
-import { collection, onSnapshot, setDoc, doc, updateDoc } from 'firebase/firestore'
+import { collection, onSnapshot, setDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { FiHome, FiShare2, FiUserPlus } from 'react-icons/fi'
 
 export default function BoardPage({ user }) {
@@ -26,8 +26,6 @@ export default function BoardPage({ user }) {
                 const data = docSnap.data()
                 setBoardTitle(data.title)
 
-                // Access Check: Owner or in allowedEmails
-                // Note: In Dashboard creating board adds owner to allowedEmails.
                 if (data.allowedEmails && !data.allowedEmails.includes(user.email)) {
                     setHasAccess(false)
                 } else {
@@ -80,7 +78,7 @@ export default function BoardPage({ user }) {
             type: type || 'Note',
             x: window.innerWidth / 2 - 140 + (Math.random() * 40 - 20),
             y: window.innerHeight / 2 - 100 + (Math.random() * 40 - 20),
-            content: content || (type === 'Todo' ? '- [ ] New Task' : 'New Item'), // Legacy fallback
+            content: content || (type === 'Todo' ? '- [ ] New Task' : 'New Item'),
             items: [], // For Todo
             events: {}, // For Calendar
             src: '', // For Image
@@ -110,6 +108,15 @@ export default function BoardPage({ user }) {
             await updateDoc(doc(db, 'boards', boardId, 'nodes', id), data)
         } catch (e) {
             console.error("Error updating node data:", e)
+        }
+    }
+
+    const deleteNode = async (id) => {
+        if (!window.confirm("Delete this item?")) return
+        try {
+            await deleteDoc(doc(db, 'boards', boardId, 'nodes', id))
+        } catch (e) {
+            console.error("Error deleting node:", e)
         }
     }
 
@@ -171,6 +178,7 @@ export default function BoardPage({ user }) {
                     onAddNode={addNode}
                     onUpdateNodePosition={updateNodePosition}
                     onUpdateNodeData={updateNodeData}
+                    onDeleteNode={deleteNode}
                 />
             </div>
 
