@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import React, { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { FiX, FiUserPlus, FiMail } from 'react-icons/fi'
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -7,6 +9,13 @@ import { db } from '../firebase'
 export default function ShareModal({ boardId, isOpen, onClose }) {
     const [email, setEmail] = useState('')
     const [loading, setLoading] = useState(false)
+    const [copied, setCopied] = useState(false)
+
+    const copyLink = () => {
+        navigator.clipboard.writeText(window.location.href)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+    }
 
     const handleInvite = async (e) => {
         e.preventDefault()
@@ -21,15 +30,15 @@ export default function ShareModal({ boardId, isOpen, onClose }) {
             })
 
             // Create mailto link
-            const subject = encodeURIComponent("You're invited to my Whiteboard")
-            const body = encodeURIComponent(`Hi,\n\nI've invited you to collaborate on my whiteboard. Please log in with this Google Email (${email}) to access it.\n\nLink: ${window.location.href}\n\nThanks!`)
+            const subject = encodeURIComponent("Invitation: Collaborate on Whiteboard")
+            const body = encodeURIComponent(`Hi,\n\nI've enabled access for you on my whiteboard. Please log in with this Google Email (${email}).\n\nLink: ${window.location.href}\n\nThanks!`)
 
-            if (window.confirm(`User ${email} has been given access!\n\nDo you want to open your email app to send them the link now?`)) {
-                window.open(`mailto:${email}?subject=${subject}&body=${body}`)
-            }
+            // Open user's email client
+            window.location.href = `mailto:${email}?subject=${subject}&body=${body}`
 
+            alert(`Access granted to ${email}. Check your email app to send the link!`)
             setEmail('')
-            onClose()
+            // Don't close immediately so they can copy link if needed
         } catch (error) {
             console.error("Invite failed", error)
             alert("Failed to invite: " + error.message)
@@ -58,13 +67,25 @@ export default function ShareModal({ boardId, isOpen, onClose }) {
                 </button>
 
                 <h2 style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 0 }}>
-                    <FiUserPlus /> Invite Members
+                    <FiUserPlus /> Share Board
                 </h2>
-                <p style={{ color: '#666', lineHeight: '1.5' }}>
-                    Enter the email address of the person you want to invite. They must sign in with Google using this email.
+                <p style={{ color: '#666', lineHeight: '1.5', fontSize: '0.9rem' }}>
+                    Invite collaborators by email (must use Google Login).
                 </p>
 
-                <form onSubmit={handleInvite} style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 15 }}>
+                {/* Copy Link Section */}
+                <div style={{ background: '#f5f5f5', padding: 10, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                    <span style={{ fontSize: '0.8rem', color: '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
+                        {window.location.href}
+                    </span>
+                    <button onClick={copyLink} style={{ border: 'none', background: copied ? '#4caf50' : 'white', color: copied ? 'white' : '#333', padding: '5px 10px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>
+                        {copied ? 'Copied!' : 'Copy Link'}
+                    </button>
+                </div>
+
+                <div style={{ borderBottom: '1px solid #eee', marginBottom: 20 }}></div>
+
+                <form onSubmit={handleInvite} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
                     <div style={{ position: 'relative' }}>
                         <FiMail style={{ position: 'absolute', left: 15, top: 14, color: '#888' }} />
                         <input
@@ -86,8 +107,11 @@ export default function ShareModal({ boardId, isOpen, onClose }) {
                             cursor: 'pointer', opacity: loading ? 0.7 : 1
                         }}
                     >
-                        {loading ? 'Sending...' : 'Send Invite'}
+                        {loading ? 'Granting Access...' : 'Grant Access & Send Email'}
                     </button>
+                    <p style={{ fontSize: '0.8rem', color: '#888', textAlign: 'center', margin: 0 }}>
+                        We use your default email app to send the invite link.
+                    </p>
                 </form>
             </motion.div>
         </div>
