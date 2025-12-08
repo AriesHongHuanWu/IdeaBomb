@@ -64,6 +64,16 @@ export default function BoardPage({ user }) {
     const deleteNode = async (id) => { try { await deleteDoc(doc(db, 'boards', boardId, 'nodes', id)) } catch (e) { console.error(e) } }
 
     // --- Batch Operations (Exposed to Whiteboard) ---
+    const batchUpdateNodes = async (updates) => {
+        // updates: [{ id, data }]
+        if (!updates.length) return
+        const batch = writeBatch(db)
+        updates.forEach(({ id, data }) => {
+            batch.update(doc(db, 'boards', boardId, 'nodes', id), data)
+        })
+        await batch.commit()
+    }
+
     const batchDelete = async (ids) => {
         if (!ids.length || !window.confirm(`Delete ${ids.length} items?`)) return
         const batch = writeBatch(db); ids.forEach(id => batch.delete(doc(db, 'boards', boardId, 'nodes', id))); await batch.commit()
@@ -140,27 +150,6 @@ export default function BoardPage({ user }) {
 
             {/* Undo Toast */}
             {lastAIAction && (<div style={{ position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#333', color: 'white', padding: '10px 20px', borderRadius: 20, display: 'flex', gap: 10, alignItems: 'center' }}><span>AI completed an action. Satisfied?</span><button onClick={() => setLastAIAction(null)} style={{ background: 'green', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>Yes</button><button onClick={undoLastAIAction} style={{ background: 'red', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>No (Undo)</button></div>)}
-
-            {/* Page Tabs */}
-            <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 150, display: 'flex', gap: 5, background: 'rgba(0,0,0,0.8)', padding: '8px 12px', borderRadius: 16 }}>{pages.map(p => (<button key={p} onClick={() => setActivePage(p)} style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: activePage === p ? 'var(--primary)' : 'rgba(255,255,255,0.2)', color: 'white', fontWeight: activePage === p ? 'bold' : 'normal', cursor: 'pointer' }}>{p}</button>))}<button onClick={addNewPage} style={{ padding: '8px 12px', borderRadius: 10, border: '1px dashed rgba(255,255,255,0.5)', background: 'transparent', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>+ New Page</button></div>
-
-            {/* Whiteboard with batch props */}
-            <div style={{ width: '100%', height: '100%' }}>
-                <Whiteboard
-                    nodes={displayNodes}
-                    pages={pages}
-                    onAddNode={addNode}
-                    onUpdateNodePosition={updateNodePosition}
-                    onUpdateNodeData={updateNodeData}
-                    onDeleteNode={deleteNode}
-                    // Batch Props
-                    onBatchDelete={batchDelete}
-                    onCopy={copyNodes}
-                    onPaste={pasteNodes}
-                    onMoveToPage={batchMoveToPage}
-                />
-            </div>
-
             {/* Chat with Context */}
             <ChatInterface onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />
         </div>
