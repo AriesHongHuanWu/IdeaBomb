@@ -11,7 +11,7 @@ Your goal is to Automate Productivity by creating **Smart, Connected, and Concis
    - **YouTube**: If user asks for specifics, find a relevant "Search:" query.
 
 **Date Context**:
-- Current Date: ${new Date().toISOString().split('T')[0]}
+- Current Date: {{TODAY}}
 
 **JSON Commands:**
 - { "id": "t1", "action": "create_node", "nodeType": "...", "content": "..." }
@@ -34,32 +34,32 @@ import { BsStars } from 'react-icons/bs'
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
 export default function ChatInterface({ onAction, nodes, collaborators }) {
-  const [messages, setMessages] = useState([{ role: 'system', content: 'Hello! I am your AI assistant. Ask me to "Plan an event" or "Organize this board".' }])
-  const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [isOpen, setIsOpen] = useState(false)
+    const [messages, setMessages] = useState([{ role: 'system', content: 'Hello! I am your AI assistant. Ask me to "Plan an event" or "Organize this board".' }])
+    const [input, setInput] = useState('')
+    const [isLoading, setIsLoading] = useState(false)
+    const [isOpen, setIsOpen] = useState(false)
 
-  const handleSend = async () => {
-    if (!input.trim()) return
-    const userMsg = input; setInput(''); setMessages(prev => [...prev, { role: 'user', content: userMsg }])
-    setIsLoading(true)
+    const handleSend = async () => {
+        if (!input.trim()) return
+        const userMsg = input; setInput(''); setMessages(prev => [...prev, { role: 'user', content: userMsg }])
+        setIsLoading(true)
 
-    try {
-      const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" }) // Upgraded model
+        try {
+            const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" }) // Upgraded model
 
-      // Context
-      const boardContext = nodes.map(n => `- ${n.type}: ${n.content} (at ${Math.round(n.x)},${Math.round(n.y)})`).join('\n').slice(0, 2000)
-      const prompt = \`\${SYSTEM_PROMPT.replace('${new Date().toISOString().split('T')[0]}', new Date().toISOString().split('T')[0])}
+            // Context
+            const boardContext = nodes.map(n => `- ${n.type}: ${n.content} (at ${Math.round(n.x)},${Math.round(n.y)})`).join('\n').slice(0, 2000)
+            const prompt = `${SYSTEM_PROMPT.replace('{{TODAY}}', new Date().toISOString().split('T')[0])}
             
             Current Board Context:
-            \${boardContext}
+            ${boardContext}
             
-            User Request: \${userMsg}\`
+            User Request: ${userMsg}`
 
             const result = await model.generateContent(prompt)
             const response = result.response.text()
-            
+
             // Extract JSON
             const jsonMatch = response.match(/\[.*\]/s)
             if (jsonMatch) {
