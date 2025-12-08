@@ -5,9 +5,10 @@ import { v4 as uuidv4 } from 'uuid'
 import Whiteboard from './Whiteboard'
 import ChatInterface from './ChatInterface'
 import ShareModal from './ShareModal'
-import { db } from '../firebase'
+import { db, auth } from '../firebase'
 import { collection, onSnapshot, setDoc, doc, updateDoc, deleteDoc, arrayUnion, writeBatch } from 'firebase/firestore'
-import { FiHome, FiUserPlus } from 'react-icons/fi'
+import { FiHome, FiUserPlus, FiDownload } from 'react-icons/fi'
+import { signOut } from 'firebase/auth'
 
 export default function BoardPage({ user }) {
     const { boardId } = useParams()
@@ -130,64 +131,79 @@ export default function BoardPage({ user }) {
         const actionList = Array.isArray(actions) ? actions : [actions]
         const createdIds = [];
         const pageNodes = nodes.filter(n => (n.page || 'Page 1') === activePage)
-        const maxX = pageNodes.length > 0 ? Math.max(...pageNodes.map(n => n.x + 320)) : 100
-        const startX = Math.max(100, maxX + 100)
-        const startY = 150
-        const idMap = {}
+
+        // Pass 1: Creation & Deletion
         const batch = writeBatch(db)
+        const idMap = {} // Local ID -> Real Firestore ID
 
-        // Pass 1: Layout & Nodes
-        // Simple Tree Layout Logic
-        const newNodes = []
-        actionList.forEach(a => {
-            if (a.action === 'create_node' || a.action === 'create_calendar_plan') {
-                const newId = uuidv4(); if (a.id) idMap[a.id] = newId
-                newNodes.push({ ...a, realId: newId })
+        // Helper: Extract YouTube ID
+        const getYTId = (u) => { const m = u?.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/); return (m && m[2].length === 11) ? m[2] : null }
+
+        for (const a of actionList) {
+            // --- CREATION ---
+            if (['create_node', 'create_calendar_plan', 'create_video', 'create_link'].includes(a.action)) {
+                const newId = uuidv4()
+                if (a.id) idMap[a.id] = newId
+
+                let type = a.nodeType || 'Note'
+                let content = a.content || ''
+                let extra = a.data || {}
+
+                // Mapping types
+                if (a.action === 'create_calendar_plan') {
+                    type = 'Calendar'; extra = { events: a.events || {} }
+                } else if (a.action === 'create_video') {
+                    type = 'YouTube'; const vid = getYTId(a.url); extra = { videoId: vid }; content = a.url || ''
+                } else if (a.action === 'create_link') {
+                    type = 'Link'; extra = { url: a.url }; content = a.url || ''
+                }
+
+                // Positioning
+                const startX = Math.max(100, (pageNodes.length > 0 ? Math.max(...pageNodes.map(n => n.x)) + 350 : 100))
+                const x = a.x !== undefined ? a.x : startX + (createdIds.length * 50) // Cascade if undefined
+                const y = a.y !== undefined ? a.y : 150 + (createdIds.length * 50)
+
+                batch.set(doc(db, 'boards', boardId, 'nodes', newId), {
+                    id: newId, type, content, page: activePage, x, y, items: [], events: {}, src: '', videoId: '', ...extra,
+                    createdAt: new Date().toISOString(), createdBy: user.uid
+                })
+                createdIds.push(newId)
             }
-        })
 
-        // Find roots (nodes not pointed to by edges in this batch) & Edges
-        const nodeIds = new Set(newNodes.map(n => n.id))
-        const childNodes = new Set()
-        const edgesList = []
+            // --- DELETION ---
+            else if (a.action === 'delete_node') {
+                const matches = pageNodes.filter(n => {
+                    if (a.id && n.id === a.id) return true
+                    if (a.content && n.content && n.content.toLowerCase().includes(a.content.toLowerCase())) return true
+                    return false
+                })
+                matches.forEach(t => {
+                    batch.delete(doc(db, 'boards', boardId, 'nodes', t.id))
+                    edges.filter(e => e.from === t.id || e.to === t.id).forEach(e => batch.delete(doc(db, 'boards', boardId, 'edges', e.id)))
+                })
+            }
+        }
+
+        // Pass 2: Edges (Connections)
         actionList.forEach(a => {
             if (a.action === 'create_edge') {
-                if (nodeIds.has(a.to)) childNodes.add(a.to)
-                edgesList.push(a)
-            }
-        })
+                // Resolves local ID (from this batch) OR valid existing ID
+                const fromId = idMap[a.from] || (nodes.find(n => n.id === a.from) ? a.from : null)
+                const toId = idMap[a.to] || (nodes.find(n => n.id === a.to) ? a.to : null)
 
-        let currentX = startX
-        const processed = new Set()
-
-        // Render Columns based on depth roughly (Naive visualizer)
-        newNodes.forEach((n, i) => {
-            // Just jagged line for now to ensure visibility, smart tree is hard in one batch without recursion
-            // Improved: 
-            const posX = startX + (i * 380)
-            const posY = startY + (i % 2) * 100
-
-            const type = n.nodeType || (n.action === 'create_calendar_plan' ? 'Calendar' : 'Note')
-            const content = n.content || ''; const extra = n.data || (n.action === 'create_calendar_plan' ? { events: n.events } : {})
-            batch.set(doc(db, 'boards', boardId, 'nodes', n.realId), {
-                id: n.realId, type, content, page: activePage, x: posX, y: posY, items: [], events: {}, src: '', videoId: '', ...extra,
-                createdAt: new Date().toISOString(), createdBy: user.uid
-            })
-            createdIds.push(n.realId)
-        })
-
-        edgesList.forEach(action => {
-            const realFrom = idMap[action.from]
-            const realTo = idMap[action.to]
-            if (realFrom && realTo) {
-                const edgeId = uuidv4()
-                batch.set(doc(db, 'boards', boardId, 'edges', edgeId), { id: edgeId, from: realFrom, to: realTo, page: activePage })
+                if (fromId && toId) {
+                    const edgeId = uuidv4()
+                    batch.set(doc(db, 'boards', boardId, 'edges', edgeId), { id: edgeId, from: fromId, to: toId, page: activePage })
+                }
             }
         })
 
         if (actionList.some(a => a.action === 'organize_board')) { window.dispatchEvent(new CustomEvent('ai-arrange')) }
-        await batch.commit()
-        if (createdIds.length > 0) setLastAIAction({ type: 'create', ids: createdIds })
+
+        try {
+            await batch.commit()
+            if (createdIds.length > 0) setLastAIAction({ type: 'create', ids: createdIds })
+        } catch (e) { console.error("Batch failed", e) }
     }
 
     const undoLastAIAction = async () => {
@@ -231,6 +247,19 @@ export default function BoardPage({ user }) {
         if (activePage === pageName) setActivePage('Page 1')
     }
 
+    const exportBoard = () => {
+        const data = { title: boardTitle, nodes, edges, generated: new Date().toISOString() }
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${boardTitle.replace(/\s+/g, '_')}_backup.json`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+    }
+
     const [editingPage, setEditingPage] = useState(null)
     const [editName, setEditName] = useState('')
     const [tabMenu, setTabMenu] = useState(null) // { x, y, page }
@@ -251,6 +280,7 @@ export default function BoardPage({ user }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}><button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button><h1 style={{ fontSize: '1.2rem', margin: 0 }}>{boardTitle}</h1></div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ display: 'flex', paddingRight: 10, borderRight: '1px solid #ddd' }}>{collaborators.map(c => (<img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid white', marginLeft: -10 }} />))}</div>
+                    <button onClick={exportBoard} style={{ background: 'rgba(255,255,255,0.2)', color: '#333', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiDownload /> Export</button>
                     <button onClick={() => setIsShareOpen(true)} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><FiUserPlus /> Invite</button>
                     <button onClick={async () => { await signOut(auth); navigate('/login') }} style={{ background: '#ff4d4f', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer' }}>Logout</button>
                 </div>
@@ -284,9 +314,6 @@ export default function BoardPage({ user }) {
                         )
                     ))}
                     <button onClick={addNewPage} style={{ padding: '8px 12px', borderRadius: 10, border: '1px dashed rgba(255,255,255,0.5)', background: 'transparent', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>+ New Page</button>
-                </div>
-                <div style={{ pointerEvents: 'auto', alignSelf: 'flex-start', background: 'transparent' }}>
-                    {/* Badge removed by user request */}
                 </div>
             </div>
 

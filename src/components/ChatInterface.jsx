@@ -1,36 +1,5 @@
-const SYSTEM_PROMPT = `
-You are an Advanced AI Workflow Generator for a collaborative whiteboard.
-Your goal is to Automate Productivity by creating **Smart, Connected, and Concise Workflows**.
-
-**Capabilities:**
-1. **Intelligent Workflows**: Create a hierarchical flow (Root -> Steps -> Details).
-   - Use "create_edge" to link nodes logically.
-   - **Conciseness**: Content must be short and actionable. No long paragraphs.
-2. **Real Content**:
-   - **Calendar**: Use explicit dates relative to TODAY (e.g. "YYYY-MM-DD").
-   - **YouTube**: If user asks for specifics, find a relevant "Search:" query.
-
-**Date Context**:
-- Current Date: {{TODAY}}
-
-**JSON Commands:**
-- { "id": "t1", "action": "create_node", "nodeType": "...", "content": "..." }
-- { "action": "create_edge", "from": "t1", "to": "t2" }
-
-**Example: "Plan Project"**
-\`\`\`json
-[
-  { "id": "root", "action": "create_node", "nodeType": "Note", "content": "Project Goal" },
-  { "id": "cal", "action": "create_node", "nodeType": "Calendar", "content": "Timeline", "data": { "events": { "${new Date().toISOString().slice(0, 8)}20": "Deadline" } } },
-  { "id": "task", "action": "create_node", "nodeType": "Todo", "content": "Tasks\\n- [ ] Design\\n- [ ] Code" },
-  { "action": "create_edge", "from": "root", "to": "cal" },
-  { "action": "create_edge", "from": "root", "to": "task" }
-]
-\`\`\`
-`
-
-import React, { useState, useEffect, useRef } from 'react'
 import { BsStars, BsMic, BsMicFill, BsSend } from 'react-icons/bs'
+import { FiX } from 'react-icons/fi'
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
 export default function ChatInterface({ onAction, nodes, collaborators }) {
@@ -111,58 +80,101 @@ export default function ChatInterface({ onAction, nodes, collaborators }) {
     }
 
     return (
-        <div style={{ position: 'absolute', bottom: 20, right: 20, zIndex: 200 }}>
-            {isOpen && (
-                <div className="glass-panel" style={{ width: 350, height: 500, marginBottom: 20, display: 'flex', flexDirection: 'column', background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)', borderRadius: 24, overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.5)' }}>
-                    <div style={{ padding: '15px 20px', background: 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <BsStars /> <span>Gemini AI</span>
-                        </div>
-                        <button onClick={() => setIsOpen(false)} style={{ position: 'absolute', right: 15, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.2rem', padding: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-                    </div>
-
-                    <div style={{ flex: 1, padding: 15, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {messages.map((m, i) => (
-                            <div key={i} style={{ padding: '10px 15px', borderRadius: 15, alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', background: m.role === 'user' ? '#4facfe' : 'rgba(255,255,255,0.8)', color: m.role === 'user' ? 'white' : '#333', maxWidth: '85%', fontSize: '0.9rem', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-                                {m.content}
+        <div style={{ position: 'fixed', bottom: 30, right: 30, zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', pointerEvents: 'none' }}>
+            <AnimatePresence mode="wait">
+                {isOpen ? (
+                    <motion.div
+                        key="chat-panel"
+                        initial={{ opacity: 0, scale: 0.9, y: 20, transformOrigin: 'bottom right' }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                        className="glass-panel"
+                        style={{
+                            width: 360, height: 520, pointerEvents: 'auto',
+                            background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)',
+                            borderRadius: '24px 24px 24px 8px', overflow: 'hidden',
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.5)',
+                            display: 'flex', flexDirection: 'column'
+                        }}
+                    >
+                        <div style={{ padding: '15px 20px', background: 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <BsStars size={20} /> <span style={{ fontSize: '1.1rem' }}>Gemini AI</span>
                             </div>
-                        ))}
-                        {isLoading && <div style={{ color: '#666', fontSize: '0.8rem', fontStyle: 'italic', paddingLeft: 10 }}>Thinking...</div>}
-                        <div ref={messagesEndRef} />
-                    </div>
-
-                    <div style={{ padding: 15, borderTop: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)' }}>
-                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                             <button
-                                onClick={startListening}
-                                style={{
-                                    width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer',
-                                    background: isListening ? '#ff4b4b' : '#f0f2f5', color: isListening ? 'white' : '#555',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s',
-                                    animation: isListening ? 'pulse 1.5s infinite' : 'none'
-                                }}
-                                title="Voice Input"
+                                onClick={() => setIsOpen(false)}
+                                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.2s' }}
+                                onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.3)'}
+                                onMouseLeave={e => e.target.style.background = 'rgba(255,255,255,0.2)'}
                             >
-                                {isListening ? <BsMicFill /> : <BsMic />}
-                            </button>
-                            <input
-                                value={input}
-                                onChange={e => setInput(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && handleSend()}
-                                placeholder="Type or speak..."
-                                style={{ flex: 1, padding: '10px 15px', borderRadius: 20, border: '1px solid rgba(0,0,0,0.1)', outline: 'none', background: 'white' }}
-                            />
-                            <button onClick={handleSend} style={{ background: '#4facfe', color: 'white', border: 'none', width: 40, height: 40, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <BsSend size={14} />
+                                <FiX size={16} />
                             </button>
                         </div>
-                    </div>
-                    <style>{`@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 75, 75, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0); } }`}</style>
-                </div>
-            )}
-            <button onClick={() => setIsOpen(!isOpen)} style={{ width: 60, height: 60, borderRadius: '50%', background: 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white', border: 'none', boxShadow: '0 10px 30px rgba(0, 242, 254, 0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', transition: 'transform 0.2s', transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)' }}>
-                {isOpen ? '＋' : <BsStars />}
-            </button>
+
+                        <div style={{ flex: 1, padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            <div style={{ background: 'rgba(0,0,0,0.05)', padding: '10px 15px', borderRadius: '15px 15px 15px 0', alignSelf: 'flex-start', maxWidth: '85%', fontSize: '0.9rem', lineHeight: 1.5, color: '#444' }}>
+                                I am your Whiteboard Assistant. Try saying "Create a marketing plan"!
+                            </div>
+                            {messages.map((msg, i) => (
+                                <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', background: msg.role === 'user' ? 'linear-gradient(135deg, #4facfe, #00f2fe)' : 'white', color: msg.role === 'user' ? 'white' : '#333', padding: '10px 15px', borderRadius: msg.role === 'user' ? '15px 15px 0 15px' : '15px 15px 15px 0', maxWidth: '85%', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', fontSize: '0.95rem', border: msg.role === 'model' ? '1px solid #eee' : 'none' }}>
+                                    {msg.content}
+                                </motion.div>
+                            ))}
+                            {isLoading && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ alignSelf: 'flex-start', background: '#f0f0f0', padding: '8px 12px', borderRadius: 12, fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>Thinking...</motion.div>}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        <div style={{ padding: 15, background: 'rgba(255,255,255,0.5)', borderTop: '1px solid rgba(0,0,0,0.05)', display: 'flex', gap: 10 }}>
+                            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                <input
+                                    value={input}
+                                    onChange={e => setInput(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleSend()}
+                                    placeholder={isListening ? "Listening..." : "Ask AI to create..."}
+                                    style={{ width: '100%', padding: '12px 40px 12px 15px', borderRadius: 24, border: '1px solid #ddd', outline: 'none', background: 'white', color: '#333', boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.02)', fontSize: '0.95rem' }}
+                                />
+                                <button
+                                    onClick={startListening}
+                                    style={{
+                                        position: 'absolute', right: 5, top: '50%', transform: 'translateY(-50%)',
+                                        background: isListening ? '#ff4d4f' : 'transparent',
+                                        color: isListening ? 'white' : '#888',
+                                        border: 'none', borderRadius: '50%', width: 32, height: 32,
+                                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        transition: 'all 0.2s',
+                                        animation: isListening ? 'pulse 1.5s infinite' : 'none'
+                                    }}
+                                    title="Voice Input"
+                                >
+                                    {isListening ? <BsMicFill size={14} /> : <BsMic size={18} />}
+                                </button>
+                            </div>
+                            <button onClick={handleSend} disabled={isLoading || (!input.trim() && !isListening)} style={{ width: 44, height: 44, borderRadius: '50%', border: 'none', background: isLoading ? '#ccc' : 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white', cursor: isLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(79, 172, 254, 0.4)', flexShrink: 0 }}><BsSend size={18} /></button>
+                        </div>
+                    </motion.div>
+                ) : (
+                    <motion.button
+                        key="chat-fab"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setIsOpen(true)}
+                        style={{
+                            width: 65, height: 65, borderRadius: '24px 24px 8px 24px', pointerEvents: 'auto',
+                            background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
+                            color: 'white', border: '4px solid rgba(255,255,255,0.3)', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 10px 30px rgba(79, 172, 254, 0.4)'
+                        }}
+                    >
+                        <BsStars size={30} />
+                    </motion.button>
+                )}
+            </AnimatePresence>
+            <style>{`@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 75, 75, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0); } }`}</style>
         </div>
     )
 }

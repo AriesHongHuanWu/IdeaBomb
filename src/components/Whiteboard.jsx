@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
-import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2 } from 'react-icons/fi'
+import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe } from 'react-icons/fi'
 
 // --- Utilities ---
 const useDebounce = (callback, delay) => {
@@ -29,6 +29,35 @@ const ImageNode = ({ node, onUpdate }) => {
     const up = (e) => { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onloadend = () => onUpdate(node.id, { src: r.result }); r.readAsDataURL(f) } }
     return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#9b59b6', fontWeight: 'bold' }}><FiImage size={18} /> Image</div> <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.03)', borderRadius: 12, overflow: 'hidden', position: 'relative' }}> {node.src ? (<> <img src={node.src} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> <button onClick={() => onUpdate(node.id, { src: '' })} style={{ position: 'absolute', bottom: 10, right: 10, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 30, height: 30, cursor: 'pointer' }} onPointerDown={e => e.stopPropagation()}><FiX /></button> </>) : (<div style={{ textAlign: 'center' }} onPointerDown={e => e.stopPropagation()}> <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Upload Image</p> <input type="file" onChange={up} style={{ maxWidth: 180, marginTop: 10 }} /> </div>)} </div> </div>)
 }
+
+const LinkNode = ({ node, onUpdate }) => {
+    const [url, setUrl] = useState(node.url || '');
+    const saveUrl = () => { if (url) onUpdate(node.id, { url, content: url }) }
+    return (
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#3498db', fontWeight: 'bold' }}><FiGlobe size={18} /> Web Link</div>
+            {node.content ? (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    <a href={node.content} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, background: 'rgba(255,255,255,0.5)', borderRadius: 12, textDecoration: 'none', color: '#333', border: '1px solid rgba(0,0,0,0.1)' }}>
+                        <img src={`https://www.google.com/s2/favicons?domain=${new URL(node.content).hostname}&sz=64`} style={{ width: 32, height: 32, borderRadius: 4 }} onError={(e) => e.target.style.display = 'none'} />
+                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
+                            <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{new URL(node.content).hostname}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#666' }}>{node.content}</div>
+                        </div>
+                        <FiArrowRight style={{ marginLeft: 'auto' }} />
+                    </a>
+                    <button onClick={() => onUpdate(node.id, { content: '' })} style={{ background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', alignSelf: 'center', fontSize: '0.8rem' }}>Edit URL</button>
+                </div>
+            ) : (
+                <div style={{ display: 'flex', gap: 5, marginTop: 'auto' }}>
+                    <Input placeholder="https://example.com" value={url} onChange={e => setUrl(e.target.value)} />
+                    <Button onClick={saveUrl}>Save</Button>
+                </div>
+            )}
+        </div>
+    )
+}
+
 const NoteNode = ({ node, onUpdate }) => (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, color: '#555', fontWeight: 'bold', fontSize: '0.9rem' }}><FiType /> Note</div> <textarea defaultValue={node.content} onBlur={e => onUpdate(node.id, { content: e.target.value })} onPointerDown={e => e.stopPropagation()} style={{ flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none', fontSize: '1rem', lineHeight: 1.6, color: '#333' }} placeholder="Type something..." /> </div>)
 
 // --- Connection Layer ---
@@ -49,14 +78,25 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode }) => {
     return (
         <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'visible', pointerEvents: 'none' }}>
             <defs>
+                <linearGradient id="glass-gradient" x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#4facfe" />
+                    <stop offset="100%" stopColor="#00f2fe" />
+                </linearGradient>
+                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                    <feMerge>
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
                 <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#b0b0b0" />
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#00f2fe" style={{ filter: 'drop-shadow(0 0 5px #00f2fe)' }} />
                 </marker>
                 <marker id="arrowhead-del" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                     <polygon points="0 0, 10 3.5, 0 7" fill="#ff4d4f" />
                 </marker>
             </defs>
-            {edges.map(edge => {
+            {edges.map((edge, i) => {
                 const f = nodes.find(n => n.id === edge.from); const t = nodes.find(n => n.id === edge.to)
                 if (!f || !t) return null
                 const { sx, sy, ex, ey, c1x, c1y } = getAnchors(f, t)
@@ -72,7 +112,17 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode }) => {
                 return (
                     <g key={edge.id} style={{ pointerEvents: 'auto', cursor: mode === 'delete' ? 'not-allowed' : 'pointer' }} onClick={() => onDeleteEdge(edge.id)}>
                         <path d={pathD} stroke="transparent" strokeWidth="20" fill="none" />
-                        <motion.path d={pathD} stroke={mode === 'delete' ? '#ff4d4f' : '#b0b0b0'} strokeWidth="3" strokeDasharray={mode === 'delete' ? "0" : "5 5"} fill="none" markerEnd={mode === 'delete' ? "url(#arrowhead-del)" : "url(#arrowhead)"} initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} />
+                        <motion.path
+                            d={pathD}
+                            stroke={mode === 'delete' ? '#ff4d4f' : 'url(#glass-gradient)'}
+                            strokeWidth="3"
+                            strokeDasharray={mode === 'delete' ? "0" : "0"}
+                            fill="none"
+                            markerEnd={mode === 'delete' ? "url(#arrowhead-del)" : "url(#arrowhead)"}
+                            initial={{ pathLength: 0, opacity: 0 }}
+                            animate={{ pathLength: 1, opacity: 1 }}
+                            style={{ filter: mode === 'delete' ? 'none' : 'url(#glow)', strokeLinecap: 'round' }}
+                        />
                     </g>
                 )
             })}
@@ -106,10 +156,11 @@ const DraggableNode = ({ node, isSelected, onSelect, onUpdatePosition, onUpdateD
         >
             <div className="glass-panel" style={{
                 width: '100%', height: '100%', padding: 25, borderRadius: 24, display: 'flex', flexDirection: 'column',
-                background: node.color || 'rgba(255,255,255,0.9)',
-                border: isSelected ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.8)',
-                boxShadow: isSelected ? '0 15px 40px rgba(0,0,0,0.15)' : '0 10px 30px rgba(0,0,0,0.08)',
-                backdropFilter: 'blur(20px)', transition: 'box-shadow 0.2s'
+                background: node.color || 'rgba(255,255,255,0.65)',
+                border: isSelected ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.4)',
+                boxShadow: isSelected ? '0 15px 40px rgba(0,0,0,0.15)' : '0 10px 30px rgba(0,0,0,0.05)',
+                backdropFilter: 'blur(24px)', transition: 'box-shadow 0.2s, background 0.2s',
+                overflow: 'hidden'
             }}>
                 <div onPointerDown={handleResize} style={{ position: 'absolute', bottom: 5, right: 5, width: 20, height: 20, cursor: 'nwse-resize', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiMaximize2 size={12} color="#aaa" /></div>
 
@@ -117,7 +168,8 @@ const DraggableNode = ({ node, isSelected, onSelect, onUpdatePosition, onUpdateD
                 {node.type === 'Calendar' && <CalendarNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Image' && <ImageNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'YouTube' && <YouTubeNode node={node} onUpdate={onUpdateData} />}
-                {(!['Todo', 'Calendar', 'Image', 'YouTube'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Link' && <LinkNode node={node} onUpdate={onUpdateData} />}
+                {(!['Todo', 'Calendar', 'Image', 'YouTube', 'Link'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
             </div>
             <AnimatePresence>{isHovered && !onConnectStart && (
                 <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} onClick={() => onDelete(node.id)} style={{ position: 'absolute', top: -12, right: -10, width: 32, height: 32, borderRadius: '50%', background: '#ff4d4f', color: 'white', border: '2px solid white', cursor: 'pointer', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }} onPointerDown={e => e.stopPropagation()}><FiTrash2 /></motion.button>
@@ -134,6 +186,10 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     const [connectMode, setConnectMode] = useState(false)
     const [connectStartId, setConnectStartId] = useState(null)
     const [selectionBox, setSelectionBox] = useState(null)
+
+    // Pinch Zoom State
+    const [pinchDist, setPinchDist] = useState(null)
+    const [startScale, setStartScale] = useState(1)
 
     const autoArrange = () => {
         const cols = Math.ceil(Math.sqrt(nodes.length))
@@ -195,6 +251,21 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
         }
     }
 
+    // Pinch Zoom Handlers
+    const handleTouchStart = (e) => {
+        if (e.touches.length === 2) {
+            const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY)
+            setPinchDist(d); setStartScale(scale)
+        }
+    }
+    const handleTouchMove = (e) => {
+        if (e.touches.length === 2 && pinchDist) {
+            const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY)
+            setScale(Math.min(Math.max(startScale * (d / pinchDist), 0.2), 5))
+        }
+    }
+    const handleTouchEnd = () => setPinchDist(null)
+
     // Native wheel listener to prevent browser zoom
     useEffect(() => {
         const container = containerRef.current
@@ -244,8 +315,40 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
         return selectedIds.includes(contextMenu.targetId) ? selectedIds : [contextMenu.targetId]
     }
 
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+
+
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (selectedIds.length > 0) {
+                    if (onBatchDelete) onBatchDelete(selectedIds)
+                    else selectedIds.forEach(id => onDeleteNode(id))
+                }
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+                e.preventDefault()
+                if (selectedIds.length > 0) onCopy(selectedIds)
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+                e.preventDefault()
+                onPaste(mousePos.current.x, mousePos.current.y)
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [selectedIds, onBatchDelete, onDeleteNode, onCopy, onPaste])
+
+    // Track mouse for paste position
+    const mousePos = useRef({ x: 0, y: 0 })
+    const handleGlobalMouseMove = (e) => {
+        const { left, top } = containerRef.current ? containerRef.current.getBoundingClientRect() : { left: 0, top: 0 }
+        mousePos.current = { x: (e.clientX - left - offset.x) / scale, y: (e.clientY - top - offset.y) / scale }
+    }
+
     return (
-        <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onContextMenu={handleBgContextMenu} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f8f9fa', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
+        <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={(e) => { handlePointerMove(e); handleGlobalMouseMove(e) }} onPointerUp={handlePointerUp} onContextMenu={handleBgContextMenu} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f8f9fa', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
             <div className="grid-bg" style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0', opacity: 0.6, pointerEvents: 'none' }} />
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
                 <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} />
@@ -294,6 +397,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                 <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode('Calendar')} />
                 <ToolBtn icon={<FiImage />} label="Image" onClick={() => onAddNode('Image')} />
                 <ToolBtn icon={<FiYoutube />} label="YouTube" onClick={() => onAddNode('YouTube')} />
+                <ToolBtn icon={<FiGlobe />} label="Link" onClick={() => onAddNode('Link')} />
                 <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
                 <ToolBtn icon={<FiLink />} label="Connect" active={connectMode} onClick={() => { setConnectMode(!connectMode); setConnectStartId(null) }} />
                 <ToolBtn icon={<FiGrid />} label="Auto Arrange" onClick={autoArrange} />
