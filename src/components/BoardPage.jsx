@@ -171,13 +171,20 @@ export default function BoardPage({ user }) {
                 let content = a.content || ''
                 let extra = a.data || {}
 
-                // Mapping types
-                if (a.action === 'create_calendar_plan') {
-                    type = 'Calendar'; extra = { events: a.events || {} }
-                } else if (a.action === 'create_video') {
-                    type = 'YouTube'; const vid = getYTId(a.url); extra = { videoId: vid }; content = a.url || ''
-                } else if (a.action === 'create_link') {
-                    type = 'Link'; extra = { url: a.url }; content = a.url || ''
+                // Unified Type Handling
+                if (a.action === 'create_calendar_plan') { type = 'Calendar'; extra = { events: a.events || {} } }
+                else if (a.action === 'create_video') { type = 'YouTube' }
+                else if (a.action === 'create_link') { type = 'Link' }
+
+                // Smart Property Extraction
+                if (type === 'YouTube') {
+                    const u = a.url || (content.startsWith('http') ? content : '')
+                    const vid = a.videoId || getYTId(u)
+                    if (vid) { extra.videoId = vid; if (!content) content = u }
+                }
+                else if (type === 'Link') {
+                    const u = a.url || (content.startsWith('http') ? content : '')
+                    if (u) { extra.url = u; if (!content) content = u }
                 }
 
                 // Positioning
