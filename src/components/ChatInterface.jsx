@@ -79,7 +79,7 @@ export default function ChatInterface({ onAction, nodes, collaborators }) {
     return (
         <div style={{ position: 'absolute', bottom: 20, right: 20, zIndex: 200 }}>
             {isOpen && (
-                <div className="glass-panel" style={{ width: 350, height: 500, marginBottom: 20, display: 'flex', flexDirection: 'column', background: 'white', borderRadius: 20, overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}>
+                <div className="glass-panel" style={{ width: 350, height: 500, marginBottom: 20, display: 'flex', flexDirection: 'column', background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)', borderRadius: 24, overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.5)' }}>
                     <div style={{ padding: '15px 20px', background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
                         <span>✨ AI Assistant</span>
                         <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>✕</button>

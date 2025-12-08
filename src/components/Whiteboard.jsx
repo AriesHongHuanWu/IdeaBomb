@@ -186,18 +186,26 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
         }
     }
 
-    const handleWheel = (e) => {
-        if (e.ctrlKey) {
-            e.preventDefault()
-            const s = e.deltaY > 0 ? 0.9 : 1.1
-            setScale(prev => Math.min(Math.max(prev * s, 0.2), 5))
-        } else {
-            setOffset(p => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }))
+    // Native wheel listener to prevent browser zoom
+    useEffect(() => {
+        const container = containerRef.current
+        if (!container) return
+        const onWheel = (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault()
+                const s = e.deltaY > 0 ? 0.9 : 1.1
+                setScale(prev => Math.min(Math.max(prev * s, 0.2), 5))
+            } else {
+                e.preventDefault()
+                setOffset(p => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }))
+            }
         }
-    }
+        container.addEventListener('wheel', onWheel, { passive: false })
+        return () => container.removeEventListener('wheel', onWheel)
+    }, [])
 
     return (
-        <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onWheel={handleWheel} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f8f9fa', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
+        <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f8f9fa', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
             <div className="grid-bg" style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0', opacity: 0.6, pointerEvents: 'none' }} />
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
                 <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} />
