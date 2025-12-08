@@ -4,6 +4,12 @@ import { motion } from 'framer-motion'
 import { v4 as uuidv4 } from 'uuid'
 import Whiteboard from './Whiteboard'
 import ChatInterface from './ChatInterface'
+import React, { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { v4 as uuidv4 } from 'uuid'
+import Whiteboard from './Whiteboard'
+import ChatInterface from './ChatInterface'
 import ShareModal from './ShareModal'
 import { db } from '../firebase'
 import { collection, onSnapshot, setDoc, doc, updateDoc, deleteDoc, arrayUnion } from 'firebase/firestore'
@@ -18,6 +24,9 @@ export default function BoardPage({ user }) {
     const [collaborators, setCollaborators] = useState([])
     const [isShareOpen, setIsShareOpen] = useState(false)
     const [hasAccess, setHasAccess] = useState(true)
+    const [activePage, setActivePage] = useState('Page 1')
+    const [pages, setPages] = useState(['Page 1'])
+    const [lastAIAction, setLastAIAction] = useState(null) // For Undo
 
     // 1. Sync Board Metadata (Title) & Check Access
     useEffect(() => {
@@ -53,6 +62,12 @@ export default function BoardPage({ user }) {
         const unsub = onSnapshot(q, (snapshot) => {
             const loaded = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
             setNodes(loaded)
+
+            // Extract unique pages from nodes to sync pages list
+            const nodePages = new Set(loaded.map(n => n.page).filter(p => p))
+            if (nodePages.size > 0) {
+                setPages(prev => Array.from(new Set([...prev, ...nodePages])).sort())
+            }
         })
         return unsub
     }, [boardId, hasAccess])
@@ -76,11 +91,12 @@ export default function BoardPage({ user }) {
 
     // --- Logic Functions ---
 
-    const addNode = async (type, content) => {
+    const addNode = async (type, content, extraData = {}) => {
         if (!user || !hasAccess) return
         const newNode = {
             id: uuidv4(),
             type: type || 'Note',
+            page: activePage, // Assign to current page
             x: window.innerWidth / 2 - 140 + (Math.random() * 40 - 20),
             y: window.innerHeight / 2 - 100 + (Math.random() * 40 - 20),
             content: content || (type === 'Todo' ? '- [ ] New Task' : 'New Item'),
@@ -89,12 +105,15 @@ export default function BoardPage({ user }) {
             src: '', // For Image
             videoId: '', // For YouTube
             createdAt: new Date().toISOString(),
-            createdBy: user.uid
+            createdBy: user.uid,
+            ...extraData // Allow merging extra AI data
         }
         try {
             await setDoc(doc(db, 'boards', boardId, 'nodes', newNode.id), newNode)
+            return newNode.id // Return ID for undo tracking
         } catch (e) {
             console.error("Error adding node:", e)
+            return null
         }
     }
 
@@ -126,9 +145,49 @@ export default function BoardPage({ user }) {
         }
     }
 
-    const handleAIAction = (action) => {
-        if (action.action === 'create_node') addNode(action.nodeType, action.content)
+    // AI Action Handler with Undo
+    const handleAIAction = async (action) => {
+        if (action.action === 'create_node') {
+            const id = await addNode(action.nodeType, action.content, action.data || {})
+            if (id) setLastAIAction({ type: 'create', ids: [id] })
+        }
+        if (action.action === 'organize_board') {
+            // Trigger auto-arrange for current page
+            // We need to pass this down or handle it via a ref/event. 
+            // For now, we'll signal Whiteboard via a custom event or context.
+            // Simpler: Just randomizing locally or handled in Whiteboard? 
+            // Actually, Whiteboard has the 'autoArrange' function. 
+            // We can expose it, but for now let's just use the Grid button.
+            // Let's create a special "AI Arrange" node or toast?
+            alert("AI: Organizing layout...")
+            window.dispatchEvent(new CustomEvent('ai-arrange'))
+        }
+        if (action.action === 'create_calendar_plan') {
+            const id = await addNode('Calendar', 'AI Plan', { events: action.events })
+            if (id) setLastAIAction({ type: 'create', ids: [id] })
+        }
     }
+
+    const undoLastAIAction = async () => {
+        if (!lastAIAction) return
+        if (lastAIAction.type === 'create') {
+            for (const id of lastAIAction.ids) {
+                await deleteDoc(doc(db, 'boards', boardId, 'nodes', id))
+            }
+            alert("AI Action Undone.")
+            setLastAIAction(null)
+        }
+    }
+
+    // Page Management
+    const addNewPage = () => {
+        const newPage = `Page ${pages.length + 1}`
+        setPages([...pages, newPage])
+        setActivePage(newPage)
+    }
+
+    // Filter nodes for display
+    const displayNodes = nodes.filter(n => (n.page || 'Page 1') === activePage)
 
     if (!hasAccess) {
         return (
@@ -199,10 +258,38 @@ export default function BoardPage({ user }) {
                 </div>
             </motion.div>
 
+            {/* Undo Toast */}
+            {lastAIAction && (
+                <div style={{ position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#333', color: 'white', padding: '10px 20px', borderRadius: 20, display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <span>AI completed an action. Satisfied?</span>
+                    <button onClick={() => setLastAIAction(null)} style={{ background: 'green', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>Yes</button>
+                    <button onClick={undoLastAIAction} style={{ background: 'red', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>No (Undo)</button>
+                </div>
+            )}
+
+            {/* Page Tabs */}
+            <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 110, display: 'flex', gap: 5 }}>
+                {pages.map(p => (
+                    <button
+                        key={p}
+                        onClick={() => setActivePage(p)}
+                        style={{
+                            padding: '8px 16px', borderRadius: '12px 12px 0 0', border: 'none',
+                            background: activePage === p ? 'white' : 'rgba(255,255,255,0.5)',
+                            fontWeight: activePage === p ? 'bold' : 'normal',
+                            cursor: 'pointer', boxShadow: '0 -2px 5px rgba(0,0,0,0.05)'
+                        }}
+                    >
+                        {p}
+                    </button>
+                ))}
+                <button onClick={addNewPage} style={{ padding: '8px 12px', borderRadius: '12px 12px 0 0', border: 'none', background: 'rgba(255,255,255,0.3)', cursor: 'pointer' }}>+</button>
+            </div>
+
             {/* Canvas */}
             <div style={{ width: '100%', height: '100%' }}>
                 <Whiteboard
-                    nodes={nodes}
+                    nodes={displayNodes} // Pass filtered nodes
                     onAddNode={addNode}
                     onUpdateNodePosition={updateNodePosition}
                     onUpdateNodeData={updateNodeData}
