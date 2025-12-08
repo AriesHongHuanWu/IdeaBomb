@@ -3,38 +3,74 @@ import { motion } from 'framer-motion'
 import { v4 as uuidv4 } from 'uuid'
 import Whiteboard from './components/Whiteboard'
 import ChatInterface from './components/ChatInterface'
+import Login from './components/Login'
+import { auth, db } from './firebase'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { collection, onSnapshot, setDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore'
 
 function App() {
-    // 1. Persistent State: Load from LocalStorage
-    const [nodes, setNodes] = useState(() => {
-        const saved = localStorage.getItem('whiteboard_nodes')
-        return saved ? JSON.parse(saved) : [
-            { id: '1', type: 'Todo', x: 100, y: 100, content: '- [ ] Project Planning\n- [ ] Design Review' },
-            { id: '2', type: 'Calendar', x: 500, y: 150, content: 'Dec 25: Launch Day' }
-        ]
-    })
+    const [user, setUser] = useState(null)
+    const [nodes, setNodes] = useState([])
 
-    // Save to LocalStorage whenever nodes change
+    // Auth Listener
     useEffect(() => {
-        localStorage.setItem('whiteboard_nodes', JSON.stringify(nodes))
-    }, [nodes])
+        const unsubscribe = onAuthStateChanged(auth, (u) => {
+            setUser(u)
+        })
+        return unsubscribe
+    }, [])
 
-    // Add Node Function (Used by Toolbar and AI)
-    const addNode = (type, content) => {
-        setNodes(prev => [...prev, {
+    // Realtime Nodes Listener
+    useEffect(() => {
+        if (!user) {
+            setNodes([])
+            return
+        }
+
+        // Listen to 'nodes' collection
+        const unsubscribe = onSnapshot(collection(db, 'nodes'), (snapshot) => {
+            const loadedNodes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+            setNodes(loadedNodes)
+        }, (error) => {
+            console.error("Firestore Error:", error)
+        })
+
+        return unsubscribe
+    }, [user])
+
+    // Add Node (Writes to Firestore)
+    const addNode = async (type, content) => {
+        if (!user) return
+        const newNode = {
             id: uuidv4(),
             type: type || 'Note',
             x: window.innerWidth / 2 - 140 + (Math.random() * 40 - 20),
             y: window.innerHeight / 2 - 100 + (Math.random() * 40 - 20),
-            content: content || (type === 'Todo' ? '- [ ] New Task' : 'New Item')
-        }])
+            content: content || (type === 'Todo' ? '- [ ] New Task' : 'New Item'),
+            createdAt: new Date().toISOString(),
+            createdBy: user.uid
+        }
+        try {
+            // Use setDoc with specific ID
+            await setDoc(doc(db, 'nodes', newNode.id), newNode)
+        } catch (e) {
+            console.error("Error adding node:", e)
+        }
     }
 
-    // Update Node Position (from Dragging)
-    const updateNodePosition = (id, offset) => {
-        setNodes(prev => prev.map(n =>
-            n.id === id ? { ...n, x: n.x + offset.x, y: n.y + offset.y } : n
-        ))
+    // Update Node Position (Writes to Firestore)
+    const updateNodePosition = async (id, offset) => {
+        const node = nodes.find(n => n.id === id)
+        if (!node) return
+
+        try {
+            await updateDoc(doc(db, 'nodes', id), {
+                x: node.x + offset.x,
+                y: node.y + offset.y
+            })
+        } catch (e) {
+            console.error("Error updating node:", e)
+        }
     }
 
     // Handle Actions from AI Chat
@@ -45,6 +81,10 @@ function App() {
         }
     }
 
+    if (!user) {
+        return <Login />
+    }
+
     return (
         <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
             {/* Top Bar */}
@@ -52,14 +92,19 @@ function App() {
                 className="glass-panel"
                 style={{
                     position: 'absolute', top: 20, left: '50%', x: '-50%',
-                    padding: '10px 30px', zIndex: 100, display: 'flex', alignItems: 'center', gap: 20
+                    padding: '8px 20px', zIndex: 100, display: 'flex', alignItems: 'center', gap: 20,
+                    borderRadius: 50
                 }}
                 initial={{ y: -100 }}
                 animate={{ y: 0 }}
             >
-                <h1 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 700 }}>
-                    Collab<span style={{ color: 'var(--primary)' }}>Whiteboard</span>
+                <h1 style={{ fontSize: '1rem', margin: 0, fontWeight: 700 }}>
+                    Idea<span style={{ color: 'var(--primary)' }}>Bomb</span>
                 </h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <img src={user.photoURL} style={{ width: 24, height: 24, borderRadius: '50%' }} alt="User" />
+                    <button onClick={() => signOut(auth)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#666' }}>Sign Out</button>
+                </div>
             </motion.div>
 
             {/* Main Content Area */}

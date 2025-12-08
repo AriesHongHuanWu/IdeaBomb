@@ -3,13 +3,13 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyDt22yhbuJzEfRTjOyCp1IlCM8K61ILLLc",
-    authDomain: "ideaboard-b88c0.firebaseapp.com",
-    projectId: "ideaboard-b88c0",
-    storageBucket: "ideaboard-b88c0.firebasestorage.app",
-    messagingSenderId: "932999439710",
-    appId: "1:932999439710:web:73195a4e4615334c001bcf",
-    measurementId: "G-LCG5P2V8Q6"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);

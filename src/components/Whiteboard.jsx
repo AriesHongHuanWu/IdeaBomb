@@ -43,7 +43,7 @@ export default function Whiteboard({ nodes, onAddNode, onUpdateNodePosition }) {
                 }}
                 style={{
                     width: '100%', height: '100%',
-                    cursor: 'grab'
+                    cursor: 'grab', touchAction: 'none'
                 }}
                 drag
                 dragConstraints={{ left: -3000, right: 3000, top: -3000, bottom: 3000 }}
