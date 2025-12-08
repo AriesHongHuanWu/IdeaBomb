@@ -217,8 +217,29 @@ export default function BoardPage({ user }) {
         setActivePage(newName)
     }
 
+    const deletePage = async (pageName) => {
+        if (!pageName || pageName === 'Page 1') { alert('Cannot delete the main page!'); return }
+        if (!window.confirm(`Are you sure you want to delete "${pageName}" and all its contents? This cannot be undone.`)) return
+
+        const batch = writeBatch(db)
+        const pageNodes = nodes.filter(n => (n.page || 'Page 1') === pageName)
+        pageNodes.forEach(n => batch.delete(doc(db, 'boards', boardId, 'nodes', n.id)))
+        edges.filter(e => (e.page || 'Page 1') === pageName).forEach(e => batch.delete(doc(db, 'boards', boardId, 'edges', e.id)))
+
+        await batch.commit()
+        setPages(prev => prev.filter(p => p !== pageName))
+        if (activePage === pageName) setActivePage('Page 1')
+    }
+
     const [editingPage, setEditingPage] = useState(null)
     const [editName, setEditName] = useState('')
+    const [tabMenu, setTabMenu] = useState(null) // { x, y, page }
+
+    useEffect(() => {
+        const h = () => setTabMenu(null)
+        window.addEventListener('click', h)
+        return () => window.removeEventListener('click', h)
+    }, [])
 
     if (!hasAccess) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white', background: '#111' }}>Access Denied</div>
 
@@ -231,6 +252,7 @@ export default function BoardPage({ user }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ display: 'flex', paddingRight: 10, borderRight: '1px solid #ddd' }}>{collaborators.map(c => (<img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid white', marginLeft: -10 }} />))}</div>
                     <button onClick={() => setIsShareOpen(true)} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><FiUserPlus /> Invite</button>
+                    <button onClick={async () => { await signOut(auth); navigate('/login') }} style={{ background: '#ff4d4f', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer' }}>Logout</button>
                 </div>
             </motion.div>
 
@@ -254,6 +276,7 @@ export default function BoardPage({ user }) {
                                 key={p}
                                 onClick={() => setActivePage(p)}
                                 onDoubleClick={() => { setEditingPage(p); setEditName(p) }}
+                                onContextMenu={(e) => { e.preventDefault(); setTabMenu({ x: e.clientX, y: e.clientY, page: p }) }}
                                 style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: activePage === p ? 'var(--primary)' : 'rgba(255,255,255,0.2)', color: 'white', fontWeight: activePage === p ? 'bold' : 'normal', cursor: 'pointer' }}
                             >
                                 {p}
@@ -266,6 +289,15 @@ export default function BoardPage({ user }) {
                     {/* Badge removed by user request */}
                 </div>
             </div>
+
+            {/* Tab Context Menu */}
+            {tabMenu && (
+                <div style={{ position: 'fixed', top: tabMenu.y - 100, left: tabMenu.x, background: 'white', borderRadius: 8, boxShadow: '0 5px 15px rgba(0,0,0,0.2)', zIndex: 1000, overflow: 'hidden', minWidth: 120 }}>
+                    <div style={{ padding: '8px 12px', borderBottom: '1px solid #eee', fontWeight: 'bold', fontSize: '0.9rem' }}>{tabMenu.page}</div>
+                    <button onClick={() => { setEditingPage(tabMenu.page); setEditName(tabMenu.page); setTabMenu(null) }} style={{ display: 'block', width: '100%', padding: '8px 12px', border: 'none', background: 'white', textAlign: 'left', cursor: 'pointer' }} onMouseEnter={e => e.target.style.background = '#f5f5f5'} onMouseLeave={e => e.target.style.background = 'white'}>Rename</button>
+                    <button onClick={() => { deletePage(tabMenu.page); setTabMenu(null) }} style={{ display: 'block', width: '100%', padding: '8px 12px', border: 'none', background: 'white', textAlign: 'left', cursor: 'pointer', color: 'red' }} onMouseEnter={e => e.target.style.background = '#fff1f0'} onMouseLeave={e => e.target.style.background = 'white'}>Delete</button>
+                </div>
+            )}
 
             <div style={{ width: '100%', height: '100%' }}>
                 <Whiteboard
