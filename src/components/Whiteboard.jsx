@@ -22,25 +22,36 @@ const TodoNode = ({ node, onUpdate }) => {
     return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: 'var(--primary)', fontWeight: 'bold' }}><FiCheckSquare size={18} /> To-Do List</div> <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}> {items.length === 0 && <div style={{ textAlign: 'center', color: '#ccc', marginTop: 20, fontStyle: 'italic' }}>No tasks yet</div>} {items.map((it, i) => (<motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.6)', padding: '8px 12px', borderRadius: 8 }}> <input type="checkbox" checked={it.done} onChange={() => toggle(i)} onPointerDown={e => e.stopPropagation()} style={{ accentColor: 'var(--primary)', width: 16, height: 16, cursor: 'pointer' }} /> <span style={{ flex: 1, textDecoration: it.done ? 'line-through' : 'none', color: it.done ? '#aaa' : '#333' }}>{it.text}</span> <FiX onClick={() => onUpdate(node.id, { items: items.filter((_, idx) => idx !== i) })} style={{ cursor: 'pointer', color: '#ff6b6b' }} /> </motion.div>))} </div> <form onSubmit={e => { e.preventDefault(); if (newItem) onUpdate(node.id, { items: [...items, { text: newItem, done: false }] }); setNewItem('') }} style={{ display: 'flex', gap: 5, marginTop: 10 }}> <Input value={newItem} onChange={e => setNewItem(e.target.value)} placeholder="Add new task..." onPointerDown={e => e.stopPropagation()} /> <Button type="submit" style={{ width: 40, padding: 0 }}><FiPlus /></Button> </form> </div>)
 }
 const CalendarNode = ({ node, onUpdate }) => {
-    const events = node.events || {}; const [date, setDate] = useState(''); const [text, setText] = useState(''); const addEvent = () => { if (date && text) { onUpdate(node.id, { events: { ...events, [date]: text } }); setText(''); setDate('') } }; const sortedEvents = Object.entries(events).sort((a, b) => new Date(a[0]) - new Date(b[0]))
+    const events = node.events || {};
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [text, setText] = useState('');
+    const addEvent = () => { if (date && text) { onUpdate(node.id, { events: { ...events, [date]: text } }); setText('') } };
+    const sortedEvents = Object.entries(events).sort((a, b) => new Date(a[0]) - new Date(b[0]))
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#e67e22', fontWeight: 800, fontSize: '1.1rem' }}><FiCalendar size={20} /> Calendar</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#e67e22', fontWeight: 800, fontSize: '1.1rem', borderBottom: '1px solid #eee', paddingBottom: 8 }}>
+                <FiCalendar size={20} /> Agenda
+            </div>
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 4 }}>
                 {sortedEvents.length === 0 && <div style={{ textAlign: 'center', color: '#aaa', marginTop: 20, fontSize: '0.9rem' }}>No events planned</div>}
                 {sortedEvents.map(([d, t]) => (
-                    <div key={d} style={{ background: 'white', padding: '10px', borderRadius: 10, position: 'relative', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderLeft: '4px solid #e67e22' }}>
-                        <div style={{ fontSize: '0.8rem', color: '#e67e22', fontWeight: 700, marginBottom: 2 }}>{d}</div>
-                        <div style={{ fontSize: '0.95rem', color: '#444', lineHeight: 1.4 }}>{(typeof t === 'object' && t !== null) ? (t.text || t.title || t.content || JSON.stringify(t)) : t}</div>
-                        <FiX onClick={() => { const n = { ...events }; delete n[d]; onUpdate(node.id, { events: n }) }} style={{ position: 'absolute', top: 5, right: 5, cursor: 'pointer', color: '#ccc', fontSize: 14 }} onPointerDown={e => e.stopPropagation()} />
+                    <div key={d} style={{ background: 'white', padding: '12px', borderRadius: 10, position: 'relative', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderLeft: '4px solid #e67e22', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#fff0e6', padding: '4px 8px', borderRadius: 8, minWidth: 50 }}>
+                            <span style={{ fontSize: '0.7rem', color: '#e67e22', fontWeight: 700, textTransform: 'uppercase' }}>{new Date(d).toLocaleString('default', { month: 'short' })}</span>
+                            <span style={{ fontSize: '1.1rem', color: '#d35400', fontWeight: 800 }}>{new Date(d).getDate()}</span>
+                        </div>
+                        <div style={{ flex: 1, fontSize: '0.95rem', color: '#333', lineHeight: 1.4, marginTop: 2 }}>
+                            {(typeof t === 'object' && t !== null) ? (t.text || t.title || t.content || JSON.stringify(t)) : t}
+                        </div>
+                        <FiX onClick={() => { const n = { ...events }; delete n[d]; onUpdate(node.id, { events: n }) }} style={{ cursor: 'pointer', color: '#ccc', fontSize: 16, marginTop: 4 }} onPointerDown={e => e.stopPropagation()} />
                     </div>
                 ))}
             </div>
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }} onPointerDown={e => e.stopPropagation()}>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #eee', width: '100%', fontWeight: 500, fontSize: '0.9rem' }} />
-                <div style={{ display: 'flex', gap: 8 }}>
-                    <Input placeholder="Add event..." value={text} onChange={e => setText(e.target.value)} style={{ flex: 1, fontSize: '0.9rem' }} />
-                    <Button onClick={addEvent} style={{ width: 40, height: 40, padding: 0, borderRadius: 12 }}><FiPlus /></Button>
+            <div style={{ marginTop: 12, display: 'flex', gap: 8, paddingTop: 10, borderTop: '1px solid #eee' }} onPointerDown={e => e.stopPropagation()}>
+                <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid #eee', width: 130, fontWeight: 500, fontSize: '0.9rem', outline: 'none', background: '#f9f9f9' }} />
+                <div style={{ flex: 1, display: 'flex', gap: 5 }}>
+                    <input placeholder="Event..." value={text} onChange={e => setText(e.target.value)} style={{ flex: 1, padding: '8px 12px', borderRadius: 10, border: '1px solid #eee', fontSize: '0.9rem', outline: 'none' }} onKeyDown={e => e.key === 'Enter' && addEvent()} />
+                    <button onClick={addEvent} style={{ width: 36, height: 36, padding: 0, borderRadius: 10, background: '#e67e22', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiPlus /></button>
                 </div>
             </div>
         </div>
