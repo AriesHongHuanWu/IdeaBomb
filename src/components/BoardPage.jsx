@@ -126,120 +126,37 @@ export default function BoardPage({ user }) {
         clipboard.edges.forEach(edge => {
             if (idMap[edge.from] && idMap[edge.to]) {
                 const newEdgeId = uuidv4()
-                batch.set(doc(db, 'boards', boardId, 'edges', newEdgeId), { id: newEdgeId, from: idMap[edge.from], to: idMap[edge.to], page: activePage })
+                if (!hasAccess) return <div>Access Denied</div>
+
+                return (
+                    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+                        <ShareModal boardId={boardId} isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
+                        <motion.div className="glass-panel" style={{ position: 'absolute', top: 20, left: 20, right: 20, padding: '10px 20px', zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 50, pointerEvents: 'auto' }} initial={{ y: -100 }} animate={{ y: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}><button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button><h1 style={{ fontSize: '1.2rem', margin: 0 }}>{boardTitle}</h1></div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{ display: 'flex', paddingRight: 10, borderRight: '1px solid #ddd' }}>{collaborators.map(c => (<img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid white', marginLeft: -10 }} />))}</div>
+                                <button onClick={() => setIsShareOpen(true)} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><FiUserPlus /> Invite</button>
+                            </div>
+                        </motion.div>
+                        {lastAIAction && (<div style={{ position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#333', color: 'white', padding: '10px 20px', borderRadius: 20, display: 'flex', gap: 10, alignItems: 'center' }}><span>AI completed an action. Satisfied?</span><button onClick={() => setLastAIAction(null)} style={{ background: 'green', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>Yes</button><button onClick={undoLastAIAction} style={{ background: 'red', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>No (Undo)</button></div>)}
+                        <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 150, display: 'flex', gap: 5, background: 'rgba(0,0,0,0.8)', padding: '8px 12px', borderRadius: 16 }}>{pages.map(p => (<button key={p} onClick={() => setActivePage(p)} style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: activePage === p ? 'var(--primary)' : 'rgba(255,255,255,0.2)', color: 'white', fontWeight: activePage === p ? 'bold' : 'normal', cursor: 'pointer' }}>{p}</button>))}<button onClick={addNewPage} style={{ padding: '8px 12px', borderRadius: 10, border: '1px dashed rgba(255,255,255,0.5)', background: 'transparent', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>+ New Page</button></div>
+                        <div style={{ width: '100%', height: '100%' }}>
+                            <Whiteboard
+                                nodes={displayNodes}
+                                edges={displayEdges} // Pass edges
+                                pages={pages}
+                                onAddNode={addNode}
+                                onUpdateNodePosition={updateNodePosition}
+                                onUpdateNodeData={updateNodeData}
+                                onDeleteNode={deleteNode}
+                                onBatchDelete={batchDelete}
+                                onBatchUpdate={batchUpdateNodes}
+                                onCopy={copyNodes}
+                                onPaste={pasteNodes}
+                                onMoveToPage={batchMoveToPage}
+                            />
+                        </div>
+                        <ChatInterface onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />
+                    </div>
+                )
             }
-        })
-        await batch.commit()
-    }
-
-    // --- AI Logic (Smart Workflow) ---
-    const handleAIAction = async (actions) => {
-        const actionList = Array.isArray(actions) ? actions : [actions]
-        const createdIds = []; const newEdges = []
-
-        // Smart Placement: Find right-most node on current page
-        const pageNodes = nodes.filter(n => (n.page || 'Page 1') === activePage)
-        const maxX = pageNodes.length > 0 ? Math.max(...pageNodes.map(n => n.x + 320)) : 100
-        const startX = Math.max(100, maxX + 100)
-        const startY = 150
-
-        const idMap = {} // tempId -> realId
-
-        // Pass 1: Create Nodes
-        const batch = writeBatch(db)
-        let nodeCount = 0
-
-        for (const action of actionList) {
-            if (action.action === 'create_node' || action.action === 'create_calendar_plan') {
-                const newId = uuidv4()
-                if (action.id) idMap[action.id] = newId
-
-                const type = action.nodeType || (action.action === 'create_calendar_plan' ? 'Calendar' : 'Note')
-                const content = action.content || ''; const extra = action.data || (action.action === 'create_calendar_plan' ? { events: action.events } : {})
-
-                // Workflow Layout: Horizontal flow by default
-                const posX = startX + (nodeCount * 360)
-                const posY = startY + (nodeCount % 2 === 0 ? 0 : 80) // Slight jagged for interest
-
-                batch.set(doc(db, 'boards', boardId, 'nodes', newId), {
-                    id: newId, type, content, page: activePage, x: posX, y: posY, items: [], events: {}, src: '', videoId: '', ...extra,
-                    createdAt: new Date().toISOString(), createdBy: user.uid
-                })
-                createdIds.push(newId)
-                nodeCount++
-            }
-        }
-
-        // Pass 2: Create Edges
-        for (const action of actionList) {
-            if (action.action === 'create_edge' && action.from && action.to) {
-                const realFrom = idMap[action.from]
-                const realTo = idMap[action.to]
-                if (realFrom && realTo) {
-                    const edgeId = uuidv4()
-                    batch.set(doc(db, 'boards', boardId, 'edges', edgeId), { id: edgeId, from: realFrom, to: realTo, page: activePage })
-                }
-            }
-        }
-
-        if (actionList.some(a => a.action === 'organize_board')) { window.dispatchEvent(new CustomEvent('ai-arrange')) }
-
-        await batch.commit()
-        if (createdIds.length > 0) setLastAIAction({ type: 'create', ids: createdIds })
-    }
-
-    const undoLastAIAction = async () => {
-        if (lastAIAction?.type === 'create') {
-            // Warning: Does not undo edges specifically, but edge cleanup on deleteNode handles it if we implemented it right?
-            // Actually manual cleanup is safer here.
-            const batch = writeBatch(db);
-            lastAIAction.ids.forEach(id => batch.delete(doc(db, 'boards', boardId, 'nodes', id)));
-            // Also find edges connected to these? Too complex for simple undo, let's rely on node deletion to clean edges visually?
-            // Proper cleanup:
-            const toDelete = lastAIAction.ids
-            edges.filter(e => toDelete.includes(e.from) || toDelete.includes(e.to)).forEach(e => batch.delete(doc(db, 'boards', boardId, 'edges', e.id)))
-
-            await batch.commit();
-            setLastAIAction(null)
-        }
-    }
-
-    // --- Page Logic ---
-    const addNewPage = () => { const p = `Page ${pages.length + 1}`; setPages([...pages, p]); setActivePage(p) }
-    const displayNodes = nodes.filter(n => (n.page || 'Page 1') === activePage)
-    const displayEdges = edges.filter(e => (e.page || 'Page 1') === activePage)
-
-    if (!hasAccess) return <div>Access Denied</div>
-
-    return (
-        <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-            <ShareModal boardId={boardId} isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
-            <motion.div className="glass-panel" style={{ position: 'absolute', top: 20, left: 20, right: 20, padding: '10px 20px', zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 50, pointerEvents: 'auto' }} initial={{ y: -100 }} animate={{ y: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}><button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button><h1 style={{ fontSize: '1.2rem', margin: 0 }}>{boardTitle}</h1></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ display: 'flex', paddingRight: 10, borderRight: '1px solid #ddd' }}>{collaborators.map(c => (<img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid white', marginLeft: -10 }} />))}</div>
-                    <button onClick={() => setIsShareOpen(true)} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><FiUserPlus /> Invite</button>
-                </div>
-            </motion.div>
-            {lastAIAction && (<div style={{ position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#333', color: 'white', padding: '10px 20px', borderRadius: 20, display: 'flex', gap: 10, alignItems: 'center' }}><span>AI completed an action. Satisfied?</span><button onClick={() => setLastAIAction(null)} style={{ background: 'green', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>Yes</button><button onClick={undoLastAIAction} style={{ background: 'red', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>No (Undo)</button></div>)}
-            <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 150, display: 'flex', gap: 5, background: 'rgba(0,0,0,0.8)', padding: '8px 12px', borderRadius: 16 }}>{pages.map(p => (<button key={p} onClick={() => setActivePage(p)} style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: activePage === p ? 'var(--primary)' : 'rgba(255,255,255,0.2)', color: 'white', fontWeight: activePage === p ? 'bold' : 'normal', cursor: 'pointer' }}>{p}</button>))}<button onClick={addNewPage} style={{ padding: '8px 12px', borderRadius: 10, border: '1px dashed rgba(255,255,255,0.5)', background: 'transparent', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>+ New Page</button></div>
-            <div style={{ width: '100%', height: '100%' }}>
-                <Whiteboard
-                    nodes={displayNodes}
-                    edges={displayEdges} // Pass edges
-                    pages={pages}
-                    onAddNode={addNode}
-                    onUpdateNodePosition={updateNodePosition}
-                    onUpdateNodeData={updateNodeData}
-                    onDeleteNode={deleteNode}
-                    onBatchDelete={batchDelete}
-                    onBatchUpdate={batchUpdateNodes}
-                    onCopy={copyNodes}
-                    onPaste={pasteNodes}
-                    onMoveToPage={batchMoveToPage}
-                />
-            </div>
-            <ChatInterface onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />
-        </div>
-    )
-}
