@@ -14,6 +14,7 @@ export default function BoardPage({ user }) {
     const navigate = useNavigate()
     const [nodes, setNodes] = useState([])
     const [boardTitle, setBoardTitle] = useState('Loading...')
+    const [isEditingTitle, setIsEditingTitle] = useState(false)
     const [collaborators, setCollaborators] = useState([])
     const [isShareOpen, setIsShareOpen] = useState(false)
     const [hasAccess, setHasAccess] = useState(true)
@@ -151,43 +152,29 @@ export default function BoardPage({ user }) {
             <motion.div
                 className="glass-panel"
                 style={{
-                    position: 'absolute', top: 20, left: 20, right: 20,
-                    padding: '10px 20px', zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    borderRadius: 50, pointerEvents: 'auto'
-                }}
-                initial={{ y: -100 }} animate={{ y: 0 }}
-            >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                    <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }} title="Back to Dashboard"><FiHome /></button>
-                    <h1 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 700 }}>{boardTitle}</h1>
-                </div>
-
-                {/* Collaborators */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ display: 'flex', paddingRight: 10, borderRight: '1px solid #ddd' }}>
-                        {collaborators.map(c => (
                             <img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid white', marginLeft: -10 }} />
                         ))}
                     </div>
                     <button onClick={() => setIsShareOpen(true)} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
                         <FiUserPlus /> Invite
                     </button>
-                </div>
-            </motion.div>
+                </div >
+            </motion.div >
 
-            {/* Canvas */}
-            <div style={{ width: '100%', height: '100%' }}>
-                <Whiteboard
-                    nodes={nodes}
-                    onAddNode={addNode}
-                    onUpdateNodePosition={updateNodePosition}
-                    onUpdateNodeData={updateNodeData}
-                    onDeleteNode={deleteNode}
-                />
-            </div>
+        {/* Canvas */ }
+        < div style = {{ width: '100%', height: '100%' }
+}>
+    <Whiteboard
+        nodes={nodes}
+        onAddNode={addNode}
+        onUpdateNodePosition={updateNodePosition}
+        onUpdateNodeData={updateNodeData}
+        onDeleteNode={deleteNode}
+    />
+            </div >
 
-            {/* Chat */}
-            <ChatInterface onAction={handleAIAction} />
-        </div>
+    {/* Chat */ }
+    < ChatInterface onAction = { handleAIAction } />
+        </div >
     )
 }
