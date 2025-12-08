@@ -112,15 +112,16 @@ const DraggableNode = ({ node, isSelected, onSelect, onUpdatePosition, onUpdateD
                 backdropFilter: 'blur(20px)', transition: 'box-shadow 0.2s'
             }}>
                 <div onPointerDown={handleResize} style={{ position: 'absolute', bottom: 5, right: 5, width: 20, height: 20, cursor: 'nwse-resize', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiMaximize2 size={12} color="#aaa" /></div>
-                <AnimatePresence>{isHovered && !onConnectStart && (
-                    <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} onClick={() => onDelete(node.id)} style={{ position: 'absolute', top: -12, right: -10, width: 32, height: 32, borderRadius: '50%', background: '#ff4d4f', color: 'white', border: '2px solid white', cursor: 'pointer', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onPointerDown={e => e.stopPropagation()}><FiTrash2 /></motion.button>
-                )}</AnimatePresence>
+
                 {node.type === 'Todo' && <TodoNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Calendar' && <CalendarNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Image' && <ImageNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'YouTube' && <YouTubeNode node={node} onUpdate={onUpdateData} />}
                 {(!['Todo', 'Calendar', 'Image', 'YouTube'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
             </div>
+            <AnimatePresence>{isHovered && !onConnectStart && (
+                <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} onClick={() => onDelete(node.id)} style={{ position: 'absolute', top: -12, right: -10, width: 32, height: 32, borderRadius: '50%', background: '#ff4d4f', color: 'white', border: '2px solid white', cursor: 'pointer', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }} onPointerDown={e => e.stopPropagation()}><FiTrash2 /></motion.button>
+            )}</AnimatePresence>
         </motion.div>
     )
 }
