@@ -145,7 +145,7 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode }) => {
                             strokeWidth="3"
                             strokeDasharray="10 10"
                             fill="none"
-                            markerEnd={mode === 'delete' ? "url(#arrowhead-del)" : "url(#arrowhead)"}
+                            markerEnd={undefined}
                             initial={{ strokeDashoffset: 0 }}
                             animate={{ strokeDashoffset: [-20, 0] }}
                             transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}

@@ -307,8 +307,8 @@ export default function BoardPage({ user }) {
 
             {lastAIAction && (<div style={{ position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#333', color: 'white', padding: '10px 20px', borderRadius: 20, display: 'flex', gap: 10, alignItems: 'center' }}><span>AI completed an action. Satisfied?</span><button onClick={() => setLastAIAction(null)} style={{ background: 'green', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>Yes</button><button onClick={undoLastAIAction} style={{ background: 'red', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>No (Undo)</button></div>)}
 
-            <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 150, display: 'flex', flexDirection: 'column', gap: 10, pointerEvents: 'none' }}>
-                <div style={{ display: 'flex', gap: 5, background: 'rgba(0,0,0,0.8)', padding: '8px 12px', borderRadius: 16, pointerEvents: 'auto' }}>
+            <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 150, display: 'flex', flexDirection: 'column', gap: 10, pointerEvents: 'none', maxWidth: '35vw' }}>
+                <div style={{ display: 'flex', gap: 5, background: 'rgba(0,0,0,0.8)', padding: '8px 12px', borderRadius: 16, pointerEvents: 'auto', overflowX: 'auto', scrollbarWidth: 'none', whiteSpace: 'nowrap' }}>
                     {pages.map(p => (
                         editingPage === p ? (
                             <input
