@@ -186,8 +186,18 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
         }
     }
 
+    const handleWheel = (e) => {
+        if (e.ctrlKey) {
+            e.preventDefault()
+            const s = e.deltaY > 0 ? 0.9 : 1.1
+            setScale(prev => Math.min(Math.max(prev * s, 0.2), 5))
+        } else {
+            setOffset(p => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }))
+        }
+    }
+
     return (
-        <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f8f9fa', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
+        <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onWheel={handleWheel} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f8f9fa', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
             <div className="grid-bg" style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0', opacity: 0.6, pointerEvents: 'none' }} />
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
                 <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} />
@@ -198,6 +208,14 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                     <div style={{ position: 'absolute', left: Math.min(selectionBox.startX, selectionBox.currentX), top: Math.min(selectionBox.startY, selectionBox.currentY), width: Math.abs(selectionBox.currentX - selectionBox.startX), height: Math.abs(selectionBox.currentY - selectionBox.startY), background: 'rgba(0, 123, 255, 0.2)', border: '1px solid #007bff', pointerEvents: 'none' }} />
                 )}
             </motion.div>
+
+            {/* Zoom Controls */}
+            <div style={{ position: 'absolute', top: 20, right: 20, display: 'flex', flexDirection: 'column', gap: 5, zIndex: 100 }}>
+                <button onClick={() => setScale(s => Math.min(s * 1.2, 5))} style={{ width: 32, height: 32, background: 'white', border: '1px solid #ddd', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                <div style={{ background: 'white', padding: 4, borderRadius: 4, fontSize: '0.7rem', textAlign: 'center', fontWeight: 'bold' }}>{Math.round(scale * 100)}%</div>
+                <button onClick={() => setScale(s => Math.max(s / 1.2, 0.2))} style={{ width: 32, height: 32, background: 'white', border: '1px solid #ddd', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>-</button>
+            </div>
+
             <motion.div className="glass-panel" style={{ position: 'absolute', bottom: 30, left: '50%', x: '-50%', padding: '12px 24px', display: 'flex', gap: 20, borderRadius: 24, zIndex: 100, pointerEvents: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.1)' }} initial={{ y: 100 }} animate={{ y: 0 }}>
                 <ToolBtn icon={<FiType />} label="Note" onClick={() => onAddNode('Note')} />
                 <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => onAddNode('Todo')} />
