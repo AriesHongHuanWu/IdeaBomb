@@ -9,6 +9,7 @@ import { db, auth } from '../firebase'
 import { collection, onSnapshot, setDoc, doc, updateDoc, deleteDoc, arrayUnion, writeBatch } from 'firebase/firestore'
 import { FiHome, FiUserPlus, FiDownload, FiEye, FiEyeOff } from 'react-icons/fi'
 import { signOut } from 'firebase/auth'
+import { GoogleGenerativeAI } from "@google/generative-ai"
 
 export default function BoardPage({ user }) {
     const { boardId } = useParams()
@@ -83,12 +84,42 @@ export default function BoardPage({ user }) {
 
     useEffect(() => {
         if (!user || !boardId || !hasAccess) return
-        setDoc(doc(db, 'boards', boardId, 'presence', user.uid), { uid: user.uid, photoURL: user.photoURL, displayName: user.displayName, lastActive: new Date().toISOString() })
-        const unsub = onSnapshot(collection(db, 'boards', boardId, 'presence'), (snap) => { setCollaborators(snap.docs.map(d => d.data())) })
-        return () => { unsub() }
+
+        // Initial set
+        const userRef = doc(db, 'boards', boardId, 'presence', user.uid)
+        setDoc(userRef, { uid: user.uid, photoURL: user.photoURL, displayName: user.displayName, lastActive: new Date().toISOString() })
+
+        // Heartbeat every 30s
+        const interval = setInterval(() => {
+            updateDoc(userRef, { lastActive: new Date().toISOString() }).catch(() => { })
+        }, 30000)
+
+        const unsub = onSnapshot(collection(db, 'boards', boardId, 'presence'), (snap) => {
+            // Filter out stale users (inactive loop > 2 min)? Or just store all and let UI decide.
+            // Let's just store all for now, maybe filter in UI.
+            setCollaborators(snap.docs.map(d => d.data()))
+        })
+
+        return () => { clearInterval(interval); unsub() }
     }, [user, boardId, hasAccess])
 
     // --- Core Operations ---
+    const handleAIRequest = async (nodeId, type) => {
+        const node = nodes.find(n => n.id === nodeId)
+        if (!node) return
+        try {
+            const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
+            const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash-lite" })
+            const prompt = `Improve the following text for a whiteboard note (make it clearer/better): "${node.content}"\nReturn ONLY the improved text.`
+            const result = await model.generateContent(prompt)
+            const text = result.response.text().trim()
+            await updateDoc(doc(db, 'boards', boardId, 'nodes', nodeId), { content: text })
+        } catch (e) {
+            console.error(e)
+            alert("AI Error: " + e.message)
+        }
+    }
+
     const addNode = async (type, content, extraData = {}) => {
         if (!user || !hasAccess) return null
         const newNode = { id: uuidv4(), type: type || 'Note', page: activePage, x: extraData.x || (window.innerWidth / 2), y: extraData.y || (window.innerHeight / 2), content: content || '', items: [], events: extraData.events || {}, src: '', videoId: '', createdAt: new Date().toISOString(), createdBy: user.uid, ...extraData }
@@ -400,6 +431,7 @@ export default function BoardPage({ user }) {
                     onCopy={copyNodes}
                     onPaste={pasteNodes}
                     onMoveToPage={batchMoveToPage}
+                    onAIRequest={handleAIRequest}
                     onAddEdge={addEdge}
                     onDeleteEdge={(id) => { const batch = writeBatch(db); batch.delete(doc(db, 'boards', boardId, 'edges', id)); batch.commit() }}
                 />
