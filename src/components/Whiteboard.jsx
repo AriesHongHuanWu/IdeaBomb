@@ -166,14 +166,16 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode, tempEdge }) => {
                 const f = nodes.find(n => n.id === edge.from); const t = nodes.find(n => n.id === edge.to)
                 if (!f || !t) return null
                 const { sx, sy, ex, ey, c1x, c1y } = getAnchors(f, t)
-                // Orthogonal Step Logic (Workflow Style)
+                // Bezier Curve Logic
                 let pathD = ''
-                if (Math.abs(c1x) > Math.abs(c1y)) { // Horizontal Flow
-                    const midX = (sx + ex) / 2
-                    pathD = `M ${sx} ${sy} L ${midX} ${sy} L ${midX} ${ey} L ${ex} ${ey}`
-                } else { // Vertical Flow
-                    const midY = (sy + ey) / 2
-                    pathD = `M ${sx} ${sy} L ${sx} ${midY} L ${ex} ${midY} L ${ex} ${ey}`
+                const dx = Math.abs(ex - sx)
+                const dy = Math.abs(ey - sy)
+                if (Math.abs(c1x) > Math.abs(c1y)) { // Horizontal Preferred
+                    const cp = Math.max(dx * 0.5, 50)
+                    pathD = `M ${sx} ${sy} C ${sx + cp * (sx < ex ? 1 : -1)} ${sy}, ${ex - cp * (sx < ex ? 1 : -1)} ${ey}, ${ex} ${ey}`
+                } else { // Vertical Preferred
+                    const cp = Math.max(dy * 0.5, 50)
+                    pathD = `M ${sx} ${sy} C ${sx} ${sy + cp * (sy < ey ? 1 : -1)}, ${ex} ${ey - cp * (sy < ey ? 1 : -1)}, ${ex} ${ey}`
                 }
                 return (
                     <g key={edge.id} style={{ pointerEvents: 'auto', cursor: mode === 'delete' ? 'not-allowed' : 'pointer' }} onClick={() => onDeleteEdge(edge.id)}>

@@ -18,11 +18,18 @@ STRICT RULES FOR CONTENT:
 2. PROVIDE RESOURCES (CRITICAL):
    - You HAVE access to Google Search. You MUST Use it.
    - For 'Link' nodes: Search for the BEST real-world resource (e.g. official docs, viral article) and use the REAL URL. If NO valid URL is found, create a Note node instead. Do NOT use fake URLs.
-   - For 'YouTube' nodes: Search for a specific, high-quality video (e.g. "SpaceX launch best video") and use the real YouTube URL or ID.
-   - Do NOT use placeholder URLs like "example.com". Use real ones found via search.
-   - **IMPORTANT**: If you cannot find a valid URL or Video ID, set the content to "Search: [Query]" (e.g. "Search: SpaceX Launch") so the user can search. DO NOT HALLUCINATE IDs.
+   - For 'YouTube' nodes:
+     - Search for a specific video.
+     - You MUST verify the URL contains 'watch?v=' or is a valid ID.
+     - IF UNCERTAIN or if the URL looks like an embed/tracker, Defaults to "Search: [Query]" content.
+     - DO NOT provide links that are not standard Watch URLs.
+   - **CRITICAL**: If you cannot find a valid URL or Video ID, set the content to "Search: [Query]" (e.g. "Search: SpaceX Launch") so the user can search. DO NOT HALLUCINATE IDs.
 
 STRICT RULES FOR LAYOUT:
+1. ARRANGE nodes logically (e.g., Left-to-Right timeline or Grid).
+2. DO NOT overlap nodes. Use spacing of at least 400px horizontally and 300px vertically.
+3. CONNECT nodes in a logical flow (e.g., Step 1 -> Step 2). Avoid crossing lines.
+4. If the plan is complex, break it into Phases (columns).
 1. Do NOT overlap nodes. Use 'x' and 'y' coordinates.
 2. Use a Workflow or Grid layout.
    - Horizontal spacing: ~400px. Vertical spacing: ~300px.
