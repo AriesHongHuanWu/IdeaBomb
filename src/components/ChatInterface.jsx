@@ -4,7 +4,7 @@ import { BsStars, BsMic, BsMicFill, BsSend } from 'react-icons/bs'
 import { FiX } from 'react-icons/fi'
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { db } from '../firebase'
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, setDoc, updateDoc, doc } from 'firebase/firestore'
 
 const SYSTEM_PROMPT = `You are an expert Project Manager & Board Architect AI for IdeaBomb.
 Today is {{TODAY}}. Your goal is to be an **EXPANSIVE, PROACTIVE CONSULTANT**.
@@ -161,6 +161,37 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
         if (userMsg.toLowerCase().includes('@ai')) {
             setIsLoading(true)
             try {
+                // --- Admin Quota Check ---
+                const settingsRef = doc(db, 'settings', 'ai_config')
+                const settingsSnap = await getDoc(settingsRef)
+                const settings = settingsSnap.exists() ? settingsSnap.data() : { globalEnabled: true, userQuotas: {} }
+
+                if (settings.globalEnabled === false) {
+                    throw new Error("AI features are currently disabled by the administrator.")
+                }
+
+                // Determine User Limit
+                const userQuota = settings.userQuotas?.[user.email]
+                const dailyLimit = userQuota?.limit || 10 // Default 10 requests/day
+
+                // Check Usage
+                const today = new Date().toISOString().split('T')[0]
+                const usageRef = doc(db, 'users', user.uid, 'ai_usage', today)
+                const usageSnap = await getDoc(usageRef)
+                const currentUsage = usageSnap.exists() ? usageSnap.data().count : 0
+
+                if (currentUsage >= dailyLimit) {
+                    throw new Error(`Daily AI quota exceeded (${currentUsage}/${dailyLimit}). Please upgrade your plan or contact admin.`)
+                }
+
+                // Increment Usage (Optimistic - we do it before/during to prevent spam)
+                if (usageSnap.exists()) {
+                    await updateDoc(usageRef, { count: currentUsage + 1 })
+                } else {
+                    await setDoc(usageRef, { count: 1, date: today })
+                }
+                // -------------------------
+
                 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
                 const model = genAI.getGenerativeModel({
                     model: "models/gemini-2.5-flash-lite",

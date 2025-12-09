@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './components/Login'
 import Dashboard from './components/Dashboard'
 import BoardPage from './components/BoardPage'
+import AdminPage from './components/AdminPage'
 import { auth } from './firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 
@@ -41,6 +42,7 @@ function App() {
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to="/login" />} />
                 <Route path="/board/:boardId" element={user ? <BoardPage user={user} /> : <Navigate to="/login" />} />
+                <Route path="/admin" element={user ? <AdminPage user={user} /> : <Navigate to="/login" />} />
 
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>
