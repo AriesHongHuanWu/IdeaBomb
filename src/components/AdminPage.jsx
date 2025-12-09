@@ -42,6 +42,14 @@ export default function AdminPage({ user }) {
             }
         })
 
+        // Force Sync Admin User (so they see themselves immediately)
+        setDoc(doc(db, 'users', user.uid), {
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            lastLogin: new Date().toISOString()
+        }, { merge: true }).catch(err => console.error(err))
+
         // 2. Fetch User Directory (Real-time)
         const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
             const users = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
