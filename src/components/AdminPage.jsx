@@ -20,6 +20,7 @@ export default function AdminPage({ user }) {
     const [config, setConfig] = useState({
         userQuotas: {}, // { 'email': { limit: 100, tier: 'pro' } }
         globalEnabled: true,
+        quotaEnabled: true,
         maintenanceMode: false,
         systemMessage: '',
         defaultDailyLimit: 10
@@ -216,6 +217,14 @@ export default function AdminPage({ user }) {
                                     <span style={{ color: '#888' }}>requests / user / day</span>
                                 </div>
                                 <p style={{ fontSize: '0.85rem', color: '#999', marginTop: 5 }}>Applies to all users without a custom quota.</p>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, padding: 20, background: '#fff', borderRadius: 12, border: '1px solid #eee' }}>
+                                <div>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Enforce Quota Limits</h3>
+                                    <p style={{ margin: '5px 0 0', color: '#666' }}>If disabled, users can generate unlimited content (ignoring daily limits).</p>
+                                </div>
+                                <Toggle checked={config.quotaEnabled !== false} onClick={() => handleGlobalUpdate('quotaEnabled', !(config.quotaEnabled !== false))} />
                             </div>
 
                             <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '30px 0' }} />
