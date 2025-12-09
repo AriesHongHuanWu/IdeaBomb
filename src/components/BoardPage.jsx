@@ -317,7 +317,88 @@ export default function BoardPage({ user }) {
                     extra.url = content
                 }
 
+                // 4. Kanban Node: Parse Markdown Headers for Columns
+                if (type === 'Kanban') {
+                    // Default columns if not provided
+                    const columns = extra.columns || {
+                        'todo': { title: 'To Do', items: [] },
+                        'doing': { title: 'Doing', items: [] },
+                        'done': { title: 'Done', items: [] }
+                    }
+
+                    // Try parsing content if it's markdown with headers
+                    if (content.includes('###')) {
+                        const sections = content.split('###').slice(1) // Skip first empty
+                        sections.forEach(sec => {
+                            const [titleLine, ...itemsText] = sec.trim().split('\n')
+                            const title = titleLine.trim()
+                            const items = itemsText.filter(l => l.trim().startsWith('- ') || l.trim().startsWith('* ')).map(l => ({ id: uuidv4(), text: l.replace(/^[-\*] /, '').trim() }))
+
+                            // Map to internal IDs loosely
+                            let colId = 'todo'
+                            if (title.toLowerCase().includes('doing') || title.toLowerCase().includes('progress')) colId = 'doing'
+                            if (title.toLowerCase().includes('done') || title.toLowerCase().includes('complete')) colId = 'done'
+
+                            if (items.length > 0) {
+                                columns[colId].items.push(...items)
+                            }
+                        })
+                    }
+                    extra.columns = columns
+                }
+
                 // 2. Todo Node: Parse markdown bullets into items
+                if (type === 'Todo') {
+                    const bullets = content.split('\n').filter(l => l.trim().startsWith('- ') || l.trim().startsWith('* '))
+                    if (bullets.length > 0) {
+                        extra.items = bullets.map(b => ({ text: b.replace(/^[-*] /, '').trim(), done: false }))
+                    }
+                }
+
+                // 3. Calendar Node: Parse "Date: Event" or "**Time**: Event" lines
+                if (type === 'Calendar') {
+                    const lines = content.split('\n')
+                    const newEvents = { ...extra.events } // Preserve existing if any
+                    const today = new Date().toISOString().split('T')[0].slice(0, 8) // "2023-10-" helper
+
+                    lines.forEach(line => {
+                        // Match "YYYY-MM-DD: Event" or "**HH:MM**: Event" or "* **HH:MM**: Event"
+                        // Regex for Date: (\d{4}-\d{2}-\d{2})
+                        // Regex for Time: (\d{1,2}:\d{2}(?: - \d{1,2}:\d{2})?)
+
+                        const dateMatch = line.match(/(\d{4}[\/-]\d{2}[\/-]\d{2})/)
+                        const timeMatch = line.match(/(\d{1,2}:\d{2})/)
+
+                        let key = null
+                        if (dateMatch) {
+                            key = dateMatch[1].replace(/\//g, '-')
+                        } else if (timeMatch) {
+                            // If only time is found, assume it's for the previously mentioned date or "today" relative to context? 
+                            // Safer to just store as Time Key if the UI handles it (Timeline UI handles time-only keys)
+                            key = timeMatch[1]
+                            // If range "09:00 - 10:00", keep just start time as key, but maybe full string is better? 
+                            // Timeline expects unique keys. 
+                            if (line.includes('-') && line.match(/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/)) {
+                                // "09:00 - 10:00" -> key "09:00"
+                                key = timeMatch[0]
+                            }
+                        }
+
+                        if (key) {
+                            // Extract content: Remove the date/time part and bullets
+                            let cleanContent = line.replace(/[*#\-]/g, '') // remove markdown chars
+                                .replace(dateMatch ? dateMatch[0] : '', '')
+                                .replace(timeMatch ? /[\d:-]+/ : '', '') // remove time range loosely
+                                .replace(/^[:\s]+/, '') // remove leading colon/space
+                                .trim()
+
+                            if (cleanContent) {
+                                newEvents[key] = cleanContent
+                            }
+                        }
+                    })
+                    extra.events = newEvents
+                }
                 if (type === 'Todo') {
                     if (!extra.items || extra.items.length === 0) {
                         const lines = content.split('\n')
@@ -657,7 +738,7 @@ export default function BoardPage({ user }) {
                     onUpdateNodePosition={updateNodePosition}
                     onUpdateNodeData={updateNodeData}
                     onDeleteNode={deleteNode}
-                    onBatchDelete={batchDelete}
+                    onBatchDelete={handleBatchDelete}
                     onBatchUpdate={batchUpdateNodes}
                     onCopy={copyNodes}
                     onPaste={pasteNodes}
