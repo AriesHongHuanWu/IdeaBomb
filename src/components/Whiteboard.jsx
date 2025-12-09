@@ -638,17 +638,23 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
 
     // Toolbox State
     const [toolboxOpen, setToolboxOpen] = useState(false)
+    const [embedModal, setEmbedModal] = useState(null) // { provider: 'Spotify', url: '' }
+
     const promptEmbed = (provider, defaultUrl) => {
-        const url = prompt(`Enter ${provider} URL or Embed Code:`, defaultUrl || '')
-        if (url) {
-            let finalSrc = url
-            // Simple sanitization/extraction could go here
-            if (url.includes('<iframe')) {
-                const srcMatch = url.match(/src="([^"]+)"/)
+        setEmbedModal({ provider, url: defaultUrl || '' })
+        setToolboxOpen(false)
+    }
+
+    const handleEmbedSubmit = (e) => {
+        e.preventDefault()
+        if (embedModal && embedModal.url) {
+            let finalSrc = embedModal.url
+            if (finalSrc.includes('<iframe')) {
+                const srcMatch = finalSrc.match(/src="([^"]+)"/)
                 if (srcMatch) finalSrc = srcMatch[1]
             }
-            onAddNode('Embed', '', { src: finalSrc, title: provider })
-            setToolboxOpen(false)
+            onAddNode('Embed', '', { src: finalSrc, title: embedModal.provider })
+            setEmbedModal(null)
         }
     }
 
@@ -807,6 +813,43 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                 <ToolBtn icon={<FiMaximize2 />} label="Auto Arrange" onClick={autoArrange} />
             </motion.div>
             {connectMode && <div style={{ position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', background: '#007bff', color: 'white', padding: '10px 20px', borderRadius: 20, fontWeight: 'bold' }}>Select two nodes to connect</div>}
+
+            {/* --- Embed Modal --- */}
+            <AnimatePresence>
+                {embedModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
+                        onClick={() => setEmbedModal(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+                            style={{ background: 'white', padding: 24, borderRadius: 24, width: '90%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', color: '#333' }}>Add {embedModal.provider}</h3>
+                            <form onSubmit={handleEmbedSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: '#666', fontWeight: 600 }}>URL or Embed Code</label>
+                                    <input
+                                        autoFocus
+                                        value={embedModal.url}
+                                        onChange={e => setEmbedModal({ ...embedModal, url: e.target.value })}
+                                        placeholder={`Paste ${embedModal.provider} link here...`}
+                                        style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid #ddd', fontSize: '1rem', outline: 'none', background: '#f9f9f9', transition: '0.2s' }}
+                                        onFocus={e => { e.target.style.background = 'white'; e.target.style.borderColor = '#4facfe'; e.target.style.boxShadow = '0 0 0 3px rgba(79, 172, 254, 0.2)' }}
+                                        onBlur={e => { e.target.style.background = '#f9f9f9'; e.target.style.borderColor = '#ddd'; e.target.style.boxShadow = 'none' }}
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                                    <button type="button" onClick={() => setEmbedModal(null)} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#f0f0f0', color: '#666', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                                    <button type="submit" style={{ padding: '10px 24px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(79, 172, 254, 0.4)' }}>Embed</button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }
