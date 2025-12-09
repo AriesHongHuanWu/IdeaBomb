@@ -122,7 +122,7 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
             try {
                 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
                 const model = genAI.getGenerativeModel({
-                    model: "models/gemini-2.5-flash",
+                    model: "models/gemini-1.5-flash",
                     tools: [{ googleSearch: {} }]
                 })
 
@@ -164,8 +164,12 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                 }
             } catch (error) {
                 console.error("AI Error:", error)
+                let errorMsg = "Sorry, I had trouble processing that request."
+                if (error.message.includes('429') || error.message.includes('Quota')) {
+                    errorMsg = "Updates are paused temporarily (Rate Limit). Please try again in 10-20 seconds."
+                }
                 await addDoc(collection(db, 'boards', boardId, 'messages'), {
-                    role: 'model', content: "Sorry, I had trouble processing that request.", createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
+                    role: 'model', content: errorMsg, createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
                 })
             } finally {
                 setIsLoading(false)
@@ -194,7 +198,11 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                     >
                         <div style={{ padding: '15px 20px', background: 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <BsStars size={20} /> <span style={{ fontSize: '1.1rem' }}>Gemini AI</span>
+                                <BsStars size={20} />
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: '1rem', lineHeight: '1.2' }}>Team Collaboration</span>
+                                    <span style={{ fontSize: '0.7rem', fontWeight: 'normal', opacity: 0.9 }}>Type <strong>@ai</strong> for help</span>
+                                </div>
                             </div>
                             <button
                                 onClick={() => setIsOpen(false)}
