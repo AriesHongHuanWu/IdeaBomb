@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { BsStars } from 'react-icons/bs'
-import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers } from 'react-icons/fi'
+import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck } from 'react-icons/fi'
 
 // --- Utilities ---
 const useDebounce = (callback, delay) => {
@@ -254,6 +254,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
     }
 
     const handleStyle = { position: 'absolute', width: 16, height: 16, background: '#007bff', borderRadius: '50%', cursor: 'crosshair', opacity: 1, zIndex: 200, transition: 'transform 0.2s', border: '2px solid white', boxShadow: '0 0 5px rgba(0,0,0,0.3)' }
+    const isSuggested = node.aiStatus === 'suggested'
 
     return (
         <motion.div
@@ -263,10 +264,23 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             onHoverStart={() => setIsHovered(true)} onHoverEnd={() => setIsHovered(false)}
             style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isSelected || isDragging ? 50 : 10, width: size.w, height: size.h }}
         >
+            {/* AI Processing Glow Effect */}
+            {isSuggested && (
+                <motion.div
+                    style={{
+                        position: 'absolute', top: -3, left: -3, right: -3, bottom: -3, borderRadius: 20, zIndex: -1,
+                        background: 'linear-gradient(45deg, #ff0080, #7928ca, #ff0080)',
+                        filter: 'blur(8px)'
+                    }}
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                />
+            )}
+
             <div className="glass-panel" style={{
                 width: '100%', minHeight: '100%', padding: 25, borderRadius: 16, display: 'flex', flexDirection: 'column',
                 background: node.color || 'rgba(255,255,255,0.65)',
-                border: isSelected ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.4)',
+                border: isSuggested ? '2px solid #7928ca' : (isSelected ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.4)'),
                 boxShadow: isSelected || isDragging ? '0 15px 40px rgba(0,0,0,0.15)' : '0 10px 30px rgba(0,0,0,0.05)',
                 backdropFilter: isDragging ? 'none' : 'blur(24px)', transition: 'box-shadow 0.2s, background 0.2s',
                 overflow: 'hidden'
@@ -281,7 +295,16 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
                 {(!['Todo', 'Calendar', 'Image', 'YouTube', 'Link'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
             </div>
 
-            {(isHovered || isSelected) && !isDragging && (
+            {/* AI Suggestion Controls */}
+            {isSuggested && (
+                <div style={{ position: 'absolute', top: -50, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8, zIndex: 201, padding: '8px 12px', background: 'white', borderRadius: 24, boxShadow: '0 4px 15px rgba(0,0,0,0.2)', border: '1px solid #eee' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#7928ca', marginRight: 5, display: 'flex', alignItems: 'center' }}><BsStars style={{ marginRight: 5 }} /> Suggested</span>
+                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); onUpdateData(node.id, { aiStatus: 'accepted' }) }} style={{ background: '#52c41a', color: 'white', border: 'none', borderRadius: 20, padding: '4px 12px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 5 }}><FiCheck /> Keep</motion.button>
+                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); onDelete(node.id) }} style={{ background: '#ff4d4f', color: 'white', border: 'none', borderRadius: 20, padding: '4px 12px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 5 }}><FiX /> Discard</motion.button>
+                </div>
+            )}
+
+            {(isHovered || isSelected) && !isDragging && !isSuggested && (
                 <div style={{ position: 'absolute', top: -45, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8, zIndex: 200, padding: 8, background: 'white', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', border: '1px solid rgba(0,0,0,0.05)' }}>
                     <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); onEdgeStart(node.id, e) }} title="Connect" style={{ width: 32, height: 32, borderRadius: 8, background: '#4facfe', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiLink size={16} /></motion.button>
                     <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); onDelete(node.id) }} title="Delete" style={{ width: 32, height: 32, borderRadius: 8, background: '#ff4d4f', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiTrash2 size={16} /></motion.button>

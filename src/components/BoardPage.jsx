@@ -258,12 +258,21 @@ export default function BoardPage({ user }) {
         const createdIds = [];
         const pageNodes = nodes.filter(n => (n.page || 'Page 1') === activePage)
 
-        // Pass 1: Creation & Deletion
+        // Pass 1: Creation, Update & Deletion
         const batch = writeBatch(db)
         const idMap = {} // Local ID -> Real Firestore ID
 
         // Helper: Extract YouTube ID
         const getYTId = (u) => { const m = u?.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/); return (m && m[2].length === 11) ? m[2] : null }
+
+        // Smart Layout Calculation
+        const existingMaxX = pageNodes.length > 0 ? Math.max(...pageNodes.map(n => n.x + (n.w || 320))) : 0
+        const startX = Math.max(100, existingMaxX + 100) // Start 100px after the rightmost node
+        const GRID_COLS = 3
+        const COL_WIDTH = 350
+        const ROW_HEIGHT = 400
+
+        let createCount = 0
 
         for (const a of actionList) {
             // --- CREATION ---
@@ -288,23 +297,37 @@ export default function BoardPage({ user }) {
                 }
                 else if (type === 'Link') {
                     const u = a.url || (content.startsWith('http') ? content : '')
-                    if (u) { extra.url = u; content = u } // Force content to be URL for Links
+                    if (u) { extra.url = u; content = u }
                 }
                 else if (type === 'Calendar') {
-                    // Try to extract events from data, or parse content if needed (simple fallback)
                     if (!extra.events && a.events) extra.events = a.events
                 }
 
-                // Positioning
-                const startX = Math.max(100, (pageNodes.length > 0 ? Math.max(...pageNodes.map(n => n.x)) + 350 : 100))
-                const x = a.x !== undefined ? a.x : startX + (createdIds.length * 360) % 1000
-                const y = a.y !== undefined ? a.y : 150 + Math.floor((createdIds.length * 360) / 1000) * 300
+                // Smart Grid Positioning
+                const col = createCount % GRID_COLS
+                const row = Math.floor(createCount / GRID_COLS)
+                const x = a.x !== undefined ? a.x : startX + (col * COL_WIDTH)
+                const y = a.y !== undefined ? a.y : 150 + (row * ROW_HEIGHT)
+
+                createCount++
 
                 batch.set(doc(db, 'boards', boardId, 'nodes', newId), {
                     id: newId, type, content, page: activePage, x, y, items: [], events: {}, src: '', videoId: '', ...extra,
-                    createdAt: new Date().toISOString(), createdBy: user.uid
+                    createdAt: new Date().toISOString(), createdBy: user.uid,
+                    aiStatus: 'suggested' // Mark for UI glow
                 })
                 createdIds.push(newId)
+            }
+
+            // --- UPDATE (New Feature) ---
+            else if (a.action === 'update_node') {
+                const targetNode = pageNodes.find(n => n.id === a.id || (n.content && n.content.includes(a.content_match)))
+                if (targetNode) {
+                    const updates = { aiStatus: 'suggested' }
+                    if (a.content) updates.content = a.content
+                    if (a.data) Object.assign(updates, a.data)
+                    batch.update(doc(db, 'boards', boardId, 'nodes', targetNode.id), updates)
+                }
             }
 
             // --- DELETION ---
