@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { FiArrowLeft, FiSave, FiUser, FiSettings, FiActivity, FiSearch, FiPlus, FiTrash2 } from 'react-icons/fi'
+import { FiArrowLeft, FiSave, FiUsers, FiSettings, FiActivity, FiSearch, FiPlus, FiTrash2 } from 'react-icons/fi'
 import { db } from '../firebase'
 import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore'
 
