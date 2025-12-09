@@ -7,8 +7,9 @@ import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore'
 
 // Simple Admin List (For prototype safety, ideally in Firestore rules)
 const ADMIN_EMAILS = [
-    'aries0d0f@gmail.com', // Replace with actual email or fetch from DB
-    'aries.wu@ideabomb.com'
+    'aries0d0f@gmail.com',
+    'aries.wu@ideabomb.com',
+    'arieswu001@gmail.com'
 ]
 
 export default function AdminPage({ user }) {
