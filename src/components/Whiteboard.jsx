@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { BsStars } from 'react-icons/bs'
-import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck } from 'react-icons/fi'
+import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare } from 'react-icons/fi'
 
 // --- Utilities ---
 const useDebounce = (callback, delay) => {
@@ -13,6 +13,37 @@ const Button = ({ children, onClick, variant = 'primary', style }) => { const bg
 const ToolBtn = ({ icon, label, onClick, active }) => (<motion.button whileHover={{ y: -5 }} whileTap={{ scale: 0.95 }} onClick={onClick} title={label} style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: active ? '#007bff' : 'white', color: active ? 'white' : '#444', fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>{icon}</motion.button>)
 
 // --- Node Types ---
+const EmbedNode = ({ node, onUpdate }) => {
+    return (
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ height: 24, background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', padding: '0 10px', fontSize: '0.8rem', color: '#666', borderBottom: '1px solid rgba(0,0,0,0.05)', cursor: 'move' }} className="drag-handle">
+                {node.title || 'Embed'}
+            </div>
+            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+                <iframe
+                    src={node.src}
+                    title={node.title}
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
+                />
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }} /> {/* Click shield for drag */}
+            </div>
+            {/* Interactive Overlay for Playback controls if needed, but pointer-events: none usually blocks interaction. 
+                For Embeds, we usually WANT interaction. 
+                We might need a "Lock/Interact" toggle. 
+                For now, let's allow interaction by default but handling drag via header.
+            */}
+        </div>
+    )
+}
+const EmbedNodeWrapper = ({ node }) => {
+    // We need to enable pointer events on iframe for interaction, but dragging relies on the header.
+    // The drag-handle class in header connects to DraggableNode.
+    return <EmbedNode node={node} />
+}
+
 // Helper to linkify text
 const Linkify = ({ text }) => {
     if (!text) return null
@@ -605,6 +636,22 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
         return selectedIds.includes(contextMenu.targetId) ? selectedIds : [contextMenu.targetId]
     }
 
+    // Toolbox State
+    const [toolboxOpen, setToolboxOpen] = useState(false)
+    const promptEmbed = (provider, defaultUrl) => {
+        const url = prompt(`Enter ${provider} URL or Embed Code:`, defaultUrl || '')
+        if (url) {
+            let finalSrc = url
+            // Simple sanitization/extraction could go here
+            if (url.includes('<iframe')) {
+                const srcMatch = url.match(/src="([^"]+)"/)
+                if (srcMatch) finalSrc = srcMatch[1]
+            }
+            onAddNode('Embed', '', { src: finalSrc, title: provider })
+            setToolboxOpen(false)
+        }
+    }
+
     // Keyboard Shortcuts
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -672,7 +719,10 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                             window.addEventListener('pointermove', onEdgeMove); window.addEventListener('pointerup', onEdgeUp)
                         }}
                         onUpdatePosition={handleNodeUpdatePos} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} onContextMenu={(e) => handleNodeContextMenu(e, node.id)}
-                    />
+                    >
+                        {/* Pass EmbedNodeWrapper explicitly if node type matches */}
+                        {node.type === 'Embed' && <EmbedNodeWrapper node={node} />}
+                    </DraggableNode>
                 ))}
                 {cursors && Object.values(cursors).map(c => (
                     <div key={c.uid} style={{ position: 'absolute', left: c.x, top: c.y, pointerEvents: 'none', zIndex: 9999, transition: 'all 0.1s linear' }}>
@@ -714,16 +764,47 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                 </div>
             )}
 
+            {/* --- Toolbox Menu --- */}
+            <AnimatePresence>
+                {toolboxOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                        style={{
+                            position: 'absolute', bottom: 90, left: '50%', transform: 'translateX(-50%)',
+                            background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(12px)',
+                            padding: '12px', borderRadius: 20,
+                            boxShadow: '0 10px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.4) inset',
+                            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12,
+                            zIndex: 100, minWidth: 280
+                        }}
+                    >
+                        {[
+                            { id: 'spotify', label: 'Spotify', icon: <FiMusic size={24} color="#1DB954" />, action: () => promptEmbed('Spotify', 'https://open.spotify.com/embed/track/...') },
+                            { id: 'bandlab', label: 'BandLab', icon: <FiMic size={24} color="#F50" />, action: () => promptEmbed('BandLab', 'https://www.bandlab.com/embed/...') },
+                            { id: 'youtube', label: 'YouTube', icon: <FiYoutube size={24} color="#FF0000" />, action: () => { onAddNode('YouTube'); setToolboxOpen(false) } },
+                            { id: 'generic', label: 'Embed', icon: <FiCode size={24} color="#333" />, action: () => promptEmbed('Embed', 'Paste URL or <iframe> code') },
+                        ].map(item => (
+                            <div key={item.id} onClick={item.action} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', padding: 8, borderRadius: 12, transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                <div style={{ width: 44, height: 44, background: 'white', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>{item.icon}</div>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#555' }}>{item.label}</span>
+                            </div>
+                        ))}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <motion.div className="glass-panel" style={{ position: 'absolute', bottom: 30, left: '50%', x: '-50%', padding: '12px 24px', display: 'flex', gap: 20, borderRadius: 24, zIndex: 100, pointerEvents: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.1)' }} initial={{ y: 100 }} animate={{ y: 0 }}>
                 <ToolBtn icon={<FiType />} label="Note" onClick={() => onAddNode('Note')} />
                 <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => onAddNode('Todo')} />
                 <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode('Calendar')} />
                 <ToolBtn icon={<FiImage />} label="Image" onClick={() => onAddNode('Image')} />
-                <ToolBtn icon={<FiYoutube />} label="YouTube" onClick={() => onAddNode('YouTube')} />
                 <ToolBtn icon={<FiGlobe />} label="Link" onClick={() => onAddNode('Link')} />
                 <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
                 <ToolBtn icon={<FiLink />} label="Connect" active={connectMode} onClick={() => { setConnectMode(!connectMode); setConnectStartId(null) }} />
-                <ToolBtn icon={<FiGrid />} label="Auto Arrange" onClick={autoArrange} />
+                <ToolBtn icon={<FiGrid />} label="Toolbox" active={toolboxOpen} onClick={() => setToolboxOpen(!toolboxOpen)} />
+                <ToolBtn icon={<FiMaximize2 />} label="Auto Arrange" onClick={autoArrange} />
             </motion.div>
             {connectMode && <div style={{ position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', background: '#007bff', color: 'white', padding: '10px 20px', borderRadius: 20, fontWeight: 'bold' }}>Select two nodes to connect</div>}
         </div>
