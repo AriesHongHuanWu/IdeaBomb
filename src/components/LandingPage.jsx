@@ -170,36 +170,39 @@ export default function LandingPage({ user }) {
                     <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: '#202124', marginBottom: 20 }}>Simple, Transparent Pricing</h2>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: 30, flexWrap: 'wrap', marginTop: 50, flexDirection: isMobile ? 'column' : 'row', alignItems: 'center' }}>
                         {/* Free Tier */}
-                        <div style={{ width: isMobile ? '100%' : 300, border: '1px solid #dadce0', borderRadius: 12, padding: 30, textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Starter</h3>
-                            <div style={{ fontSize: '2.5rem', fontWeight: 700, margin: '15px 0' }}>$0 <span style={{ fontSize: '1rem', fontWeight: 400, color: '#5f6368' }}>/ month</span></div>
-                            <div style={{ fontSize: '0.9rem', color: '#1a73e8', fontWeight: 600, marginBottom: 5 }}>All Features Free for Beta</div>
-                            <p style={{ color: '#5f6368', marginBottom: 30 }}>Perfect for getting started with AI collaboration.</p>
-                            {user ? (
-                                <button disabled style={{ width: '100%', padding: '12px', background: '#e8f0fe', border: 'none', color: '#1967d2', borderRadius: 4, fontWeight: 700, cursor: 'default', marginBottom: 20 }}>Current Plan</button>
-                            ) : (
-                                <button onClick={() => navigate('/login')} style={{ width: '100%', padding: '12px', background: '#1a73e8', border: 'none', color: 'white', borderRadius: 4, fontWeight: 600, cursor: 'pointer', marginBottom: 20 }}>Get Started</button>
-                            )}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, color: '#5f6368', fontSize: '0.9rem' }}>
-                                <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Unlimited Boards</div>
-                                <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Real-time Collaboration</div>
-                                <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Access to Basic AI (Flash-Lite)</div>
-                            </div>
+                        <div style={{ width: isMobile ? '100%' : 300, background: 'white', border: '1px solid #dadce0', borderRadius: 8, padding: 24, textAlign: 'left', display: 'flex', flexDirection: 'column', transition: 'box-shadow 0.2s' }} onMouseEnter={e => e.currentTarget.style.boxShadow = '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)'} onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 500, color: '#202124', marginBottom: 8 }}>Starter</h3>
+                            <div style={{ fontSize: '2.5rem', fontWeight: 400, color: '#202124', marginBottom: 8 }}>$0 <span style={{ fontSize: '1rem', color: '#5f6368' }}>/ month</span></div>
+                            <div style={{ fontSize: '0.875rem', color: '#1a73e8', fontWeight: 500, marginBottom: 24 }}>All features free during Beta</div>
 
-                            {/* Pro Tier (Coming Soon) */}
-                            <div style={{ width: isMobile ? '100%' : 300, border: '1px solid #dadce0', borderRadius: 12, padding: 30, textAlign: 'left', display: 'flex', flexDirection: 'column', opacity: 0.8, background: '#f8f9fa' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <h3 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Pro</h3>
-                                    <span style={{ background: '#e8f0fe', color: '#1a73e8', fontSize: '0.75rem', padding: '4px 8px', borderRadius: 12, fontWeight: 700 }}>SOON</span>
-                                </div>
-                                <div style={{ fontSize: '2.5rem', fontWeight: 700, margin: '15px 0' }}>$2 <span style={{ fontSize: '1rem', fontWeight: 400, color: '#5f6368' }}>/ month</span></div>
-                                <p style={{ color: '#5f6368', marginBottom: 30 }}>For power users who need advanced controls.</p>
-                                <button disabled style={{ width: '100%', padding: '12px', background: '#e0e0e0', border: 'none', color: '#888', borderRadius: 4, fontWeight: 600, cursor: 'not-allowed', marginBottom: 20 }}>Coming Soon</button>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, color: '#5f6368', fontSize: '0.9rem' }}>
-                                    <div><FiCheck style={{ color: '#dadce0', marginRight: 8 }} /> Everything in Starter</div>
-                                    <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Advanced AI Models</div>
-                                    <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Unlimited History</div>
-                                </div>
+                            {user ? (
+                                <button disabled style={{ width: '100%', padding: '10px 24px', background: '#e8f0fe', border: 'none', color: '#1967d2', borderRadius: 4, fontWeight: 500, cursor: 'default', marginBottom: 32 }}>Current Plan</button>
+                            ) : (
+                                <button onClick={() => navigate('/login')} style={{ width: '100%', padding: '10px 24px', background: '#1a73e8', border: 'none', color: 'white', borderRadius: 4, fontWeight: 500, cursor: 'pointer', marginBottom: 32 }}>Get Started</button>
+                            )}
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, color: '#3c4043', fontSize: '0.9rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: '#1a73e8', marginRight: 12 }} /> Unlimited Boards</div>
+                                <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: '#1a73e8', marginRight: 12 }} /> Real-time Collaboration</div>
+                                <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: '#1a73e8', marginRight: 12 }} /> Basic AI (Flash-Lite)</div>
+                            </div>
+                        </div>
+
+                        {/* Pro Tier (Coming Soon) */}
+                        <div style={{ width: isMobile ? '100%' : 300, background: '#f8f9fa', border: '1px solid #dadce0', borderRadius: 8, padding: 24, textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                <h3 style={{ fontSize: '1.25rem', fontWeight: 500, color: '#5f6368' }}>Pro</h3>
+                                <span style={{ background: '#f1f3f4', color: '#5f6368', fontSize: '0.75rem', padding: '2px 8px', borderRadius: 4, fontWeight: 500, letterSpacing: '0.5px' }}>COMING SOON</span>
+                            </div>
+                            <div style={{ fontSize: '2.5rem', fontWeight: 400, color: '#5f6368', marginBottom: 8 }}>$2 <span style={{ fontSize: '1rem', color: '#5f6368' }}>/ month</span></div>
+                            <div style={{ fontSize: '0.875rem', color: '#5f6368', marginBottom: 24 }}>For power users</div>
+
+                            <button disabled style={{ width: '100%', padding: '10px 24px', background: '#e0e0e0', border: 'none', color: '#9aa0a6', borderRadius: 4, fontWeight: 500, cursor: 'not-allowed', marginBottom: 32 }}>Join Waitlist</button>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, color: '#5f6368', fontSize: '0.9rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: '#dadce0', marginRight: 12 }} /> Everything in Starter</div>
+                                <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: '#5f6368', marginRight: 12 }} /> Advanced AI Models</div>
+                                <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: '#5f6368', marginRight: 12 }} /> Unlimited History</div>
                             </div>
                         </div>
                     </div>
