@@ -135,9 +135,17 @@ export default function Dashboard({ user }) {
             } else if (action === 'move') {
                 await updateDoc(boardRef, { folder: val === '' ? null : val })
             } else if (action === 'delete') {
-                if (window.confirm('Are you sure you want to delete this board?')) {
-                    await deleteDoc(boardRef)
-                }
+                setContextMenu(null)
+                setModalConfig({
+                    type: 'confirm',
+                    title: 'Delete Board?',
+                    message: 'Are you sure you want to delete this board? This action cannot be undone.',
+                    onConfirm: async () => {
+                        await deleteDoc(boardRef)
+                        setModalConfig(null)
+                    }
+                })
+                return // Don't close modal immediately for delete
             }
         } catch (e) {
             console.error(e)
@@ -315,7 +323,7 @@ export default function Dashboard({ user }) {
                 </div>
             </div>
 
-            {/* Input Modal */}
+            {/* Modal System */}
             {modalConfig && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -330,33 +338,47 @@ export default function Dashboard({ user }) {
                             border: '1px solid rgba(0,0,0,0.05)'
                         }}
                     >
-                        <h2 style={{ margin: '0 0 20px 0', fontSize: '1.4rem' }}>{modalConfig.title}</h2>
-                        <input
-                            autoFocus
-                            defaultValue={modalConfig.initialValue}
-                            placeholder="Type here..."
-                            onKeyDown={e => { if (e.key === 'Enter') handleAction(modalConfig.type, modalConfig.board, e.target.value) }}
-                            style={{
-                                width: '100%', padding: '12px 16px', borderRadius: 12,
-                                border: '1px solid #dadce0', fontSize: '1rem', outline: 'none',
-                                marginBottom: 20, background: '#f8f9fa'
-                            }}
-                            ref={input => input && (input.value = modalConfig.initialValue || '')}
-                        />
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                            <button
-                                onClick={() => setModalConfig(null)}
-                                style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: 'transparent', color: '#5f6368', fontWeight: 600, cursor: 'pointer' }}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={(e) => handleAction(modalConfig.type, modalConfig.board, e.target.previousSibling.value)}
-                                style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#1a73e8', color: 'white', fontWeight: 600, cursor: 'pointer' }}
-                            >
-                                Confirm
-                            </button>
-                        </div>
+                        {modalConfig.type === 'confirm' ? (
+                            <>
+                                <h2 style={{ margin: '0 0 10px 0', fontSize: '1.4rem' }}>{modalConfig.title}</h2>
+                                <p style={{ color: '#666', marginBottom: 25, lineHeight: 1.5 }}>{modalConfig.message}</p>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                                    <button onClick={() => setModalConfig(null)} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'transparent', color: '#666', cursor: 'pointer' }}>Cancel</button>
+                                    <button onClick={() => handleAction(modalConfig.type, modalConfig.board, document.getElementById('modal-input').value)} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#1a73e8', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Confirm</button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <h2 style={{ margin: '0 0 20px 0', fontSize: '1.4rem' }}>{modalConfig.title}</h2>
+                                <input
+                                    autoFocus
+                                    id="modal-input"
+                                    defaultValue={modalConfig.initialValue}
+                                    placeholder="Type here..."
+                                    onKeyDown={e => { if (e.key === 'Enter') handleAction(modalConfig.type, modalConfig.board, e.target.value) }}
+                                    style={{
+                                        width: '100%', padding: '12px 16px', borderRadius: 12,
+                                        border: '1px solid #dadce0', fontSize: '1rem', outline: 'none',
+                                        marginBottom: 20, background: '#f8f9fa'
+                                    }}
+                                    ref={input => input && (input.value = modalConfig.initialValue || '')}
+                                />
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                                    <button
+                                        onClick={() => setModalConfig(null)}
+                                        style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: 'transparent', color: '#5f6368', fontWeight: 600, cursor: 'pointer' }}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={() => handleAction(modalConfig.type, modalConfig.board, document.getElementById('modal-input').value)}
+                                        style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#1a73e8', color: 'white', fontWeight: 600, cursor: 'pointer' }}
+                                    >
+                                        Confirm
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </motion.div>
                 </div>
             )}

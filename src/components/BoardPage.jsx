@@ -27,6 +27,7 @@ export default function BoardPage({ user }) {
     const [clipboard, setClipboard] = useState(null)
     const [cursors, setCursors] = useState({})
     const [isIncognito, setIsIncognito] = useState(false)
+    const [confirmModal, setConfirmModal] = useState(null) // { title, message, onConfirm }
     const throttleRef = useRef(Date.now())
     const isMobile = useMediaQuery('(max-width: 768px)')
 
@@ -208,12 +209,21 @@ export default function BoardPage({ user }) {
         await batch.commit()
     }
     const batchUpdateNodes = async (updates) => { if (!updates.length) return; const batch = writeBatch(db); updates.forEach(({ id, data }) => batch.update(doc(db, 'boards', boardId, 'nodes', id), data)); await batch.commit() }
-    const batchDelete = async (ids) => {
-        if (!ids.length || !window.confirm(`Delete ${ids.length} items?`)) return
-        const batch = writeBatch(db)
-        ids.forEach(id => batch.delete(doc(db, 'boards', boardId, 'nodes', id)))
-        edges.filter(e => ids.includes(e.from) || ids.includes(e.to)).forEach(e => batch.delete(doc(db, 'boards', boardId, 'edges', e.id)))
-        await batch.commit()
+    const handleBatchDelete = async (ids) => {
+        if (!ids.length) return
+
+        setConfirmModal({
+            title: `Delete ${ids.length} items?`,
+            message: 'Are you sure you want to delete these items?',
+            onConfirm: async () => {
+                const batch = writeBatch(db)
+                const deleteEdgeIds = edges.filter(e => ids.includes(e.from) || ids.includes(e.to)).map(e => e.id)
+                ids.forEach(id => batch.delete(doc(db, 'boards', boardId, 'nodes', id)))
+                deleteEdgeIds.forEach(id => batch.delete(doc(db, 'boards', boardId, 'edges', id)))
+                await batch.commit()
+                setConfirmModal(null)
+            }
+        })
     }
 
     const batchMoveToPage = async (ids, targetPage) => {
@@ -470,16 +480,30 @@ export default function BoardPage({ user }) {
 
     const deletePage = async (pageName) => {
         if (!pageName || pageName === 'Page 1') { alert('Cannot delete the main page!'); return }
-        if (!window.confirm(`Are you sure you want to delete "${pageName}" and all its contents? This cannot be undone.`)) return
+        setConfirmModal({
+            title: `Delete ${pageName}?`,
+            message: `Are you sure you want to delete "${pageName}" and all its contents? This cannot be undone.`,
+            onConfirm: async () => {
+                const batch = writeBatch(db)
+                // Delete nodes on page
+                const pNodes = nodes.filter(n => (n.page || 'Page 1') === pageName)
+                pNodes.forEach(n => batch.delete(doc(db, 'boards', boardId, 'nodes', n.id)))
 
-        const batch = writeBatch(db)
-        const pageNodes = nodes.filter(n => (n.page || 'Page 1') === pageName)
-        pageNodes.forEach(n => batch.delete(doc(db, 'boards', boardId, 'nodes', n.id)))
-        edges.filter(e => (e.page || 'Page 1') === pageName).forEach(e => batch.delete(doc(db, 'boards', boardId, 'edges', e.id)))
+                // Delete edges where both nodes are on page
+                // (Edges crossing pages might be tricky, for now delete connected edges)
+                const pNodeIds = pNodes.map(n => n.id)
+                const pEdges = edges.filter(e => pNodeIds.includes(e.from) || pNodeIds.includes(e.to))
+                pEdges.forEach(e => batch.delete(doc(db, 'boards', boardId, 'edges', e.id)))
 
-        await batch.commit()
-        setPages(prev => prev.filter(p => p !== pageName))
-        if (activePage === pageName) setActivePage('Page 1')
+                await batch.commit()
+
+                const newPages = pages.filter(p => p !== pageName)
+                setPages(newPages)
+                if (activePage === pageName) setActivePage(newPages[0] || 'Page 1')
+                await updateDoc(doc(db, 'boards', boardId), { pages: newPages })
+                setConfirmModal(null)
+            }
+        })
     }
 
     const exportBoard = () => {
@@ -644,6 +668,30 @@ export default function BoardPage({ user }) {
                 />
             </div>
             <ChatInterface boardId={boardId} user={user} onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />
-        </div >
+            {/* Confirm Modal */}
+            {confirmModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
+                }}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                        style={{
+                            background: 'white', padding: 30, borderRadius: 24,
+                            boxShadow: '0 20px 60px rgba(0,0,0,0.15)', width: '90%', maxWidth: 400,
+                            border: '1px solid rgba(0,0,0,0.05)'
+                        }}
+                    >
+                        <h2 style={{ margin: '0 0 10px 0', fontSize: '1.4rem' }}>{confirmModal.title}</h2>
+                        <p style={{ color: '#666', marginBottom: 25, lineHeight: 1.5 }}>{confirmModal.message}</p>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                            <button onClick={() => setConfirmModal(null)} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#f1f2f6', color: '#666', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                            <button onClick={confirmModal.onConfirm} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#ff4757', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Delete</button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+        </div>
     )
 }

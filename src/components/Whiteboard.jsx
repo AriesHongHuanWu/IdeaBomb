@@ -35,46 +35,88 @@ const CalendarNode = ({ node, onUpdate }) => {
     const [text, setText] = useState('');
     const addEvent = () => { if (date && text) { onUpdate(node.id, { events: { ...events, [date]: text } }); setText('') } };
     const sortedEvents = Object.entries(events).sort((a, b) => new Date(a[0]) - new Date(b[0]))
+
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#e67e22', fontWeight: 800, fontSize: '1.1rem', borderBottom: '1px solid #eee', paddingBottom: 8 }}>
-                <FiCalendar size={20} /> Agenda
+            <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 15,
+                background: 'linear-gradient(135deg, #FF9966, #FF5E62)', padding: '10px 15px',
+                borderRadius: 12, color: 'white', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(255, 94, 98, 0.3)'
+            }}>
+                <FiCalendar size={20} /> <span style={{ fontSize: '1.1rem' }}>Timeline</span>
             </div>
             {node.content && <ContentDisplay content={node.content} />}
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 4 }}>
-                {sortedEvents.length === 0 && <div style={{ textAlign: 'center', color: '#aaa', marginTop: 20, fontSize: '0.9rem' }}>No events planned</div>}
-                {sortedEvents.map(([d, t]) => {
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0, padding: '0 5px' }}>
+                {sortedEvents.length === 0 && <div style={{ textAlign: 'center', color: '#aaa', marginTop: 20, fontStyle: 'italic' }}>No events scheduled</div>}
+
+                {sortedEvents.map(([d, t], i) => {
                     const isTimeOnly = d.match(/^\d{1,2}:\d{2}$/);
                     const dateObj = new Date(d);
                     const isDate = !isTimeOnly && !isNaN(dateObj.getTime());
-                    const showTime = isDate && (d.length > 10 || d.includes('T'));
 
                     return (
-                        <div key={d} style={{ background: 'white', padding: '12px', borderRadius: 10, position: 'relative', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderLeft: '4px solid #e67e22', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#fff0e6', padding: '4px 8px', borderRadius: 8, minWidth: 50, justifyContent: 'center' }}>
+                        <div key={d} style={{ display: 'flex', position: 'relative' }}>
+                            {/* Line */}
+                            {i !== sortedEvents.length - 1 && (
+                                <div style={{ position: 'absolute', left: 29, top: 40, bottom: -10, width: 2, background: '#e0e0e0', borderLeft: '2px dashed #ccc' }} />
+                            )}
+
+                            {/* Time / Date Column */}
+                            <div style={{ width: 60, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', paddingRight: 10, paddingTop: 5 }}>
                                 {isTimeOnly ? (
-                                    <span style={{ fontSize: '1.0rem', color: '#d35400', fontWeight: 800 }}>{d}</span>
+                                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#333' }}>{d}</span>
                                 ) : (
                                     <>
-                                        <span style={{ fontSize: '0.7rem', color: '#e67e22', fontWeight: 700, textTransform: 'uppercase' }}>{isDate ? dateObj.toLocaleString('default', { month: 'short' }) : ''}</span>
-                                        <span style={{ fontSize: '1.1rem', color: '#d35400', fontWeight: 800 }}>{isDate ? dateObj.getDate() : '?'}</span>
-                                        {showTime && <span style={{ fontSize: '0.65rem', color: '#666', marginTop: 2, background: 'rgba(255,255,255,0.7)', borderRadius: 4, padding: '1px 3px' }}>{d.split(' ')[1]?.slice(0, 5) || dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</span>}
+                                        <span style={{ fontSize: '0.7rem', color: '#999', fontWeight: 600 }}>{isDate ? dateObj.toLocaleString('default', { month: 'short' }) : ''}</span>
+                                        <span style={{ fontSize: '1.2rem', color: '#333', fontWeight: 800, lineHeight: 1 }}>{isDate ? dateObj.getDate() : '?'}</span>
                                     </>
                                 )}
                             </div>
-                            <div style={{ flex: 1, fontSize: '0.95rem', color: '#333', lineHeight: 1.4, marginTop: 2 }}>
-                                {(typeof t === 'object' && t !== null) ? (t.text || t.title || t.content || JSON.stringify(t)) : t}
+
+                            {/* Dot */}
+                            <div style={{ paddingTop: 8, position: 'relative', zIndex: 2 }}>
+                                <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'white', border: '3px solid #FF5E62', boxShadow: '0 0 0 2px white' }} />
                             </div>
-                            <FiX onClick={() => { const n = { ...events }; delete n[d]; onUpdate(node.id, { events: n }) }} style={{ cursor: 'pointer', color: '#ccc', fontSize: 16, marginTop: 4 }} onPointerDown={e => e.stopPropagation()} />
+
+                            {/* Content Card */}
+                            <div style={{ flex: 1, paddingLeft: 15, paddingBottom: 20 }}>
+                                <div style={{
+                                    background: 'white', padding: '10px 14px', borderRadius: 12,
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.05)',
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10,
+                                    transition: 'transform 0.2s', cursor: 'default'
+                                }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                                    <div style={{ fontSize: '0.95rem', color: '#444', lineHeight: 1.5 }}>
+                                        {(typeof t === 'object' && t !== null) ? (t.text || t.title || t.content || JSON.stringify(t)) : t}
+                                    </div>
+                                    <button
+                                        onClick={() => { const n = { ...events }; delete n[d]; onUpdate(node.id, { events: n }) }}
+                                        style={{ background: 'transparent', border: 'none', color: '#ddd', cursor: 'pointer', padding: 4, marginTop: -4 }}
+                                        onMouseEnter={e => e.target.style.color = '#ff6b6b'} onMouseLeave={e => e.target.style.color = '#ddd'}
+                                    >
+                                        <FiX size={14} />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )
                 })}
             </div>
-            <div style={{ marginTop: 12, display: 'flex', gap: 8, paddingTop: 10, borderTop: '1px solid #eee' }} onPointerDown={e => e.stopPropagation()}>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid #eee', width: 130, fontWeight: 500, fontSize: '0.9rem', outline: 'none', background: '#f9f9f9' }} />
-                <div style={{ flex: 1, display: 'flex', gap: 5 }}>
-                    <input placeholder="Event..." value={text} onChange={e => setText(e.target.value)} style={{ flex: 1, padding: '8px 12px', borderRadius: 10, border: '1px solid #eee', fontSize: '0.9rem', outline: 'none' }} onKeyDown={e => e.key === 'Enter' && addEvent()} />
-                    <button onClick={addEvent} style={{ width: 36, height: 36, padding: 0, borderRadius: 10, background: '#e67e22', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiPlus /></button>
+
+            {/* Input Area */}
+            <div style={{ marginTop: 10, display: 'flex', gap: 8, paddingTop: 10, borderTop: '1px solid #eee' }} onPointerDown={e => e.stopPropagation()}>
+                <input type="date" value={date} onChange={e => setDate(e.target.value)}
+                    style={{ padding: '8px', borderRadius: 10, border: '1px solid #ddd', width: 40, height: 40, cursor: 'pointer', outline: 'none' }}
+                    title="Select Date"
+                />
+                <div style={{ flex: 1, display: 'flex', gap: 5, background: '#f5f5f5', borderRadius: 12, padding: 4 }}>
+                    <input placeholder="Add event..." value={text} onChange={e => setText(e.target.value)}
+                        style={{ flex: 1, padding: '0 10px', background: 'transparent', border: 'none', fontSize: '0.9rem', outline: 'none' }}
+                        onKeyDown={e => e.key === 'Enter' && addEvent()}
+                    />
+                    <button onClick={addEvent} style={{ width: 32, height: 32, borderRadius: 10, background: '#FF5E62', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <FiPlus />
+                    </button>
                 </div>
             </div>
         </div>
