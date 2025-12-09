@@ -141,7 +141,7 @@ const getAnchors = (n1, n2) => {
         else return { sx: n1.x + w1 / 2, sy: n1.y, ex: n2.x + w2 / 2, ey: n2.y + h2, c1x: 0, c1y: -50, c2x: 0, c2y: 50 } // T -> B
     }
 }
-const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode, tempEdge }) => {
+const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode, tempEdge, dragOverrides }) => {
     return (
         <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'visible', pointerEvents: 'none' }}>
             <defs>
@@ -164,8 +164,14 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode, tempEdge }) => {
                 </marker>
             </defs>
             {edges.map((edge, i) => {
-                const f = nodes.find(n => n.id === edge.from); const t = nodes.find(n => n.id === edge.to)
-                if (!f || !t) return null
+                const fNode = nodes.find(n => n.id === edge.from)
+                const tNode = nodes.find(n => n.id === edge.to)
+                if (!fNode || !tNode) return null
+
+                // Apply Overrides for smooth dragging
+                const f = dragOverrides && dragOverrides[fNode.id] ? { ...fNode, ...dragOverrides[fNode.id] } : fNode
+                const t = dragOverrides && dragOverrides[tNode.id] ? { ...tNode, ...dragOverrides[tNode.id] } : tNode
+
                 const { sx, sy, ex, ey, c1x, c1y } = getAnchors(f, t)
                 // Bezier Curve Logic
                 let pathD = ''
@@ -211,7 +217,7 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode, tempEdge }) => {
 }
 
 // --- Draggable Node (Resizable + Handles) ---
-const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart }) => {
+const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onDragEnd }) => {
     const x = useMotionValue(node.x); const y = useMotionValue(node.y);
     const [isHovered, setIsHovered] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
@@ -225,9 +231,15 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         const startX = e.clientX; const startY = e.clientY
         const startNodeX = x.get(); const startNodeY = y.get()
         setIsDragging(true); onSelect(e)
-        const onMove = (be) => { const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1); x.set(startNodeX + dx); y.set(startNodeY + dy) }
+        const onMove = (be) => {
+            const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1);
+            const curX = startNodeX + dx; const curY = startNodeY + dy
+            x.set(curX); y.set(curY)
+            if (onDrag) onDrag(node.id, curX, curY)
+        }
         const onUp = (be) => {
             window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); setIsDragging(false)
+            if (onDragEnd) onDragEnd(node.id)
             const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1)
             if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: dx, y: dy })
         }
@@ -291,10 +303,23 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     const [connectMode, setConnectMode] = useState(false)
     const [connectStartId, setConnectStartId] = useState(null)
     const [selectionBox, setSelectionBox] = useState(null)
+    const [dragOverrides, setDragOverrides] = useState({}) // { [id]: {x, y} }
 
     // Pinch Zoom State
     const [pinchDist, setPinchDist] = useState(null)
     const [startScale, setStartScale] = useState(1)
+
+    const handleDragNode = (id, x, y) => {
+        setDragOverrides(prev => ({ ...prev, [id]: { x, y } }))
+    }
+
+    const handleDragEndNode = (id) => {
+        setDragOverrides(prev => {
+            const next = { ...prev }
+            delete next[id]
+            return next
+        })
+    }
 
     const autoArrange = () => {
         const cols = Math.ceil(Math.sqrt(nodes.length))
@@ -492,9 +517,10 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
         <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={(e) => { handlePointerMove(e); handleGlobalMouseMove(e) }} onPointerUp={handlePointerUp} onContextMenu={handleBgContextMenu} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f8f9fa', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
             <div className="grid-bg" style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0', opacity: 0.6, pointerEvents: 'none' }} />
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
-                <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} tempEdge={tempEdge} />
+                <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} tempEdge={tempEdge} dragOverrides={dragOverrides} />
                 {nodes.map(node => (
                     <DraggableNode key={node.id} node={node} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id}
+                        onDrag={handleDragNode} onDragEnd={handleDragEndNode}
                         onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }}
                         onConnectStart={connectMode ? ((id) => { if (connectStartId) { onAddEdge(connectStartId, id); setConnectStartId(null); setConnectMode(false) } else { setConnectStartId(id) } }) : null}
                         onEdgeStart={(id, e) => {

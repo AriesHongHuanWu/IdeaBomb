@@ -115,7 +115,7 @@ export default function LandingPage({ user }) {
                 <div style={{ maxWidth: 1200, margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: 60 }}>
                         <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: '#202124', marginBottom: 20 }}>Why choose IdeaBomb?</h2>
-                        <p style={{ fontSize: '1.2rem', color: '#5f6368' }}>Enterprise-grade security meets consumer-grade simplicity.</p>
+                        <p style={{ fontSize: '1.2rem', color: '#5f6368' }}>Bank-grade security meets consumer-grade simplicity.</p>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: 40 }}>
                         <FeatureCard icon={<FiGrid size={40} color="#1a73e8" />} title="Infinite Canvas" desc="Break free from page limits. Organize thoughts, flowcharts, and plans on an endless whiteboard." />
@@ -174,7 +174,6 @@ export default function LandingPage({ user }) {
                             <h3 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Starter</h3>
                             <div style={{ fontSize: '2.5rem', fontWeight: 700, margin: '15px 0' }}>$0 <span style={{ fontSize: '1rem', fontWeight: 400, color: '#5f6368' }}>/ month</span></div>
                             <p style={{ color: '#5f6368', marginBottom: 30 }}>Perfect for getting started with AI collaboration.</p>
-                            {/* Corrected Button: Current Plan if logged in, else Get Started */}
                             {user ? (
                                 <button disabled style={{ width: '100%', padding: '12px', background: '#e8f0fe', border: 'none', color: '#1967d2', borderRadius: 4, fontWeight: 700, cursor: 'default', marginBottom: 20 }}>Current Plan</button>
                             ) : (
@@ -184,20 +183,6 @@ export default function LandingPage({ user }) {
                                 <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Unlimited Boards</div>
                                 <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Real-time Collaboration</div>
                                 <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Access to Basic AI (Flash-Lite)</div>
-                            </div>
-                        </div>
-                        {/* Pro Tier (Coming Soon) */}
-                        <div style={{ width: isMobile ? '100%' : 300, border: '1px solid #ea4335', borderRadius: 12, padding: 30, textAlign: 'left', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', background: '#fff8f8' }}>
-                            <div style={{ position: 'absolute', top: 12, right: -40, background: '#ea4335', color: 'white', fontSize: '0.7rem', fontWeight: 700, padding: '5px 40px', transform: 'rotate(45deg)' }}>COMING SOON</div>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Professional</h3>
-                            <div style={{ fontSize: '2.5rem', fontWeight: 700, margin: '15px 0' }}>$2 <span style={{ fontSize: '1rem', fontWeight: 400, color: '#5f6368' }}>/ month</span></div>
-                            <p style={{ color: '#ea4335', fontWeight: 500, marginBottom: 10 }}>Experience the Next Level of AI.</p>
-                            <p style={{ color: '#5f6368', fontSize: '0.9rem', marginBottom: 20 }}>Unlock superior reasoning with advanced models.</p>
-                            <button disabled style={{ width: '100%', padding: '12px', background: '#ea4335', border: 'none', color: 'white', borderRadius: 4, fontWeight: 600, cursor: 'not-allowed', opacity: 0.7, marginBottom: 20 }}>Join Waitlist</button>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, color: '#5f6368', fontSize: '0.9rem' }}>
-                                <div><FiCpu style={{ color: '#ea4335', marginRight: 8 }} /> <b>Advanced Gemini Pro/Ultra</b></div>
-                                <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Faster Response Times</div>
-                                <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Deeper Context Window</div>
                             </div>
                         </div>
                     </div>

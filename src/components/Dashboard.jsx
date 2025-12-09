@@ -118,7 +118,9 @@ export default function Dashboard({ user }) {
                                 </div>
                                 <div style={{ padding: 15 }}>
                                     <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', color: '#202124' }}>{board.title || 'Untitled Board'}</h3>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#5f6368' }}>Created {board.createdAt?.toDate().toLocaleDateString()}</p>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#5f6368' }}>
+                                        Created {board.createdAt?.toDate ? board.createdAt.toDate().toLocaleDateString() : new Date(board.createdAt || Date.now()).toLocaleDateString()}
+                                    </p>
                                 </div>
                             </motion.div>
                         ))}
