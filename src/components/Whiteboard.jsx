@@ -265,15 +265,25 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isSelected || isDragging ? 50 : 10, width: size.w, height: size.h }}
         >
             {/* AI Processing Glow Effect */}
+            {/* Suggested Glow Animation */}
             {isSuggested && (
                 <motion.div
-                    style={{
-                        position: 'absolute', top: -12, left: -12, right: -12, bottom: -12, borderRadius: 24, zIndex: -1,
-                        background: 'conic-gradient(from 0deg, #ff0080, #7928ca, #ff0080)',
-                        filter: 'blur(12px)', opacity: 0.8
+                    animate={{
+                        boxShadow: [
+                            "0 0 0 2px rgba(121, 40, 202, 0.2), 0 0 10px rgba(79, 172, 254, 0.3)",
+                            "0 0 0 4px rgba(121, 40, 202, 0.6), 0 0 20px rgba(79, 172, 254, 0.6)",
+                            "0 0 0 2px rgba(121, 40, 202, 0.2), 0 0 10px rgba(79, 172, 254, 0.3)"
+                        ]
                     }}
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    style={{
+                        position: 'absolute',
+                        inset: -2, // Slight overlap
+                        borderRadius: 12,
+                        zIndex: -1,
+                        background: 'linear-gradient(135deg, #7928ca, #4facfe)',
+                        opacity: 0.3 // Subtle background tint
+                    }}
                 />
             )}
 

@@ -9,41 +9,59 @@ import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 
 const SYSTEM_PROMPT = `You are an expert Project Manager & Board Architect AI for IdeaBomb.
 Today is {{TODAY}}. Your goal is to create COMPREHENSIVE, ACTIONABLE, and VISUALLY ORGANIZED plans.
 
-STRICT DECISION LOGIC (CREATE vs UPDATE vs QUESTION):
+STRICT DECISION LOGIC (CREATE vs UPDATE):
 1. IF the user asks to "Change", "Improve", "Expand", "Shorten", or "Fix" a SPECIFIC node (or the currently selected node):
-   - ACTION: "update_node"
+   - Use "action": "update_node"
    - "id": The ID of the node to update.
-   - "content": The NEW full content.
-2. IF the user request is VAGUE or LACKS CRITICAL INFO (e.g. "Plan an event" without topic/date):
-   - ACTION: "ask_question" (DO NOT ASK A LIST. Ask ONE key question).
-   - "question": Short, clear question text.
-   - "options": Array of 2-4 likely answers (strings).
-   - "allow_generate": boolean (True if you can make a good guess instead).
-3. IF the user asks to "Create", "Add", "Generate", or "Plan" something NEW and you have enough info:
-   - ACTION: "create_node" (or "create_calendar_plan", etc.)
-4. IF AMBIGUOUS:
-   - If a node is SELECTED -> "update_node".
-   - If nothing selected -> "create_node".
+   - "content": The NEW full content (replacing the old).
+2. IF the user asks to "Create", "Add", "Generate", or "Plan" something NEW:
+   - Use "action": "create_node" (or "create_calendar_plan", etc.)
+3. IF AMBIGUOUS:
+   - If a node is SELECTED, assume the user refers to that node -> "update_node".
+   - If NOTHING is selected -> "create_node".
 
 STRICT RULES FOR CONTENT:
 1. NEVER create empty nodes. Content MUST be rich and detailed.
-   - For 'Todo': Aggregate tasks. 5+ items.
-   - For 'Calendar': Use 'YYYY-MM-DD'.
-2. PROVIDE RESOURCES: Use Google Search for real URLs/Video IDs. If not found, use "Search: [Query]".
+   - For 'Todo' nodes: Aggregate ALL tasks into ONE single Todo Node for each phase. Do NOT split tasks into multiple nodes. Populate 'data.items' with 5+ items.
+   - For 'Note' nodes: Use markdown for headers and bullet points.
+   - For 'Calendar': Use specific dates. Keys MUST be 'YYYY-MM-DD' or 'YYYY-MM-DD HH:mm'.
+     - If user says "12/10" and today is 2025, use "2025-12-10". DO NOT change the month (e.g. to Jan or Feb) unless requested.
+     - If multiple events happen on the same day, include the time in the key (e.g. "2025-12-10 09:00").
+   - **CRITICAL**: If the user request implies a schedule (e.g. 'Plan a wedding', 'Marketing timeline') but **LACKS specific dates**, ALWAYS ASK clarifying questions first (e.g. "What is the start date?", "When is the event?"). Do NOT generate a calendar with fake/random dates unless the user says "mock" or "example".
+2. PROVIDE RESOURCES (CRITICAL):
+   - You HAVE access to Google Search. You MUST Use it.
+   - For 'Link' nodes: Search for the BEST real-world resource (e.g. official docs, viral article) and use the REAL URL. If NO valid URL is found, create a Note node instead. Do NOT use fake URLs.
+   - For 'YouTube' nodes:
+     - Search for a specific video.
+     - You MUST verify the URL contains 'watch?v=' or is a valid ID.
+     - IF UNCERTAIN or if the URL looks like an embed/tracker, Defaults to "Search: [Query]" content.
+     - DO NOT provide links that are not standard Watch URLs.
+   - **CRITICAL**: If you cannot find a valid URL or Video ID, set the content to "Search: [Query]" (e.g. "Search: SpaceX Launch") so the user can search. DO NOT HALLUCINATE IDs.
 
-RESPONSE FORMAT: Return ONLY a Raw JSON Array.
-    Example (Question):
-        [{ "action": "ask_question", "question": "What is the event date?", "options": ["Next Week", "Next Month", "TBD"], "allow_generate": true }]
+STRICT RULES FOR LAYOUT:
+1. ARRANGE nodes logically (e.g., Left-to-Right timeline or Grid).
+2. DO NOT overlap nodes. Use spacing of at least 400px horizontally and 300px vertically.
+3. CONNECT nodes in a logical flow (e.g., Step 1 -> Step 2). Avoid crossing lines.
+   - If updating a node, you typically do NOT need to create edges unless adding NEW connections.
+4. If the plan is complex, break it into Phases (columns).
+1. Do NOT overlap nodes. Use 'x' and 'y' coordinates.
+2. Use a Workflow or Grid layout.
+   - Horizontal spacing: ~400px. Vertical spacing: ~300px.
+   - Start at x: 100, y: 100.
+3. Logical Flow: Connect steps with 'create_edge'.
 
+RESPONSE FORMAT: Return ONLY a Raw JSON Array. Do NOT use markdown code blocks. Do NOT add conversational text.
     Example (Update):
-        [{ "action": "update_node", "id": "n1", "content": "# Updated..." }]
+        [ { "action": "update_node", "id": "n1", "content": "# Improved Goal\nLaunch bigger campaign." } ]
 
     Example (Create):
         [
-            { "action": "create_node", "id": "n1", "nodeType": "Note", "content": "..." },
+            { "action": "create_node", "id": "n1", "nodeType": "Note", "content": "# Project Goal\nLaunch new marketing campaign.", "x": 100, "y": 100 },
             { "action": "create_edge", "from": "n1", "to": "n2" }
         ]
-`
+
+For calendar / planning, use create_calendar_plan with events object.
+If the user just wants to chat, respond with a friendly message(no JSON needed).`
 
 export default function ChatInterface({ boardId, user, onAction, nodes, collaborators, selectedNodeIds = [] }) {
     const [messages, setMessages] = useState([])
@@ -68,109 +86,127 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
         return unsub
     }, [boardId])
 
-    // Scroll to bottom
-    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, isOpen])
+    // Scroll to bottom on new message
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }, [messages, isOpen])
 
     // Speech Recognition Setup
     const startListening = () => {
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) { alert("Voice recognition is not supported."); return }
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            alert("Voice recognition is not supported in this browser.")
+            return
+        }
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
         const recognition = new SpeechRecognition()
-        recognition.continuous = false; recognition.interimResults = false; recognition.lang = 'en-US' // Default to English, could be configurable
+        recognition.continuous = false
+        recognition.interimResults = false
+        recognition.lang = 'en-US' // Default to English, could be configurable
 
-        recognition.onstart = () => setIsListening(true); recognition.onend = () => setIsListening(false)
-        recognition.onresult = (e) => { setInput(prev => prev ? prev + ' ' + e.results[0][0].transcript : e.results[0][0].transcript) }
+        recognition.onstart = () => setIsListening(true)
+        recognition.onend = () => setIsListening(false)
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript
+            setInput(prev => prev ? prev + ' ' + transcript : transcript)
+        }
         recognition.start()
     }
 
-    const sendMessage = async (text, role = 'user', extraData = {}) => {
-        if (!text && !extraData.isQuestion) return
-        await addDoc(collection(db, 'boards', boardId, 'messages'), {
-            role, content: text, createdAt: serverTimestamp(),
-            sender: role === 'user' ? (user.displayName || 'User') : 'IdeaBomb AI',
-            uid: role === 'user' ? user.uid : 'ai',
-            photoURL: role === 'user' ? user.photoURL : null,
-            ...extraData
-        })
-    }
+    const handleSend = async () => {
+        if (!input.trim() || !user || !boardId || isLoading) return
 
-    const handleSend = async (overrideInput = null) => {
-        const textToSend = overrideInput !== null ? overrideInput : input
-        if (!textToSend.trim() || !user || !boardId || isLoading) return
-
-        if (!overrideInput) setInput('') // Clear input if manual send
-
-        // Rate Limit Check
-        if (textToSend.toLowerCase().includes('@ai')) {
+        if (input.toLowerCase().includes('@ai')) {
             const now = Date.now()
             const history = JSON.parse(localStorage.getItem('ai_usage_history') || '[]').filter(t => now - t < 3600000)
             const lastUsed = parseInt(localStorage.getItem('ai_last_used') || '0', 10)
-            if (now - lastUsed < 5000) { alert("Please wait a few seconds."); return } // 5s debounce
-            if (history.length >= 20) { alert("Hourly AI limit reached."); return }
+
+            if (now - lastUsed < 30000) {
+                alert("Please wait 30 seconds before triggering AI again.")
+                return
+            }
+            if (history.length >= 10) {
+                alert("Hourly AI limit reached (10 requests/hour).")
+                return
+            }
             localStorage.setItem('ai_last_used', now.toString())
             localStorage.setItem('ai_usage_history', JSON.stringify([...history, now]))
         }
 
-        await sendMessage(textToSend, 'user')
+        const userMsg = input
+        setInput('')
 
-        // AI Logic
-        if (textToSend.toLowerCase().includes('@ai') || overrideInput) { // Assume overrides are AI-directed
+        // Optimistic add not needed since onSnapshot will catch it
+        await addDoc(collection(db, 'boards', boardId, 'messages'), {
+            role: 'user',
+            content: userMsg,
+            createdAt: serverTimestamp(),
+            sender: user.displayName || 'User',
+            uid: user.uid,
+            photoURL: user.photoURL
+        })
+
+        // Check for AI Trigger
+        if (userMsg.toLowerCase().includes('@ai')) {
             setIsLoading(true)
             try {
                 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
-                const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash-lite", tools: [{ googleSearch: {} }] })
+                const model = genAI.getGenerativeModel({
+                    model: "models/gemini-2.5-flash-lite",
+                    tools: [{ googleSearch: {} }]
+                })
 
-                // Context
-                const historyContext = messages.slice(-10).map(m => `${m.sender || m.role}: ${m.content} ${m.question ? '(Asked Question)' : ''}`).join('\n')
+                // Context Construction
+                const historyContext = messages.slice(-10).map(m => `${m.sender || m.role}: ${m.content}`).join('\n')
                 const boardContext = nodes.map(n => `- ${n.type} (ID: ${n.id}): ${n.content.substring(0, 100)}...`).join('\n').slice(0, 3000)
+
+                // Inject Selection Context
                 let selectionContext = "No nodes selected."
                 if (selectedNodeIds && selectedNodeIds.length > 0) {
-                    const sNodes = nodes.filter(n => selectedNodeIds.includes(n.id))
-                    selectionContext = `SELECTED NODES (${sNodes.length}):\n` + sNodes.map(n => `ID: ${n.id}\nContent: ${n.content}`).join('\n')
+                    const selectedContent = nodes.filter(n => selectedNodeIds.includes(n.id)).map(n => `ID: ${n.id} Content: ${n.content}`).join('\n')
+                    selectionContext = `Currently Selected Nodes:\n${selectedContent}`
                 }
 
                 const prompt = SYSTEM_PROMPT.replace('{{TODAY}}', new Date().toDateString()) +
-                    `\n\nCONTEXT:\nCollaborators: ${collaborators.map(c => c.displayName).join(', ')}\nChat History:\n${historyContext}\nBoard:\n${boardContext}\n${selectionContext}\n\nUser: ${textToSend} (Respond as IdeaBomb AI)`
+                    `\n\nCONTEXT:\nCollaborators: ${collaborators.map(c => c.displayName).join(', ')}\nChat History:\n${historyContext}\nBoard Content Summary:\n${boardContext}\n${selectionContext}\n\nUser Request: ${userMsg} (Respond as IdeaBomb AI)`
 
                 const result = await model.generateContent(prompt)
                 const response = result.response.text()
+
+                // Extract JSON
                 let cleanText = response.replace(/```json/g, '').replace(/```/g, '').trim()
-
-                // Try JSON parsing
-                let allActions = []
                 const jsonMatch = cleanText.match(/\[.*\]/s)
+
                 if (jsonMatch) {
-                    try { allActions = JSON.parse(jsonMatch[0]) } catch (e) { console.error("JSON Parse Error", e) }
-                }
-
-                const boardActions = allActions.filter(a => a.action !== 'ask_question')
-                const questionAction = allActions.find(a => a.action === 'ask_question')
-
-                if (boardActions.length > 0) {
-                    onAction(boardActions)
-                    await sendMessage("I've updated the board!", 'model', { isAI: true })
-                }
-
-                if (questionAction) {
-                    await sendMessage(questionAction.question, 'model', {
-                        isAI: true,
-                        isQuestion: true,
-                        options: questionAction.options || [],
-                        allowGenerate: questionAction.allow_generate
-                    })
-                } else if (boardActions.length === 0) {
-                    // Fallback for conversational response (if JSON failed or just chat)
-                    // If we found NO JSON but there is text, use the text.
-                    if (!jsonMatch && cleanText.length > 0) {
-                        await sendMessage(cleanText, 'model', { isAI: true })
-                    } else if (!jsonMatch) {
-                        await sendMessage("I'm not sure what to do. Could you clarify?", 'model', { isAI: true })
+                    try {
+                        const actions = JSON.parse(jsonMatch[0])
+                        onAction(actions)
+                        // Add AI Response
+                        await addDoc(collection(db, 'boards', boardId, 'messages'), {
+                            role: 'model',
+                            content: "I've executed the plan based on the chat.",
+                            createdAt: serverTimestamp(),
+                            sender: 'IdeaBomb AI',
+                            isAI: true
+                        })
+                    } catch (e) {
+                        await addDoc(collection(db, 'boards', boardId, 'messages'), {
+                            role: 'model', content: response, createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
+                        })
                     }
+                } else {
+                    await addDoc(collection(db, 'boards', boardId, 'messages'), {
+                        role: 'model', content: response, createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
+                    })
                 }
-
             } catch (error) {
-                console.error("AI Error", error)
-                await sendMessage("Something went wrong with AI processing.", 'system')
+                console.error("AI Error:", error)
+                let errorMsg = "Sorry, I had trouble processing that request."
+                if (error.message.includes('429') || error.message.includes('Quota')) {
+                    errorMsg = "Updates are paused temporarily (Rate Limit). Please try again in 10-20 seconds."
+                }
+                await addDoc(collection(db, 'boards', boardId, 'messages'), {
+                    role: 'model', content: errorMsg, createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
+                })
             } finally {
                 setIsLoading(false)
             }
@@ -218,41 +254,27 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                             <div style={{ background: 'rgba(0,0,0,0.05)', padding: '10px 15px', borderRadius: '15px 15px 15px 0', alignSelf: 'flex-start', maxWidth: '85%', fontSize: '0.9rem', lineHeight: 1.5, color: '#444' }}>
                                 I am your Whiteboard Assistant. Try saying "Create a marketing plan"!
                             </div>
-                            {messages.map((m, i) => (
-                                <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
-                                    {m.role !== 'user' && <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: 4, marginLeft: 10 }}>{m.sender}</div>}
-
-                                    {/* Question Card UI */}
-                                    {m.isQuestion ? (
-                                        <div style={{ background: '#f0f5ff', padding: 15, borderRadius: 16, borderTopLeftRadius: 4, border: '1px solid #d6e4ff' }}>
-                                            <div style={{ fontWeight: 'bold', marginBottom: 10, color: '#1d39c4' }}>{m.content}</div>
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                                                {m.options?.map(opt => (
-                                                    <button key={opt} onClick={() => handleSend(opt)} style={{ background: 'white', border: '1px solid #adc6ff', padding: '6px 12px', borderRadius: 15, cursor: 'pointer', fontSize: '0.9rem', color: '#1d39c4', transition: 'all 0.2s' }} onMouseEnter={e => e.target.style.background = '#f0f5ff'} onMouseLeave={e => e.target.style.background = 'white'}>
-                                                        {opt}
-                                                    </button>
-                                                ))}
-                                                {m.allowGenerate && (
-                                                    <button onClick={() => handleSend("Surprise me! Make a best guess.")} style={{ background: 'linear-gradient(45deg, #722ed1, #eb2f96)', border: 'none', padding: '6px 14px', borderRadius: 15, cursor: 'pointer', fontSize: '0.9rem', color: 'white', fontWeight: 'bold' }}>
-                                                        ✨ Just Generate
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ) : (
+                            {messages.map((msg, i) => {
+                                const isMe = msg.uid === user?.uid
+                                const isAI = msg.role === 'model' || msg.isAI
+                                const align = isMe ? 'flex-end' : 'flex-start'
+                                return (
+                                    <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ alignSelf: align, maxWidth: '85%', display: 'flex', flexDirection: 'column', alignItems: align }}>
+                                        {!isMe && !isAI && <span style={{ fontSize: '0.7rem', color: '#666', marginBottom: 2, marginLeft: 4 }}>{msg.sender || 'User'}</span>}
                                         <div style={{
-                                            padding: '10px 16px', borderRadius: 16,
-                                            background: m.role === 'user' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#f5f5f5',
-                                            color: m.role === 'user' ? 'white' : '#333',
+                                            background: isMe ? 'linear-gradient(135deg, #4facfe, #00f2fe)' : (isAI ? 'white' : '#f1f3f4'),
+                                            color: isMe ? 'white' : '#333',
+                                            padding: '10px 15px',
+                                            borderRadius: isMe ? '15px 15px 0 15px' : '15px 15px 15px 0',
                                             boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-                                            borderBottomRightRadius: m.role === 'user' ? 4 : 16,
-                                            borderTopLeftRadius: m.role === 'user' ? 16 : 4
+                                            fontSize: '0.95rem',
+                                            border: isAI ? '1px solid #eee' : 'none'
                                         }}>
-                                            {m.content}
+                                            {msg.content}
                                         </div>
-                                    )}
-                                </div>
-                            ))}
+                                    </motion.div>
+                                )
+                            })}
                             {isLoading && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ alignSelf: 'flex-start', background: '#f0f0f0', padding: '8px 12px', borderRadius: 12, fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>Thinking...</motion.div>}
                             <div ref={messagesEndRef} />
                         </div>

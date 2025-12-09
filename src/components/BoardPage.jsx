@@ -396,11 +396,20 @@ export default function BoardPage({ user }) {
 
         try {
             await batch.commit()
-            // if (createdIds.length > 0) setLastAIAction({ type: 'create', ids: createdIds }) // Removed ephemeral state
+            if (createdIds.length > 0) setLastAIAction({ type: 'create', ids: createdIds })
         } catch (e) { console.error("Batch failed", e) }
     }
 
-    // undoLastAIAction removed in favor of persistent state management
+    const undoLastAIAction = async () => {
+        if (lastAIAction?.type === 'create') {
+            const batch = writeBatch(db)
+            lastAIAction.ids.forEach(id => batch.delete(doc(db, 'boards', boardId, 'nodes', id)))
+            const toDelete = lastAIAction.ids
+            edges.filter(e => toDelete.includes(e.from) || toDelete.includes(e.to)).forEach(e => batch.delete(doc(db, 'boards', boardId, 'edges', e.id)))
+            await batch.commit()
+            setLastAIAction(null)
+        }
+    }
 
     const addNewPage = () => { const p = `Page ${pages.length + 1}`; setPages([...pages, p]); setActivePage(p) }
     const displayNodes = nodes.filter(n => (n.page || 'Page 1') === activePage)
@@ -503,13 +512,24 @@ export default function BoardPage({ user }) {
                 </div>
             </motion.div>
 
-            {/* Persistent AI Review Bar */}
-            {nodes.some(n => n.aiStatus === 'suggested' && (n.page || 'Page 1') === activePage) && (
+            {/* Persistent AI Review Banner */}
+            {nodes.some(n => n.aiStatus === 'suggested') && (
                 <div style={{ position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#222', color: 'white', padding: '12px 24px', borderRadius: 50, display: 'flex', gap: 15, alignItems: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
-                    <span style={{ fontWeight: 'bold' }}>✨ {nodes.filter(n => n.aiStatus === 'suggested' && (n.page || 'Page 1') === activePage).length} AI Suggestions</span>
-                    <div style={{ width: 1, height: 20, background: '#444' }}></div>
-                    <button onClick={() => batchUpdateNodes(nodes.filter(n => n.aiStatus === 'suggested' && (n.page || 'Page 1') === activePage).map(n => n.id), { aiStatus: 'accepted' })} style={{ background: '#52c41a', border: 'none', color: 'white', padding: '6px 16px', borderRadius: 20, cursor: 'pointer', fontWeight: 'bold' }}>Keep All</button>
-                    <button onClick={() => batchDelete(nodes.filter(n => n.aiStatus === 'suggested' && (n.page || 'Page 1') === activePage).map(n => n.id))} style={{ background: '#ff4d4f', border: 'none', color: 'white', padding: '6px 16px', borderRadius: 20, cursor: 'pointer', fontWeight: 'bold' }}>Discard All</button>
+                    <span style={{ fontWeight: 'bold' }}>AI Suggestions Pending Review</span>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                            onClick={() => batchUpdateNodes(nodes.filter(n => n.aiStatus === 'suggested').map(n => n.id), { aiStatus: 'accepted' })}
+                            style={{ background: '#52c41a', border: 'none', color: 'white', padding: '6px 16px', borderRadius: 20, cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                            Accept All
+                        </button>
+                        <button
+                            onClick={() => batchDelete(nodes.filter(n => n.aiStatus === 'suggested').map(n => n.id))}
+                            style={{ background: '#ff4d4f', border: 'none', color: 'white', padding: '6px 16px', borderRadius: 20, cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                            Discard All
+                        </button>
+                    </div>
                 </div>
             )}
 
