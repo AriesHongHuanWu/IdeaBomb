@@ -317,36 +317,6 @@ export default function BoardPage({ user }) {
                     extra.url = content
                 }
 
-                // 4. Kanban Node: Parse Markdown Headers for Columns
-                if (type === 'Kanban') {
-                    // Default columns if not provided
-                    const columns = extra.columns || {
-                        'todo': { title: 'To Do', items: [] },
-                        'doing': { title: 'Doing', items: [] },
-                        'done': { title: 'Done', items: [] }
-                    }
-
-                    // Try parsing content if it's markdown with headers
-                    if (content.includes('###')) {
-                        const sections = content.split('###').slice(1) // Skip first empty
-                        sections.forEach(sec => {
-                            const [titleLine, ...itemsText] = sec.trim().split('\n')
-                            const title = titleLine.trim()
-                            const items = itemsText.filter(l => l.trim().startsWith('- ') || l.trim().startsWith('* ')).map(l => ({ id: uuidv4(), text: l.replace(/^[-\*] /, '').trim() }))
-
-                            // Map to internal IDs loosely
-                            let colId = 'todo'
-                            if (title.toLowerCase().includes('doing') || title.toLowerCase().includes('progress')) colId = 'doing'
-                            if (title.toLowerCase().includes('done') || title.toLowerCase().includes('complete')) colId = 'done'
-
-                            if (items.length > 0) {
-                                columns[colId].items.push(...items)
-                            }
-                        })
-                    }
-                    extra.columns = columns
-                }
-
                 // 2. Todo Node: Parse markdown bullets into items
                 if (type === 'Todo') {
                     const bullets = content.split('\n').filter(l => l.trim().startsWith('- ') || l.trim().startsWith('* '))

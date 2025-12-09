@@ -20,37 +20,33 @@ If the user asks for a "Plan", "Strategy", "Roadmap", or "Process":
     -   **Middle**: Series of "Action Nodes" (TodoType) for each phase.
     -   **Resources**: "Link Nodes" or "YouTube Nodes" attached to relevant steps.
 4.  **CONNECTIVITY**: All nodes MUST be connected via 'create_edge'.
-const SYSTEM_PROMPT = `
-You are an expert Agile Project Manager and UI Designer.Your goal is to create actionable, visually structured whiteboard layouts.
 
-CORE BEHAVIOR:
-1. ** Analyze Intent **:
--   "Plan a project/trip" -> Use a ** Kanban Board ** for tasks, ** Calendar ** for timeline, and ** Notes ** for details.
-    - "Explain concept" -> Use ** Flowchart Mode ** (Nodes + Edges).
-2. ** Layout Strategy **:
-    -   ** Kanban **: Use "type": "Kanban" for categorized lists(To Do, In Progress, Done).
-    -   ** Timeline **: Use "type": "Calendar" for dated agendas.
-    - NEVER stack nodes.Spread them out(grid spacing ~350px).
+**STRICT RULES FOR CONTENT:**
+1.  **Detailed Notes**: Use Markdown headers, bullet points, and bold text. NO short one-liners.
+2.  **Calendar**: If implied (e.g., "12/10 plan"), create a **Calendar Node**.
+    -   events MUST be 'YYYY-MM-DD HH:mm'.
+    -   Add at least 5 events for the day.
+3.  **Google Search**: You HAVE access to Google Search.
+    -   If the user asks for "resources", **YOU MUST SEARCH** and provide **REAL URLs**.
+    -   Create "Link" nodes or "YouTube" nodes with these URLs.
+    -   **DO NOT** leave resources empty.
 
-RESPONSE FORMAT(JSON ARRAY):
+**LAYOUT ALGORITHM:**
+1.  **Start**: (x: 100, y: 100).
+2.  **Flow**: Move RIGHT for next steps (x + 350).
+3.  **Branches**: Move DOWN for parallel tracks (y + 300).
+4.  **No Overlap**: Keep ample spacing.
+
+**RESPONSE FORMAT:**
+Return ONLY a Raw JSON Array.
+Example:
 [
-    {
-        "action": "create_node" | "update_node" | "delete_node",
-        "id": "unique_id",
-        "nodeType": "Note" | "Todo" | "Kanban" | "Calendar" | "Image" | "YouTube" | "Link",
-        "content": "Markdown content",
-        "x": 100, "y": 100, "w": 320, "h": 240,
-        "columns": { "todo": { "title": "To Do", "items": [{ "text": "Task 1" }] } } // For Kanban
-    },
-    { "action": "connect_nodes", "from": "id1", "to": "id2", "label": "dependency" }
+  { "action": "create_node", "id": "n1", "nodeType": "Note", "content": "# Goal: Ace Interview...", "x": 100, "y": 100 },
+  { "action": "create_node", "id": "n2", "nodeType": "Todo", "content": "## Phase 1: Research...", "x": 450, "y": 100 },
+  { "action": "create_edge", "from": "n1", "to": "n2" }
 ]
-
-RULES:
--   ** Kanban **: Use for any multi - step project.Structure columns logically.
--   ** Calendar **: Use for specific dates / times.Format events as "YYYY-MM-DD: Event".
--   ** Rich Content **: Use Markdown(lists, bold) inside Notes.
--   ** Connections **: Connect related ideas.
 `
+
 export default function ChatInterface({ boardId, user, onAction, nodes, collaborators, selectedNodeIds = [] }) {
     const [messages, setMessages] = useState([])
     const [input, setInput] = useState('')
@@ -145,7 +141,7 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                 // Check Usage (Skip if quota system is disabled)
                 if (settings.quotaEnabled !== false) {
                     if (currentUsage >= dailyLimit) {
-                        throw new Error(`Daily AI quota exceeded(${ currentUsage } / ${ dailyLimit }).Please upgrade your plan or contact admin.`)
+                        throw new Error(`Daily AI quota exceeded (${currentUsage}/${dailyLimit}). Please upgrade your plan or contact admin.`)
                     }
                 }
 
@@ -164,193 +160,193 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                 })
 
                 // Context Construction
-                const historyContext = messages.slice(-10).map(m => `${ m.sender || m.role }: ${ m.content } `).join('\n')
-                const boardContext = nodes.map(n => `- ${ n.type } (ID: ${ n.id }): ${ n.content.substring(0, 100) }...`).join('\n').slice(0, 3000)
+                const historyContext = messages.slice(-10).map(m => `${m.sender || m.role}: ${m.content}`).join('\n')
+                const boardContext = nodes.map(n => `- ${n.type} (ID: ${n.id}): ${n.content.substring(0, 100)}...`).join('\n').slice(0, 3000)
 
                 // Inject Selection Context
                 let selectionContext = "No nodes selected."
                 if (selectedNodeIds && selectedNodeIds.length > 0) {
-                    const selectedContent = nodes.filter(n => selectedNodeIds.includes(n.id)).map(n => `ID: ${ n.id } Content: ${ n.content } `).join('\n')
-                    selectionContext = `Currently Selected Nodes: \n${ selectedContent } `
+                    const selectedContent = nodes.filter(n => selectedNodeIds.includes(n.id)).map(n => `ID: ${n.id} Content: ${n.content}`).join('\n')
+                    selectionContext = `Currently Selected Nodes:\n${selectedContent}`
                 }
 
                 const prompt = SYSTEM_PROMPT.replace('{{TODAY}}', new Date().toDateString()) +
-                    `\n\nCONTEXT: \nCollaborators: ${ collaborators.map(c => c.displayName).join(', ') } \nChat History: \n${ historyContext } \nBoard Content Summary: \n${ boardContext } \n${ selectionContext } \n\nUser Request: ${ userMsg } (Respond as IdeaBomb AI)`
+                    `\n\nCONTEXT:\nCollaborators: ${collaborators.map(c => c.displayName).join(', ')}\nChat History:\n${historyContext}\nBoard Content Summary:\n${boardContext}\n${selectionContext}\n\nUser Request: ${userMsg} (Respond as IdeaBomb AI)`
 
                 const result = await model.generateContent(prompt)
                 const response = result.response.text()
 
                 // Extract JSON
-                let cleanText = response.replace(/```json / g, '').replace(/```javascript/g, '').replace(/```/g, '').trim()
+                let cleanText = response.replace(/```json/g, '').replace(/```javascript/g, '').replace(/```/g, '').trim()
 
-// Try to find a JSON Array first
-let jsonMatch = cleanText.match(/\[[\s\S]*\]/)
+                // Try to find a JSON Array first
+                let jsonMatch = cleanText.match(/\[[\s\S]*\]/)
 
-// If no array, try to find a JSON Object
-if (!jsonMatch) {
-    jsonMatch = cleanText.match(/\{[\s\S]*\}/)
-}
+                // If no array, try to find a JSON Object
+                if (!jsonMatch) {
+                    jsonMatch = cleanText.match(/\{[\s\S]*\}/)
+                }
 
-if (jsonMatch) {
-    try {
-        let parsed = JSON.parse(jsonMatch[0])
-        // If it's a single object, wrap it in an array
-        if (!Array.isArray(parsed)) {
-            parsed = [parsed]
-        }
+                if (jsonMatch) {
+                    try {
+                        let parsed = JSON.parse(jsonMatch[0])
+                        // If it's a single object, wrap it in an array
+                        if (!Array.isArray(parsed)) {
+                            parsed = [parsed]
+                        }
 
-        onAction(parsed)
+                        onAction(parsed)
 
-        // Add AI Response
-        await addDoc(collection(db, 'boards', boardId, 'messages'), {
-            role: 'model',
-            content: "I've executed the plan based on the chat.",
-            createdAt: serverTimestamp(),
-            sender: 'IdeaBomb AI',
-            isAI: true
-        })
-    } catch (e) {
-        console.error("JSON Parse Error:", e)
-        await addDoc(collection(db, 'boards', boardId, 'messages'), {
-            role: 'model', content: "I tried to generate a plan but I made a mistake in the format. Please try again.", createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
-        })
-    }
-} else {
-    await addDoc(collection(db, 'boards', boardId, 'messages'), {
-        role: 'model', content: response, createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
-    })
-}
+                        // Add AI Response
+                        await addDoc(collection(db, 'boards', boardId, 'messages'), {
+                            role: 'model',
+                            content: "I've executed the plan based on the chat.",
+                            createdAt: serverTimestamp(),
+                            sender: 'IdeaBomb AI',
+                            isAI: true
+                        })
+                    } catch (e) {
+                        console.error("JSON Parse Error:", e)
+                        await addDoc(collection(db, 'boards', boardId, 'messages'), {
+                            role: 'model', content: "I tried to generate a plan but I made a mistake in the format. Please try again.", createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
+                        })
+                    }
+                } else {
+                    await addDoc(collection(db, 'boards', boardId, 'messages'), {
+                        role: 'model', content: response, createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
+                    })
+                }
             } catch (error) {
-    console.error("AI Error:", error)
-    let errorMsg = "Sorry, I had trouble processing that request."
-    if (error.message.includes('429') || error.message.includes('Quota')) {
-        errorMsg = "Updates are paused temporarily (Rate Limit). Please try again in 10-20 seconds."
-    }
-    await addDoc(collection(db, 'boards', boardId, 'messages'), {
-        role: 'model', content: errorMsg, createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
-    })
-} finally {
-    setIsLoading(false)
-}
+                console.error("AI Error:", error)
+                let errorMsg = "Sorry, I had trouble processing that request."
+                if (error.message.includes('429') || error.message.includes('Quota')) {
+                    errorMsg = "Updates are paused temporarily (Rate Limit). Please try again in 10-20 seconds."
+                }
+                await addDoc(collection(db, 'boards', boardId, 'messages'), {
+                    role: 'model', content: errorMsg, createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
+                })
+            } finally {
+                setIsLoading(false)
+            }
         }
     }
 
-return (
-    <div style={{ position: 'fixed', bottom: 30, right: 30, zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', pointerEvents: 'none' }}>
-        <AnimatePresence mode="wait">
-            {isOpen ? (
-                <motion.div
-                    key="chat-panel"
-                    initial={{ opacity: 0, scale: 0.9, y: 20, transformOrigin: 'bottom right' }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    className="glass-panel"
-                    style={{
-                        width: 360, height: 520, pointerEvents: 'auto',
-                        background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)',
-                        borderRadius: '24px 24px 24px 8px', overflow: 'hidden',
-                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.5)',
-                        display: 'flex', flexDirection: 'column'
-                    }}
-                >
-                    <div style={{ padding: '15px 20px', background: 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <BsStars size={20} />
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ fontSize: '1rem', lineHeight: '1.2' }}>Team Collaboration</span>
-                                <span style={{ fontSize: '0.7rem', fontWeight: 'normal', opacity: 0.9 }}>Type <strong>@ai</strong> for help</span>
+    return (
+        <div style={{ position: 'fixed', bottom: 30, right: 30, zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', pointerEvents: 'none' }}>
+            <AnimatePresence mode="wait">
+                {isOpen ? (
+                    <motion.div
+                        key="chat-panel"
+                        initial={{ opacity: 0, scale: 0.9, y: 20, transformOrigin: 'bottom right' }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                        className="glass-panel"
+                        style={{
+                            width: 360, height: 520, pointerEvents: 'auto',
+                            background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)',
+                            borderRadius: '24px 24px 24px 8px', overflow: 'hidden',
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.5)',
+                            display: 'flex', flexDirection: 'column'
+                        }}
+                    >
+                        <div style={{ padding: '15px 20px', background: 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <BsStars size={20} />
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: '1rem', lineHeight: '1.2' }}>Team Collaboration</span>
+                                    <span style={{ fontSize: '0.7rem', fontWeight: 'normal', opacity: 0.9 }}>Type <strong>@ai</strong> for help</span>
+                                </div>
                             </div>
-                        </div>
-                        <button
-                            onClick={() => setIsOpen(false)}
-                            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.2s' }}
-                            onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.3)'}
-                            onMouseLeave={e => e.target.style.background = 'rgba(255,255,255,0.2)'}
-                        >
-                            <FiX size={16} />
-                        </button>
-                    </div>
-
-                    <div style={{ flex: 1, padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        <div style={{ background: 'rgba(0,0,0,0.05)', padding: '10px 15px', borderRadius: '15px 15px 15px 0', alignSelf: 'flex-start', maxWidth: '85%', fontSize: '0.9rem', lineHeight: 1.5, color: '#444' }}>
-                            I am your Whiteboard Assistant. Try saying "Create a marketing plan"!
-                        </div>
-                        {messages.map((msg, i) => {
-                            const isMe = msg.uid === user?.uid
-                            const isAI = msg.role === 'model' || msg.isAI
-                            const align = isMe ? 'flex-end' : 'flex-start'
-                            return (
-                                <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ alignSelf: align, maxWidth: '85%', display: 'flex', flexDirection: 'column', alignItems: align }}>
-                                    {!isMe && !isAI && <span style={{ fontSize: '0.7rem', color: '#666', marginBottom: 2, marginLeft: 4 }}>{msg.sender || 'User'}</span>}
-                                    <div style={{
-                                        background: isMe ? 'linear-gradient(135deg, #4facfe, #00f2fe)' : (isAI ? 'white' : '#f1f3f4'),
-                                        color: isMe ? 'white' : '#333',
-                                        padding: '10px 15px',
-                                        borderRadius: isMe ? '15px 15px 0 15px' : '15px 15px 15px 0',
-                                        boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-                                        fontSize: '0.95rem',
-                                        border: isAI ? '1px solid #eee' : 'none'
-                                    }}>
-                                        {msg.content}
-                                    </div>
-                                </motion.div>
-                            )
-                        })}
-                        {isLoading && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ alignSelf: 'flex-start', background: '#f0f0f0', padding: '8px 12px', borderRadius: 12, fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>Thinking...</motion.div>}
-                        <div ref={messagesEndRef} />
-                    </div>
-
-                    <div style={{ padding: 15, background: 'rgba(255,255,255,0.5)', borderTop: '1px solid rgba(0,0,0,0.05)', display: 'flex', gap: 10 }}>
-                        <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
-                            <input
-                                value={input}
-                                onChange={e => setInput(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && handleSend()}
-                                placeholder={isListening ? "Listening..." : "Ask AI to create..."}
-                                style={{ width: '100%', padding: '12px 40px 12px 15px', borderRadius: 24, border: '1px solid #ddd', outline: 'none', background: 'white', color: '#333', boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.02)', fontSize: '0.95rem' }}
-                            />
                             <button
-                                onClick={startListening}
-                                style={{
-                                    position: 'absolute', right: 5, top: '50%', transform: 'translateY(-50%)',
-                                    background: isListening ? '#ff4d4f' : 'transparent',
-                                    color: isListening ? 'white' : '#888',
-                                    border: 'none', borderRadius: '50%', width: 32, height: 32,
-                                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    transition: 'all 0.2s',
-                                    animation: isListening ? 'pulse 1.5s infinite' : 'none'
-                                }}
-                                title="Voice Input"
+                                onClick={() => setIsOpen(false)}
+                                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.2s' }}
+                                onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.3)'}
+                                onMouseLeave={e => e.target.style.background = 'rgba(255,255,255,0.2)'}
                             >
-                                {isListening ? <BsMicFill size={14} /> : <BsMic size={18} />}
+                                <FiX size={16} />
                             </button>
                         </div>
-                        <button onClick={handleSend} disabled={isLoading || (!input.trim() && !isListening)} style={{ width: 44, height: 44, borderRadius: '50%', border: 'none', background: isLoading ? '#ccc' : 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white', cursor: isLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(79, 172, 254, 0.4)', flexShrink: 0 }}><BsSend size={18} /></button>
-                    </div>
-                </motion.div>
-            ) : (
-                <motion.button
-                    key="chat-fab"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setIsOpen(true)}
-                    style={{
-                        width: 65, height: 65, borderRadius: '24px 24px 8px 24px', pointerEvents: 'auto',
-                        background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
-                        color: 'white', border: '4px solid rgba(255,255,255,0.3)', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 10px 30px rgba(79, 172, 254, 0.4)'
-                    }}
-                >
-                    <BsStars size={30} />
-                </motion.button>
-            )}
-        </AnimatePresence>
-        <style>{`@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 75, 75, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0); } }`}</style>
-    </div>
-)
+
+                        <div style={{ flex: 1, padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            <div style={{ background: 'rgba(0,0,0,0.05)', padding: '10px 15px', borderRadius: '15px 15px 15px 0', alignSelf: 'flex-start', maxWidth: '85%', fontSize: '0.9rem', lineHeight: 1.5, color: '#444' }}>
+                                I am your Whiteboard Assistant. Try saying "Create a marketing plan"!
+                            </div>
+                            {messages.map((msg, i) => {
+                                const isMe = msg.uid === user?.uid
+                                const isAI = msg.role === 'model' || msg.isAI
+                                const align = isMe ? 'flex-end' : 'flex-start'
+                                return (
+                                    <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ alignSelf: align, maxWidth: '85%', display: 'flex', flexDirection: 'column', alignItems: align }}>
+                                        {!isMe && !isAI && <span style={{ fontSize: '0.7rem', color: '#666', marginBottom: 2, marginLeft: 4 }}>{msg.sender || 'User'}</span>}
+                                        <div style={{
+                                            background: isMe ? 'linear-gradient(135deg, #4facfe, #00f2fe)' : (isAI ? 'white' : '#f1f3f4'),
+                                            color: isMe ? 'white' : '#333',
+                                            padding: '10px 15px',
+                                            borderRadius: isMe ? '15px 15px 0 15px' : '15px 15px 15px 0',
+                                            boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+                                            fontSize: '0.95rem',
+                                            border: isAI ? '1px solid #eee' : 'none'
+                                        }}>
+                                            {msg.content}
+                                        </div>
+                                    </motion.div>
+                                )
+                            })}
+                            {isLoading && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ alignSelf: 'flex-start', background: '#f0f0f0', padding: '8px 12px', borderRadius: 12, fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>Thinking...</motion.div>}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        <div style={{ padding: 15, background: 'rgba(255,255,255,0.5)', borderTop: '1px solid rgba(0,0,0,0.05)', display: 'flex', gap: 10 }}>
+                            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                <input
+                                    value={input}
+                                    onChange={e => setInput(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleSend()}
+                                    placeholder={isListening ? "Listening..." : "Ask AI to create..."}
+                                    style={{ width: '100%', padding: '12px 40px 12px 15px', borderRadius: 24, border: '1px solid #ddd', outline: 'none', background: 'white', color: '#333', boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.02)', fontSize: '0.95rem' }}
+                                />
+                                <button
+                                    onClick={startListening}
+                                    style={{
+                                        position: 'absolute', right: 5, top: '50%', transform: 'translateY(-50%)',
+                                        background: isListening ? '#ff4d4f' : 'transparent',
+                                        color: isListening ? 'white' : '#888',
+                                        border: 'none', borderRadius: '50%', width: 32, height: 32,
+                                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        transition: 'all 0.2s',
+                                        animation: isListening ? 'pulse 1.5s infinite' : 'none'
+                                    }}
+                                    title="Voice Input"
+                                >
+                                    {isListening ? <BsMicFill size={14} /> : <BsMic size={18} />}
+                                </button>
+                            </div>
+                            <button onClick={handleSend} disabled={isLoading || (!input.trim() && !isListening)} style={{ width: 44, height: 44, borderRadius: '50%', border: 'none', background: isLoading ? '#ccc' : 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white', cursor: isLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(79, 172, 254, 0.4)', flexShrink: 0 }}><BsSend size={18} /></button>
+                        </div>
+                    </motion.div>
+                ) : (
+                    <motion.button
+                        key="chat-fab"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setIsOpen(true)}
+                        style={{
+                            width: 65, height: 65, borderRadius: '24px 24px 8px 24px', pointerEvents: 'auto',
+                            background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
+                            color: 'white', border: '4px solid rgba(255,255,255,0.3)', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 10px 30px rgba(79, 172, 254, 0.4)'
+                        }}
+                    >
+                        <BsStars size={30} />
+                    </motion.button>
+                )}
+            </AnimatePresence>
+            <style>{`@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 75, 75, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0); } }`}</style>
+        </div>
+    )
 }

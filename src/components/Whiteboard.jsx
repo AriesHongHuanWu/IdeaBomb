@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { BsStars } from 'react-icons/bs'
-import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiColumns } from 'react-icons/fi'
+import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck } from 'react-icons/fi'
 
 // --- Utilities ---
 const useDebounce = (callback, delay) => {
@@ -13,82 +13,6 @@ const Button = ({ children, onClick, variant = 'primary', style }) => { const bg
 const ToolBtn = ({ icon, label, onClick, active }) => (<motion.button whileHover={{ y: -5 }} whileTap={{ scale: 0.95 }} onClick={onClick} title={label} style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: active ? '#007bff' : 'white', color: active ? 'white' : '#444', fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>{icon}</motion.button>)
 
 // --- Node Types ---
-const KanbanNode = ({ node, onUpdate }) => {
-    const columns = node.columns || {
-        'todo': { title: 'To Do', items: [] },
-        'doing': { title: 'Doing', items: [] },
-        'done': { title: 'Done', items: [] }
-    }
-    const [newItem, setNewItem] = useState('')
-    const [activeCol, setActiveCol] = useState('todo')
-
-    const addItem = () => {
-        if (!newItem.trim()) return
-        const newCols = { ...columns }
-        newCols[activeCol].items.push({ id: Date.now().toString(), text: newItem })
-        onUpdate(node.id, { columns: newCols })
-        setNewItem('')
-    }
-
-    const moveItem = (colId, itemIndex, direction) => {
-        const colKeys = Object.keys(columns)
-        const currentColIndex = colKeys.indexOf(colId)
-        const targetColIndex = currentColIndex + direction
-
-        if (targetColIndex < 0 || targetColIndex >= colKeys.length) return
-
-        const newCols = { ...JSON.parse(JSON.stringify(columns)) } // Deep copy
-        const [item] = newCols[colId].items.splice(itemIndex, 1)
-        newCols[colKeys[targetColIndex]].items.push(item)
-        onUpdate(node.id, { columns: newCols })
-    }
-
-    const deleteItem = (colId, itemIndex) => {
-        const newCols = { ...columns }
-        newCols[colId].items = newCols[colId].items.filter((_, i) => i !== itemIndex)
-        onUpdate(node.id, { columns: newCols })
-    }
-
-    return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#6c5ce7', fontWeight: 'bold' }}>
-                <FiColumns size={18} /> Kanban Board
-            </div>
-
-            <div style={{ flex: 1, display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 5 }}>
-                {Object.entries(columns).map(([colId, col]) => (
-                    <div key={colId} style={{ flex: 1, minWidth: 140, background: 'rgba(255,255,255,0.5)', borderRadius: 12, padding: 8, display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#555', marginBottom: 8, paddingLeft: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>{col.title} ({col.items.length})</div>
-                        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            {col.items.map((item, i) => (
-                                <div key={item.id} style={{ background: 'white', padding: 8, borderRadius: 8, boxShadow: '0 2px 5px rgba(0,0,0,0.05)', fontSize: '0.85rem', position: 'relative', borderLeft: colId === 'done' ? '3px solid #00b894' : (colId === 'doing' ? '3px solid #fdcb6e' : '3px solid #74b9ff') }}>
-                                    {item.text}
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4, marginTop: 6, paddingTop: 6, borderTop: '1px solid #eee' }}>
-                                        <FiTrash2 size={12} style={{ cursor: 'pointer', color: '#ff7675' }} onClick={() => deleteItem(colId, i)} />
-                                        {colId !== 'done' && <FiArrowRight size={12} style={{ cursor: 'pointer', color: '#636e72', marginLeft: 'auto' }} onClick={() => moveItem(colId, i, 1)} />}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            <div style={{ marginTop: 10, display: 'flex', gap: 5 }}>
-                <select value={activeCol} onChange={e => setActiveCol(e.target.value)} style={{ padding: '6px', borderRadius: 8, border: '1px solid #ddd', outline: 'none', fontSize: '0.8rem', background: 'white' }}>
-                    {Object.entries(columns).map(([k, v]) => <option key={k} value={k}>{v.title}</option>)}
-                </select>
-                <input
-                    placeholder="New task..."
-                    value={newItem} onChange={e => setNewItem(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && addItem()}
-                    style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: '1px solid #ddd', outline: 'none', fontSize: '0.9rem' }}
-                />
-                <button onClick={addItem} style={{ width: 30, height: 30, borderRadius: 8, background: '#6c5ce7', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiPlus /></button>
-            </div>
-        </div>
-    )
-}
 const ContentDisplay = ({ content }) => {
     if (!content) return null
     const text = typeof content === 'string' ? content : JSON.stringify(content)
@@ -424,7 +348,6 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
                 <div onPointerDown={handleResize} style={{ position: 'absolute', bottom: 5, right: 5, width: 24, height: 24, background: 'rgba(255,255,255,0.8)', borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', cursor: 'nwse-resize', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}><FiMaximize2 size={14} color="#666" /></div>
 
                 {node.type === 'Todo' && <TodoNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Kanban' && <KanbanNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Calendar' && <CalendarNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Image' && <ImageNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'YouTube' && <YouTubeNode node={node} onUpdate={onUpdateData} />}
