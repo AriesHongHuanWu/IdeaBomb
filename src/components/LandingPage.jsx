@@ -220,8 +220,8 @@ export default function LandingPage({ user }) {
                         <div style={{ color: '#5f6368', fontSize: '0.9rem' }}>© 2025 IdeaBomb Inc. All rights reserved.</div>
                         <div style={{ color: '#5f6368', fontSize: '0.8rem', marginTop: 10, fontWeight: 500 }}>Created by AWBest Studio</div>
                         <div style={{ marginTop: 15, display: 'flex', gap: 15 }}>
-                            <a href="#" style={{ color: '#5f6368', fontSize: '0.85rem', textDecoration: 'none' }}>Terms of Service</a>
-                            <a href="#" style={{ color: '#5f6368', fontSize: '0.85rem', textDecoration: 'none' }}>Privacy Policy</a>
+                            <span onClick={() => navigate('/terms')} style={{ color: '#5f6368', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.textDecoration = 'underline'} onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>Terms of Service</span>
+                            <span onClick={() => navigate('/privacy')} style={{ color: '#5f6368', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.textDecoration = 'underline'} onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>Privacy Policy</span>
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: 60 }}>

@@ -7,6 +7,8 @@ import { auth } from './firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 
 import LandingPage from './components/LandingPage'
+import TermsOfService from './components/TermsOfService'
+import PrivacyPolicy from './components/PrivacyPolicy'
 
 function App() {
     const [user, setUser] = useState(null)
@@ -29,6 +31,8 @@ function App() {
             <Routes>
                 {/* Public Landing Page */}
                 <Route path="/" element={<LandingPage user={user} />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
 
                 {/* Auth Routes */}
                 <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
