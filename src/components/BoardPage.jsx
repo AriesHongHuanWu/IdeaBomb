@@ -627,13 +627,13 @@ export default function BoardPage({ user }) {
                     <span style={{ fontWeight: 'bold' }}>AI Suggestions Pending Review</span>
                     <div style={{ display: 'flex', gap: 8 }}>
                         <button
-                            onClick={() => batchUpdateNodes(nodes.filter(n => n.aiStatus === 'suggested').map(n => n.id), { aiStatus: 'accepted' })}
+                            onClick={() => batchUpdateNodes(nodes.filter(n => n.aiStatus === 'suggested').map(n => ({ id: n.id, data: { aiStatus: 'accepted' } })))}
                             style={{ background: '#52c41a', border: 'none', color: 'white', padding: '6px 16px', borderRadius: 20, cursor: 'pointer', fontWeight: 'bold' }}
                         >
                             Accept All
                         </button>
                         <button
-                            onClick={() => batchDelete(nodes.filter(n => n.aiStatus === 'suggested').map(n => n.id))}
+                            onClick={() => handleBatchDelete(nodes.filter(n => n.aiStatus === 'suggested').map(n => n.id))}
                             style={{ background: '#ff4d4f', border: 'none', color: 'white', padding: '6px 16px', borderRadius: 20, cursor: 'pointer', fontWeight: 'bold' }}
                         >
                             Discard All
