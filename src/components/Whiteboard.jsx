@@ -124,7 +124,7 @@ const LinkNode = ({ node, onUpdate }) => {
 const NoteNode = ({ node, onUpdate }) => {
     const taRef = useRef(null)
     useEffect(() => { if (taRef.current) { taRef.current.style.height = 'auto'; taRef.current.style.height = taRef.current.scrollHeight + 'px' } }, [node.content])
-    return (<div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, color: '#555', fontWeight: 'bold', fontSize: '0.9rem' }}><FiType /> Note</div> <textarea ref={taRef} defaultValue={node.content} onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }} onBlur={e => onUpdate(node.id, { content: e.target.value })} onPointerDown={e => e.stopPropagation()} style={{ flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none', fontSize: '1rem', lineHeight: 1.6, color: '#333', overflow: 'hidden', minHeight: 100 }} placeholder="Type something..." /> </div>)
+    return (<div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, color: '#555', fontWeight: 'bold', fontSize: '0.9rem' }}><FiType /> Note</div> <textarea ref={taRef} defaultValue={node.content} onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }} onBlur={e => onUpdate(node.id, { content: e.target.value, h: e.target.scrollHeight + 80 })} onPointerDown={e => e.stopPropagation()} style={{ flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none', fontSize: '1rem', lineHeight: 1.6, color: '#333', overflow: 'hidden', minHeight: 100 }} placeholder="Type something..." /> </div>)
 }
 
 // --- Connection Layer ---
@@ -216,7 +216,8 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
     const [isHovered, setIsHovered] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
     const [size, setSize] = useState({ w: node.w || 320, h: node.h || 240 })
-    useEffect(() => { if (!isDragging) { x.set(node.x); y.set(node.y) } }, [node.x, node.y])
+    useEffect(() => { if (!isDragging) { x.set(node.x); y.set(node.y) } }, [node.x, node.y, isDragging])
+    useEffect(() => { setSize({ w: node.w || 320, h: node.h || 240 }) }, [node.w, node.h]) // Sync external updates
 
     const handleDragStart = (e) => {
         if (onConnectStart || e.button !== 0 || e.target.closest('button') || e.target.closest('input') || e.target.closest('.no-drag') || e.target.classList.contains('handle')) return
