@@ -268,12 +268,12 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             {isSuggested && (
                 <motion.div
                     style={{
-                        position: 'absolute', top: -3, left: -3, right: -3, bottom: -3, borderRadius: 20, zIndex: -1,
-                        background: 'linear-gradient(45deg, #ff0080, #7928ca, #ff0080)',
-                        filter: 'blur(8px)'
+                        position: 'absolute', top: -12, left: -12, right: -12, bottom: -12, borderRadius: 24, zIndex: -1,
+                        background: 'conic-gradient(from 0deg, #ff0080, #7928ca, #ff0080)',
+                        filter: 'blur(12px)', opacity: 0.8
                     }}
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
                 />
             )}
 
