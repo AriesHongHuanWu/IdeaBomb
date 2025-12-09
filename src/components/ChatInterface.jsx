@@ -27,7 +27,10 @@ STRICT RULES FOR CONTENT:
    - For 'Calendar': Use specific dates. Keys MUST be 'YYYY-MM-DD' or 'YYYY-MM-DD HH:mm'.
      - If user says "12/10" and today is 2025, use "2025-12-10". DO NOT change the month (e.g. to Jan or Feb) unless requested.
      - If multiple events happen on the same day, include the time in the key (e.g. "2025-12-10 09:00").
-   - **CRITICAL**: If the user request implies a schedule (e.g. 'Plan a wedding', 'Marketing timeline') but **LACKS specific dates**, ALWAYS ASK clarifying questions first (e.g. "What is the start date?", "When is the event?"). Do NOT generate a calendar with fake/random dates unless the user says "mock" or "example".
+   - **CRITICAL**: If the user request implies a schedule (e.g., 'Plan a wedding') but LACKS specific dates, **DO NOT ASK** for clarification.
+     - **MAKE REASONABLE ASSUMPTIONS** for start dates (e.g., "Starting next Monday").
+     - **EXECUTE IMMEDIATELY** with these assumptions.
+     - You may add a note saying "Assumed start date: [Date]".
 2. PROVIDE RESOURCES (CRITICAL):
    - You HAVE access to Google Search. You MUST Use it.
    - For 'Link' nodes: Search for the BEST real-world resource (e.g. official docs, viral article) and use the REAL URL. If NO valid URL is found, create a Note node instead. Do NOT use fake URLs.
