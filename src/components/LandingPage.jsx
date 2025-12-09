@@ -232,6 +232,7 @@ export default function LandingPage({ user }) {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                             <span style={{ fontWeight: 600, color: '#202124' }}>Product</span>
                             <a href="#" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.9rem' }}>Overview</a>
+                            <span onClick={() => navigate('/guide')} style={{ color: '#5f6368', fontSize: '0.9rem', cursor: 'pointer' }} onMouseEnter={(e) => e.target.style.textDecoration = 'underline'} onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>User Guide</span>
                             <a href="#solutions" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.9rem' }}>Solutions</a>
                             <a href="#pricing" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.9rem' }}>Pricing</a>
                         </div>
