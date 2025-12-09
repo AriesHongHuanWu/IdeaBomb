@@ -284,21 +284,62 @@ export default function BoardPage({ user }) {
                 let extra = a.data || {}
 
                 // Unified Type Handling
+                // Unified Type Handling
                 if (a.action === 'create_calendar_plan') { type = 'Calendar'; extra = { events: a.events || {} } }
                 else if (a.action === 'create_video') { type = 'YouTube' }
                 else if (a.action === 'create_link') { type = 'Link' }
 
+                // Fallback: Check 'nodeType' from JSON
+                if (a.nodeType === 'Todo') type = 'Todo'
+                if (a.nodeType === 'Calendar') type = 'Calendar'
+                if (a.nodeType === 'Link') type = 'Link'
+
+                // --- CONTENT PARSING & CLEANUP ---
+                // 1. Link Node: Extract URL from Markdown [Title](URL) or raw text
+                if (type === 'Link') {
+                    const mdLink = content.match(/\[(.*?)\]\((.*?)\)/)
+                    if (mdLink) {
+                        content = mdLink[2] // The URL
+                        // optional: could set a title field if we had one, but for now just get the URL right
+                    }
+                    const urlMatch = content.match(/(https?:\/\/[^\s]+)/g)
+                    if (urlMatch) content = urlMatch[0] // Extract first URL if mixed text
+                    extra.url = content
+                }
+
+                // 2. Todo Node: Parse markdown bullets into items
+                if (type === 'Todo') {
+                    if (!extra.items || extra.items.length === 0) {
+                        const lines = content.split('\n')
+                        const items = lines
+                            .filter(l => l.trim().match(/^[-*] /))
+                            .map(l => ({ id: uuidv4(), text: l.replace(/^[-*] /, '').trim(), done: false }))
+
+                        if (items.length > 0) extra.items = items
+                    }
+                }
+
+                // 3. Calendar Node: Parse "YYYY-MM-DD HH:mm: Event" from content if events missing
+                if (type === 'Calendar') {
+                    if (!extra.events || Object.keys(extra.events).length === 0) {
+                        const parsedEvents = {}
+                        const lines = content.split('\n')
+                        lines.forEach(l => {
+                            // Match: 2025-12-10 09:00: Event Desc OR **09:00 - 10:00:** Event
+                            // Try simple ISO date first
+                            const isoMatch = l.match(/(\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?)\s*[:|-]\s*(.*)/)
+                            if (isoMatch) {
+                                parsedEvents[isoMatch[1]] = isoMatch[3]
+                            }
+                        })
+                        if (Object.keys(parsedEvents).length > 0) extra.events = parsedEvents
+                    }
+                }
+
                 if (type === 'YouTube') {
                     const u = a.url || (content.startsWith('http') ? content : '')
-                    const vid = a.videoId || getYTId(u)
+                    const vid = a.videoId || getYTId(u) || getYTId(content)
                     if (vid) { extra.videoId = vid; if (!content) content = u }
-                }
-                else if (type === 'Link') {
-                    const u = a.url || (content.startsWith('http') ? content : '')
-                    if (u) { extra.url = u; content = u }
-                }
-                else if (type === 'Calendar') {
-                    if (!extra.events && a.events) extra.events = a.events
                 }
 
                 // --- LAYOUT LOGIC ---
