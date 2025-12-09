@@ -25,8 +25,53 @@ export default function BoardPage({ user }) {
     const [lastAIAction, setLastAIAction] = useState(null)
     const [clipboard, setClipboard] = useState(null)
     const [cursors, setCursors] = useState({})
-    const [isIncognito, setIsIncognito] = useState(false) // Hide my cursor
+    const [isIncognito, setIsIncognito] = useState(false)
     const throttleRef = useRef(Date.now())
+
+    // --- Thumbnail Generator ---
+    const updateThumbnail = async () => {
+        if (!nodes.length || !hasAccess) return
+
+        // Simple SVG serializer
+        const pageNodes = nodes.filter(n => (n.page || 'Page 1') === 'Page 1') // Only thumbnail page 1
+        if (pageNodes.length === 0) return
+
+        const minX = Math.min(...pageNodes.map(n => n.x))
+        const minY = Math.min(...pageNodes.map(n => n.y))
+        const maxX = Math.max(...pageNodes.map(n => n.x + (n.w || 320)))
+        const maxY = Math.max(...pageNodes.map(n => n.y + (n.h || 240)))
+        const w = Math.max(maxX - minX, 100)
+        const h = Math.max(maxY - minY, 100)
+
+        // Create simplified SVG string
+        let svgContent = ''
+        pageNodes.forEach(n => {
+            const nx = n.x - minX; const ny = n.y - minY
+            let color = '#f0f0f0'; let stroke = '#ccc'
+            if (n.type === 'Note') { color = '#ffd'; stroke = '#eeb' }
+            else if (n.type === 'Todo') { color = '#e6f7ff'; stroke = '#91d5ff' }
+            else if (n.type === 'Image') { color = '#eee'; stroke = '#ddd' }
+
+            svgContent += `<rect x="${nx}" y="${ny}" width="${n.w || 300}" height="${n.h || 200}" fill="${color}" stroke="${stroke}" rx="8" />`
+            if (n.content) {
+                // Very basic text truncation
+                const text = n.content.substring(0, 20).replace(/</g, '&lt;')
+                svgContent += `<text x="${nx + 10}" y="${ny + 20}" font-family="sans-serif" font-size="12" fill="#555">${text}</text>`
+            }
+        })
+
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 ${w} ${h}" style="background:white">${svgContent}</svg>`
+        const dataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`
+
+        await updateDoc(doc(db, 'boards', boardId), { thumbnail: dataUrl })
+    }
+
+    // Auto-save thumbnail every 30s if changes happened (simple debounced version)
+    useEffect(() => {
+        const i = setInterval(updateThumbnail, 30000)
+        return () => clearInterval(i)
+    }, [nodes])
+
 
     // --- Data Sync ---
     useEffect(() => {
@@ -352,7 +397,7 @@ export default function BoardPage({ user }) {
 
             <motion.div className="glass-panel" style={{ position: 'absolute', top: 20, left: 20, right: 20, padding: '10px 20px', zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 50, pointerEvents: 'auto' }} initial={{ y: -100 }} animate={{ y: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                    <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button>
+                    <button onClick={() => { updateThumbnail(); navigate('/') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button>
                     {isEditingTitle ? (
                         <input
                             value={tempTitle}
