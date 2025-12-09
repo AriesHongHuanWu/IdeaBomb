@@ -68,11 +68,15 @@ export default function BoardPage({ user }) {
         return unsub
     }, [boardId, hasAccess, user])
 
+    // Stable User Color
+    const userColor = useRef('#' + Math.floor(Math.random() * 16777215).toString(16))
+
     const handleCursorMove = (x, y) => {
         if (isIncognito || !user || Date.now() - throttleRef.current < 50) return
         throttleRef.current = Date.now()
         setDoc(doc(db, 'boards', boardId, 'cursors', user.uid), {
-            x, y, uid: user.uid, displayName: user.displayName, photoURL: user.photoURL, color: '#' + Math.floor(Math.random() * 16777215).toString(16),
+            x, y, uid: user.uid, displayName: user.displayName, photoURL: user.photoURL,
+            color: userColor.current, page: activePage,
             lastActive: new Date().toISOString()
         })
     }
@@ -382,7 +386,7 @@ export default function BoardPage({ user }) {
 
             <div style={{ width: '100%', height: '100%' }}>
                 <Whiteboard
-                    cursors={cursors}
+                    cursors={Object.fromEntries(Object.entries(cursors).filter(([_, c]) => (c.page || 'Page 1') === activePage))}
                     onCursorMove={handleCursorMove}
                     nodes={displayNodes}
                     edges={displayEdges}
