@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiArrowLeft, FiBook, FiCpu, FiGrid, FiCommand, FiShare2, FiMousePointer } from 'react-icons/fi'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 
 export default function GuidePage() {
     const navigate = useNavigate()
+    const isMobile = useMediaQuery('(max-width: 768px)')
 
     useEffect(() => {
         document.title = 'User Guide - IdeaBomb'
@@ -15,38 +17,57 @@ export default function GuidePage() {
     }
 
     return (
-        <div style={{ fontFamily: '"Google Sans", "Inter", sans-serif', color: '#202124', background: '#f8f9fa', minHeight: '100vh', display: 'flex' }}>
+        <div style={{ fontFamily: '"Google Sans", "Inter", sans-serif', color: '#202124', background: '#f8f9fa', minHeight: '100vh', display: 'flex', flexDirection: isMobile ? 'column' : 'row' }}>
 
             {/* Sidebar Navigation */}
-            <div style={{ width: 280, padding: 30, background: 'white', borderRight: '1px solid #dadce0', position: 'fixed', height: '100vh', overflowY: 'auto' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 'bold', fontSize: '1.4rem', color: '#5f6368', marginBottom: 40, cursor: 'pointer' }} onClick={() => navigate('/')}>
-                    <div style={{ width: 24, height: 24, background: '#5f6368', borderRadius: 6 }}></div> IdeaBomb
+            <div style={{
+                width: isMobile ? '100%' : 280,
+                padding: isMobile ? '20px' : 30,
+                background: 'white',
+                borderRight: isMobile ? 'none' : '1px solid #dadce0',
+                borderBottom: isMobile ? '1px solid #dadce0' : 'none',
+                position: isMobile ? 'relative' : 'fixed',
+                height: isMobile ? 'auto' : '100vh',
+                overflowY: isMobile ? 'visible' : 'auto',
+                zIndex: 10
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 'bold', fontSize: '1.4rem', color: '#5f6368', marginBottom: isMobile ? 20 : 40, cursor: 'pointer' }} onClick={() => navigate('/')}>
+                        <div style={{ width: 24, height: 24, background: '#5f6368', borderRadius: 6 }}></div> IdeaBomb
+                    </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                    <NavButton onClick={() => scrollToSection('getting-started')} icon={<FiBook />} label="Getting Started" />
-                    <NavButton onClick={() => scrollToSection('tools')} icon={<FiGrid />} label="Canvas Tools" />
-                    <NavButton onClick={() => scrollToSection('ai')} icon={<FiCpu />} label="Mastering AI" />
-                    <NavButton onClick={() => scrollToSection('collaboration')} icon={<FiShare2 />} label="Collaboration" />
-                    <NavButton onClick={() => scrollToSection('shortcuts')} icon={<FiCommand />} label="Shortcuts" />
+                <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: 5, overflowX: isMobile ? 'auto' : 'visible', paddingBottom: isMobile ? 10 : 0 }}>
+                    <NavButton onClick={() => scrollToSection('getting-started')} icon={<FiBook />} label={isMobile ? "Start" : "Getting Started"} />
+                    <NavButton onClick={() => scrollToSection('tools')} icon={<FiGrid />} label={isMobile ? "Tools" : "Canvas Tools"} />
+                    <NavButton onClick={() => scrollToSection('ai')} icon={<FiCpu />} label={isMobile ? "AI" : "Mastering AI"} />
+                    <NavButton onClick={() => scrollToSection('collaboration')} icon={<FiShare2 />} label={isMobile ? "Collab" : "Collaboration"} />
+                    <NavButton onClick={() => scrollToSection('shortcuts')} icon={<FiCommand />} label={isMobile ? "Keys" : "Shortcuts"} />
                 </div>
 
-                <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid #eee' }}>
-                    <button onClick={() => navigate('/')} style={{ display: 'flex', alignItems: 'center', gap: 10, border: 'none', background: 'none', color: '#5f6368', cursor: 'pointer', fontSize: '0.9rem' }}>
-                        <FiArrowLeft /> Back to Home
-                    </button>
-                </div>
+                {!isMobile && (
+                    <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid #eee' }}>
+                        <button onClick={() => navigate('/')} style={{ display: 'flex', alignItems: 'center', gap: 10, border: 'none', background: 'none', color: '#5f6368', cursor: 'pointer', fontSize: '0.9rem' }}>
+                            <FiArrowLeft /> Back to Home
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Main Content */}
-            <div style={{ marginLeft: 280, flex: 1, padding: '60px 80px', maxWidth: 900 }}>
-                <h1 style={{ fontSize: '3rem', fontWeight: 800, marginBottom: 20 }}>IdeaBomb Guide</h1>
-                <p style={{ fontSize: '1.2rem', color: '#5f6368', marginBottom: 60 }}>Complete documentation for the world's smartest AI whiteboard.</p>
+            <div style={{ marginLeft: isMobile ? 0 : 280, flex: 1, padding: isMobile ? '40px 20px' : '60px 80px', maxWidth: 900 }}>
+                {isMobile && (
+                    <button onClick={() => navigate('/')} style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10, border: 'none', background: 'none', color: '#5f6368', cursor: 'pointer', fontSize: '0.9rem' }}>
+                        <FiArrowLeft /> Back to Home
+                    </button>
+                )}
+                <h1 style={{ fontSize: isMobile ? '2rem' : '3rem', fontWeight: 800, marginBottom: 20 }}>IdeaBomb Guide</h1>
+                <p style={{ fontSize: isMobile ? '1rem' : '1.2rem', color: '#5f6368', marginBottom: 60 }}>Complete documentation for the world's smartest AI whiteboard.</p>
 
                 {/* Getting Started */}
                 <Section id="getting-started" title="1. Getting Started">
                     <p>Welcome to IdeaBomb. To begin, simply sign in with your Google Account. We use secure Google Authentication, so no new passwords are needed.</p>
-                    <div style={{ display: 'flex', gap: 20, marginTop: 20 }}>
+                    <div style={{ display: 'flex', gap: 20, marginTop: 20, flexDirection: isMobile ? 'column' : 'row' }}>
                         <StepCard step="1" title="Sign In" desc="Click 'Login' on the homepage." />
                         <StepCard step="2" title="Dashboard" desc="View all your boards in one place." />
                         <StepCard step="3" title="Create" desc="Click '+' to start a new board." />
@@ -73,13 +94,13 @@ export default function GuidePage() {
                         <h4 style={{ margin: '0 0 15px 0', color: '#1967d2', display: 'flex', alignItems: 'center', gap: 10 }}><FiCpu /> How to use</h4>
                         <p style={{ marginBottom: 15 }}>Open the Chat (bottom right) or use a text node, and start your message with <b>@ai</b>.</p>
 
-                        <div style={{ background: 'white', padding: 15, borderRadius: 8, fontFamily: 'monospace', color: '#333', marginBottom: 10 }}>
+                        <div style={{ background: 'white', padding: 15, borderRadius: 8, fontFamily: 'monospace', color: '#333', marginBottom: 10, fontSize: isMobile ? '0.85rem' : '1rem' }}>
                             @ai Summarize the blue sticky notes into a project plan
                         </div>
-                        <div style={{ background: 'white', padding: 15, borderRadius: 8, fontFamily: 'monospace', color: '#333', marginBottom: 10 }}>
+                        <div style={{ background: 'white', padding: 15, borderRadius: 8, fontFamily: 'monospace', color: '#333', marginBottom: 10, fontSize: isMobile ? '0.85rem' : '1rem' }}>
                             @ai Suggest 5 marketing slogans for this product
                         </div>
-                        <div style={{ background: 'white', padding: 15, borderRadius: 8, fontFamily: 'monospace', color: '#333' }}>
+                        <div style={{ background: 'white', padding: 15, borderRadius: 8, fontFamily: 'monospace', color: '#333', fontSize: isMobile ? '0.85rem' : '1rem' }}>
                             @ai Analyze the flowchart and find bottlenecks
                         </div>
                     </div>
@@ -92,7 +113,7 @@ export default function GuidePage() {
 
                 {/* Shortcuts */}
                 <Section id="shortcuts" title="5. Keyboard Shortcuts">
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 20 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 20, marginTop: 20 }}>
                         <Shortcut keyName="Space + Drag" action="Pan Canvas" />
                         <Shortcut keyName="Mouse Wheel" action="Zoom In / Out" />
                         <Shortcut keyName="Delete / Backspace" action="Delete Selected" />
@@ -109,10 +130,11 @@ export default function GuidePage() {
 }
 
 function Section({ id, title, children }) {
+    const isMobile = useMediaQuery('(max-width: 768px)')
     return (
-        <section id={id} style={{ marginBottom: 80, scrollMarginTop: 40 }}>
-            <h2 style={{ fontSize: '2rem', fontWeight: 600, marginBottom: 20, color: '#202124' }}>{title}</h2>
-            <div style={{ fontSize: '1.1rem', lineHeight: 1.6, color: '#4a4a4a' }}>
+        <section id={id} style={{ marginBottom: 80, scrollMarginTop: isMobile ? 180 : 40 }}>
+            <h2 style={{ fontSize: isMobile ? '1.5rem' : '2rem', fontWeight: 600, marginBottom: 20, color: '#202124' }}>{title}</h2>
+            <div style={{ fontSize: isMobile ? '1rem' : '1.1rem', lineHeight: 1.6, color: '#4a4a4a' }}>
                 {children}
             </div>
         </section>
@@ -120,13 +142,14 @@ function Section({ id, title, children }) {
 }
 
 function NavButton({ onClick, icon, label }) {
+    const isMobile = useMediaQuery('(max-width: 768px)')
     return (
         <button onClick={onClick} style={{
             display: 'flex', alignItems: 'center', gap: 12, padding: '12px 15px',
-            border: 'none', background: 'transparent', width: '100%',
+            border: 'none', background: 'transparent', width: isMobile ? 'auto' : '100%', whiteSpace: 'nowrap',
             textAlign: 'left', borderRadius: 8, cursor: 'pointer',
             color: '#5f6368', fontSize: '1rem', fontWeight: 500,
-            transition: 'background 0.2s'
+            transition: 'background 0.2s', flexShrink: 0
         }}
             onMouseEnter={(e) => e.target.style.background = '#f1f3f4'}
             onMouseLeave={(e) => e.target.style.background = 'transparent'}

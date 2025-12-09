@@ -34,7 +34,8 @@ export default function Login() {
                 className="glass-panel"
                 style={{
                     padding: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20,
-                    background: 'rgba(255,255,255,0.8)', borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.1)'
+                    background: 'rgba(255,255,255,0.8)', borderRadius: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.1)',
+                    maxWidth: '90%'
                 }}
             >
                 <div style={{ fontSize: '3rem', color: 'var(--primary)', marginBottom: 10 }}>

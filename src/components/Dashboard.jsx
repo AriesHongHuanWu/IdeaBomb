@@ -5,10 +5,12 @@ import { auth, db } from '../firebase'
 import { signOut } from 'firebase/auth'
 import { collection, addDoc, query, where, onSnapshot } from 'firebase/firestore'
 import { FiPlus, FiLogOut, FiLayout, FiHome } from 'react-icons/fi'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 
 export default function Dashboard({ user }) {
     const [boards, setBoards] = useState([])
     const navigate = useNavigate()
+    const isMobile = useMediaQuery('(max-width: 768px)')
 
     useEffect(() => {
         document.title = 'Dashboard - IdeaBomb'
@@ -16,101 +18,112 @@ export default function Dashboard({ user }) {
 
     useEffect(() => {
         if (!user) return
-        // Query: Boards owner created OR is invited to (allowedEmails contains my email)
-        // To support both efficiently without composite index issues immediately, 
-        // we'll just check 'allowedEmails' array-contains user.email.
-        // (Assuming creating a board adds owner to allowedEmails)
 
         const q = query(
-            collection(db, 'boards'),
-            where('allowedEmails', 'array-contains', user.email)
+            collection(db, "boards"),
+            where("allowedEmails", "array-contains", user.email)
         )
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setBoards(snapshot.docs.map(d => ({ id: d.id, ...d.data() })))
-        }, (error) => {
-            console.error("Dashboard Query Error:", error)
+            const boardsData = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }))
+            boardsData.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+            setBoards(boardsData)
         })
-        return unsubscribe
+
+        return () => unsubscribe()
     }, [user])
 
     const createBoard = async () => {
         try {
-            const docRef = await addDoc(collection(db, 'boards'), {
-                title: 'Untitled Board',
-                createdBy: user.uid,
-                createdAt: new Date().toISOString(),
-                allowedEmails: [user.email], // Add self to permission list
-                members: [user.uid] // Start with self as member (legacy support)
+            const docRef = await addDoc(collection(db, "boards"), {
+                createdAt: new Date(),
+                ownerId: user.uid,
+                ownerEmail: user.email,
+                allowedEmails: [user.email],
+                elements: [],
+                title: "Untitled Board"
             })
             navigate(`/board/${docRef.id}`)
-        } catch (e) {
-            console.error("Error creating board", e)
-            alert("Error creating board: " + e.message)
+        } catch (error) {
+            console.error("Error creating board: ", error)
+            alert("Failed to create board")
         }
     }
 
+    const handleLogout = async () => {
+        await signOut(auth)
+        navigate('/')
+    }
+
     return (
-        <div style={{ minHeight: '100vh', background: '#f8f9fa', padding: 40 }}>
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 60 }}>
-                <h1 style={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ minHeight: '100vh', background: '#f8f9fa', fontFamily: '"Google Sans", "Inter", sans-serif' }}>
+            {/* Navbar */}
+            <nav style={{
+                padding: isMobile ? '15px 20px' : '15px 40px', background: 'white', borderBottom: '1px solid #dadce0',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 'bold', fontSize: '1.2rem', color: '#5f6368', cursor: 'pointer' }} onClick={() => navigate('/')}>
                     <FiLayout /> IdeaBomb Dashboard
-                </h1>
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                    {user && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <button onClick={() => navigate('/')} style={{ background: 'transparent', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: '#555' }}>
-                                <FiHome /> Home
-                            </button>
-                            <img src={user.photoURL} alt="User" style={{ width: 32, height: 32, borderRadius: '50%' }} />
-                            <span>{user.displayName}</span>
-                        </div>
-                    )}
-                    <button onClick={() => signOut(auth)} style={{ background: 'white', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <FiLogOut /> Sign Out
+                    <span style={{ color: '#5f6368', fontSize: '0.9rem', display: isMobile ? 'none' : 'block' }}>{user?.email}</span>
+                    <button onClick={handleLogout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#5f6368', fontSize: '1.2rem' }} title="Sign Out">
+                        <FiLogOut />
                     </button>
                 </div>
-            </header>
+            </nav>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 30 }}>
-                {/* Create New Card */}
-                <motion.button
-                    whileHover={{ scale: 1.02, y: -5 }}
-                    onClick={createBoard}
-                    style={{
-                        height: 200, border: 'none', background: 'var(--primary)', color: 'white',
-                        borderRadius: 24, cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                        alignItems: 'center', justifyContent: 'center', gap: 20,
-                        boxShadow: '0 10px 30px rgba(26, 115, 232, 0.3)'
-                    }}
-                >
-                    <div style={{ padding: 20, background: 'rgba(255,255,255,0.2)', borderRadius: '50%' }}>
-                        <FiPlus size={40} />
-                    </div>
-                    <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>Create New Board</span>
-                </motion.button>
-
-                {/* Existing Boards */}
-                {boards.map(board => (
-                    <motion.div
-                        key={board.id}
-                        whileHover={{ scale: 1.02, y: -5 }}
-                        onClick={() => navigate(`/board/${board.id}`)}
+            <div style={{ padding: isMobile ? '20px' : 40, maxWidth: 1200, margin: '0 auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 }}>
+                    <h1 style={{ fontSize: '1.8rem', margin: 0 }}>My Boards</h1>
+                    <button
+                        onClick={createBoard}
                         style={{
-                            height: 200, background: 'white', borderRadius: 24, padding: 30,
-                            cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                            boxShadow: '0 10px 30px rgba(0,0,0,0.05)'
+                            padding: '10px 20px', background: '#1a73e8', color: 'white', border: 'none',
+                            borderRadius: 4, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
                         }}
                     >
-                        <h3 style={{ margin: 0, fontSize: '1.4rem' }}>{board.title}</h3>
-                        <div style={{ color: '#888', fontSize: '0.9rem' }}>
-                            Created: {new Date(board.createdAt).toLocaleDateString()}
-                        </div>
-                        <div style={{ color: '#888', fontSize: '0.8rem' }}>
-                            Members: {board.allowedEmails?.length || 1}
-                        </div>
-                    </motion.div>
-                ))}
+                        <FiPlus /> New Board
+                    </button>
+                </div>
+
+                {boards.length === 0 ? (
+                    <div style={{ textAlign: 'center', marginTop: 80, color: '#5f6368' }}>
+                        <div style={{ fontSize: '3rem', marginBottom: 20, opacity: 0.2 }}><FiLayout /></div>
+                        <p>No boards yet. Create one to get started!</p>
+                    </div>
+                ) : (
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
+                        gap: 20
+                    }}>
+                        {boards.map(board => (
+                            <motion.div
+                                key={board.id}
+                                layoutId={board.id}
+                                whileHover={{ y: -5, boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}
+                                onClick={() => navigate(`/board/${board.id}`)}
+                                style={{
+                                    background: 'white', borderRadius: 8, border: '1px solid #dadce0',
+                                    overflow: 'hidden', cursor: 'pointer', transition: 'box-shadow 0.2s'
+                                }}
+                            >
+                                <div style={{ height: 140, background: '#f1f3f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bdc1c6' }}>
+                                    <FiLayout style={{ fontSize: '3rem', opacity: 0.5 }} />
+                                </div>
+                                <div style={{ padding: 15 }}>
+                                    <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', color: '#202124' }}>{board.title || 'Untitled Board'}</h3>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#5f6368' }}>Created {board.createdAt?.toDate().toLocaleDateString()}</p>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     )
