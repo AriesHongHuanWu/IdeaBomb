@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { BsStars, BsMic, BsMicFill, BsSend } from 'react-icons/bs'
 import { FiX } from 'react-icons/fi'
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import { db } from '../firebase'
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore'
 
 const SYSTEM_PROMPT = `You are an expert Project Manager & Board Architect AI for IdeaBomb.
 Today is {{TODAY}}. Your goal is to create COMPREHENSIVE, ACTIONABLE, and VISUALLY ORGANIZED plans.
@@ -48,18 +50,33 @@ RESPONSE FORMAT: Return ONLY a Raw JSON Array. Do NOT use markdown code blocks. 
 For calendar / planning, use create_calendar_plan with events object.
 If the user just wants to chat, respond with a friendly message(no JSON needed).`
 
-export default function ChatInterface({ onAction, nodes, collaborators }) {
-    const [messages, setMessages] = useState([{ role: 'system', content: 'Hello! I am your AI assistant. Ask me to "Plan an event" or "Organize this board".' }])
+export default function ChatInterface({ boardId, user, onAction, nodes, collaborators }) {
+    const [messages, setMessages] = useState([])
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [isOpen, setIsOpen] = useState(false)
     const [isListening, setIsListening] = useState(false)
     const messagesEndRef = useRef(null)
 
+    // Sync Messages
+    useEffect(() => {
+        if (!boardId) return
+        const q = query(collection(db, 'boards', boardId, 'messages'), orderBy('createdAt', 'asc'))
+        const unsub = onSnapshot(q, (snapshot) => {
+            const msgs = snapshot.docs.map(d => d.data())
+            if (msgs.length === 0) {
+                setMessages([{ role: 'system', content: 'Welcome to Team Chat! Mention @ai to get help.' }])
+            } else {
+                setMessages(msgs)
+            }
+        })
+        return unsub
+    }, [boardId])
+
     // Scroll to bottom on new message
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [messages])
+    }, [messages, isOpen])
 
     // Speech Recognition Setup
     const startListening = () => {
@@ -83,53 +100,77 @@ export default function ChatInterface({ onAction, nodes, collaborators }) {
     }
 
     const handleSend = async () => {
-        if (!input.trim()) return
+        if (!input.trim() || !user || !boardId) return
         const userMsg = input
         setInput('')
-        setMessages(prev => [...prev, { role: 'user', content: userMsg }])
-        setIsLoading(true)
 
-        try {
-            const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
-            console.log("Initializing Gemini 2.5 Flash...")
-            const model = genAI.getGenerativeModel({
-                model: "models/gemini-2.5-flash",
-                tools: [{ googleSearch: {} }]
-            })
+        // Optimistic add not needed since onSnapshot will catch it
+        await addDoc(collection(db, 'boards', boardId, 'messages'), {
+            role: 'user',
+            content: userMsg,
+            createdAt: serverTimestamp(),
+            sender: user.displayName || 'User',
+            uid: user.uid,
+            photoURL: user.photoURL
+        })
 
-            // Context
-            const boardContext = nodes.map(n => `- ${n.type}: ${n.content} (at ${Math.round(n.x)},${Math.round(n.y)})`).join('\n').slice(0, 2000)
-            const prompt = `${SYSTEM_PROMPT.replace('{{TODAY}}', new Date().toISOString().split('T')[0])}
-            
-            Current Board Context:
-            ${boardContext}
-            
-            User Request: ${userMsg} `
+        // Check for AI Trigger
+        if (userMsg.toLowerCase().includes('@ai')) {
+            // Add Loading Indicator (Ephemeral?) Or just handle in UI
+            // Actually, we can add a 'system' message or just rely on isLoading
+            setIsLoading(true)
+            try {
+                const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
+                const model = genAI.getGenerativeModel({
+                    model: "models/gemini-2.5-flash",
+                    tools: [{ googleSearch: {} }]
+                })
 
-            const result = await model.generateContent(prompt)
-            const response = result.response.text()
+                // Context Construction
+                const historyContext = messages.slice(-10).map(m => `${m.sender || m.role}: ${m.content}`).join('\n')
+                const boardContext = nodes.map(n => `- ${n.type}: ${n.content}`).join('\n').slice(0, 3000)
 
-            // Extract JSON
-            let cleanText = response.replace(/```json/g, '').replace(/```/g, '').trim()
-            const jsonMatch = cleanText.match(/\[.*\]/s)
-            if (jsonMatch) {
-                try {
-                    const actions = JSON.parse(jsonMatch[0])
-                    onAction(actions)
-                    setMessages(prev => [...prev, { role: 'ai', content: "Creating your workflow..." }])
-                } catch (e) {
-                    setMessages(prev => [...prev, { role: 'ai', content: response }])
+                const prompt = SYSTEM_PROMPT.replace('{{TODAY}}', new Date().toDateString()) +
+                    `\n\nCONTEXT:\nCollaborators: ${collaborators.map(c => c.displayName).join(', ')}\nChat History:\n${historyContext}\nBoard Content Summary:\n${boardContext}\n\nUser Request: ${userMsg} (Respond as IdeaBomb AI)`
+
+                const result = await model.generateContent(prompt)
+                const response = result.response.text()
+
+                // Extract JSON
+                let cleanText = response.replace(/```json/g, '').replace(/```/g, '').trim()
+                const jsonMatch = cleanText.match(/\[.*\]/s)
+
+                if (jsonMatch) {
+                    try {
+                        const actions = JSON.parse(jsonMatch[0])
+                        onAction(actions)
+                        // Add AI Response
+                        await addDoc(collection(db, 'boards', boardId, 'messages'), {
+                            role: 'model',
+                            content: "I've executed the plan based on the chat.",
+                            createdAt: serverTimestamp(),
+                            sender: 'IdeaBomb AI',
+                            isAI: true
+                        })
+                    } catch (e) {
+                        await addDoc(collection(db, 'boards', boardId, 'messages'), {
+                            role: 'model', content: response, createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
+                        })
+                    }
+                } else {
+                    await addDoc(collection(db, 'boards', boardId, 'messages'), {
+                        role: 'model', content: response, createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
+                    })
                 }
-            } else {
-                setMessages(prev => [...prev, { role: 'ai', content: response }])
+            } catch (error) {
+                console.error("AI Error:", error)
+                await addDoc(collection(db, 'boards', boardId, 'messages'), {
+                    role: 'model', content: "Sorry, I had trouble processing that request.", createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
+                })
+            } finally {
+                setIsLoading(false)
             }
-        } catch (error) {
-            console.error(error)
-            let msg = `Sorry, error: ${error.message}`
-            if (error.message.includes('API key')) msg += " (Please check VITE_GEMINI_API_KEY in Netlify)"
-            setMessages(prev => [...prev, { role: 'ai', content: msg }])
         }
-        setIsLoading(false)
     }
 
     return (

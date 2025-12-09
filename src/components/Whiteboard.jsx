@@ -459,6 +459,10 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                     else selectedIds.forEach(id => onDeleteNode(id))
                 }
             }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                e.preventDefault()
+                setSelectedIds(nodes.map(n => n.id))
+            }
             if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
                 e.preventDefault()
                 if (selectedIds.length > 0) onCopy(selectedIds)
@@ -470,7 +474,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
         }
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [selectedIds, onBatchDelete, onDeleteNode, onCopy, onPaste])
+    }, [selectedIds, onBatchDelete, onDeleteNode, onCopy, onPaste, nodes])
 
     // Track mouse for paste position
     const mousePos = useRef({ x: 0, y: 0 })

@@ -404,7 +404,7 @@ export default function BoardPage({ user }) {
                     onDeleteEdge={(id) => { const batch = writeBatch(db); batch.delete(doc(db, 'boards', boardId, 'edges', id)); batch.commit() }}
                 />
             </div>
-            <ChatInterface onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />
+            <ChatInterface boardId={boardId} user={user} onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />
         </div>
     )
 }
