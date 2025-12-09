@@ -62,10 +62,13 @@ export default function BoardPage({ user }) {
             else if (n.type === 'Image') { color = '#eee'; stroke = '#ddd' }
 
             svgContent += `<rect x="${nx}" y="${ny}" width="${n.w || 320}" height="${n.h || 240}" fill="${color}" stroke="${stroke}" rx="8" />`
-            if (n.content) {
-                // Very basic text truncation
-                const text = n.content.substring(0, 20).replace(/</g, '&lt;')
-                svgContent += `<text x="${nx + 10}" y="${ny + 20}" font-family="sans-serif" font-size="12" fill="#555">${text}</text>`
+            if (n.content && typeof n.content === 'string') {
+                const lines = n.content.replace(/</g, '&lt;').split('\n').slice(0, 5) // Take first 5 lines
+                lines.forEach((line, i) => {
+                    const yOffset = 24 + (i * 16)
+                    const truncated = line.substring(0, 40) // Trucate char count
+                    svgContent += `<text x="${nx + 16}" y="${ny + yOffset}" font-family="Arial, sans-serif" font-size="14" fill="#555">${truncated}</text>`
+                })
             }
         })
 

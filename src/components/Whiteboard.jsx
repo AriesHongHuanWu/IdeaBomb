@@ -261,7 +261,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             onClick={(e) => { e.stopPropagation(); if (onConnectStart) { onConnectStart(node.id) } else { onSelect(e) } }}
             onContextMenu={(e) => { onSelect(e) }}
             onHoverStart={() => setIsHovered(true)} onHoverEnd={() => setIsHovered(false)}
-            style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isSelected || isDragging ? 50 : 10, width: size.w, minHeight: size.h }}
+            style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isSelected || isDragging ? 50 : 10, width: size.w, height: size.h }}
         >
             <div className="glass-panel" style={{
                 width: '100%', minHeight: '100%', padding: 25, borderRadius: 16, display: 'flex', flexDirection: 'column',

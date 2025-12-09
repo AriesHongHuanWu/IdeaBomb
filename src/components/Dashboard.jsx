@@ -289,7 +289,7 @@ export default function Dashboard({ user }) {
                                             </div>
                                         </div>
 
-                                        {board.createdBy !== user.uid && (
+                                        {(board.createdBy !== user.uid && board.ownerEmail !== user.email) && (
                                             <div style={{ marginTop: 8, fontSize: '0.75rem', color: '#1a73e8', background: '#e8f0fe', display: 'inline-block', padding: '2px 6px', borderRadius: 4 }}>
                                                 Shared by {board.ownerEmail}
                                             </div>

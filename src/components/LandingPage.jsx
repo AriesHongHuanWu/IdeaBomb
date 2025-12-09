@@ -40,7 +40,7 @@ export default function LandingPage({ user }) {
                     <div style={{ background: '#e8f0fe', color: '#1967d2', padding: '6px 16px', borderRadius: 20, fontSize: '0.9rem', fontWeight: 600, display: 'inline-block', marginBottom: 20 }}>
                         ✨ Now with Gemini AI Integration
                     </div>
-                    <h1 style={{ fontSize: isMobile ? '2.5rem' : '4rem', fontWeight: 800, lineHeight: 1.1, marginBottom: 20, background: 'linear-gradient(90deg, #1a73e8, #ea4335, #fbbc04, #34a853)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    <h1 style={{ fontSize: isMobile ? '2.5rem' : '4rem', fontWeight: 800, lineHeight: 1.1, marginBottom: 20, color: '#202124' }}>
                         Think Bigger.<br /> Collaborate Smarter.
                     </h1>
                     <p style={{ fontSize: isMobile ? '1.1rem' : '1.3rem', color: '#5f6368', marginBottom: 40, maxWidth: 600, margin: '0 auto 40px auto', lineHeight: 1.6 }}>
@@ -184,6 +184,22 @@ export default function LandingPage({ user }) {
                                 <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Unlimited Boards</div>
                                 <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Real-time Collaboration</div>
                                 <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Access to Basic AI (Flash-Lite)</div>
+                            </div>
+
+                            {/* Pro Tier (Coming Soon) */}
+                            <div style={{ width: isMobile ? '100%' : 300, border: '1px solid #dadce0', borderRadius: 12, padding: 30, textAlign: 'left', display: 'flex', flexDirection: 'column', opacity: 0.8, background: '#f8f9fa' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h3 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Pro</h3>
+                                    <span style={{ background: '#e8f0fe', color: '#1a73e8', fontSize: '0.75rem', padding: '4px 8px', borderRadius: 12, fontWeight: 700 }}>SOON</span>
+                                </div>
+                                <div style={{ fontSize: '2.5rem', fontWeight: 700, margin: '15px 0' }}>$2 <span style={{ fontSize: '1rem', fontWeight: 400, color: '#5f6368' }}>/ month</span></div>
+                                <p style={{ color: '#5f6368', marginBottom: 30 }}>For power users who need advanced controls.</p>
+                                <button disabled style={{ width: '100%', padding: '12px', background: '#e0e0e0', border: 'none', color: '#888', borderRadius: 4, fontWeight: 600, cursor: 'not-allowed', marginBottom: 20 }}>Coming Soon</button>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, color: '#5f6368', fontSize: '0.9rem' }}>
+                                    <div><FiCheck style={{ color: '#dadce0', marginRight: 8 }} /> Everything in Starter</div>
+                                    <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Advanced AI Models</div>
+                                    <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Unlimited History</div>
+                                </div>
                             </div>
                         </div>
                     </div>
