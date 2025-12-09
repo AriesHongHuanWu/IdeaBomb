@@ -429,7 +429,8 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
                 {node.type === 'Image' && <ImageNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'YouTube' && <YouTubeNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Link' && <LinkNode node={node} onUpdate={onUpdateData} />}
-                {(!['Todo', 'Calendar', 'Image', 'YouTube', 'Link'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Embed' && <EmbedNode node={node} onUpdate={onUpdateData} />}
+                {(!['Todo', 'Calendar', 'Image', 'YouTube', 'Link', 'Embed'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
             </div>
 
             {/* AI Suggestion Controls */}
@@ -650,7 +651,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
         if (embedModal && embedModal.url) {
             let finalSrc = embedModal.url
             if (finalSrc.includes('<iframe')) {
-                const srcMatch = finalSrc.match(/src="([^"]+)"/)
+                const srcMatch = finalSrc.match(/src=["']([^"']+)["']/)
                 if (srcMatch) finalSrc = srcMatch[1]
             }
             onAddNode('Embed', '', { src: finalSrc, title: embedModal.provider })
@@ -725,10 +726,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                             window.addEventListener('pointermove', onEdgeMove); window.addEventListener('pointerup', onEdgeUp)
                         }}
                         onUpdatePosition={handleNodeUpdatePos} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} onContextMenu={(e) => handleNodeContextMenu(e, node.id)}
-                    >
-                        {/* Pass EmbedNodeWrapper explicitly if node type matches */}
-                        {node.type === 'Embed' && <EmbedNodeWrapper node={node} />}
-                    </DraggableNode>
+                    />
                 ))}
                 {cursors && Object.values(cursors).map(c => (
                     <div key={c.uid} style={{ position: 'absolute', left: c.x, top: c.y, pointerEvents: 'none', zIndex: 9999, transition: 'all 0.1s linear' }}>
