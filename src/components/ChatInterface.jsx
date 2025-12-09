@@ -100,7 +100,25 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
     }
 
     const handleSend = async () => {
-        if (!input.trim() || !user || !boardId) return
+        if (!input.trim() || !user || !boardId || isLoading) return
+
+        if (input.toLowerCase().includes('@ai')) {
+            const now = Date.now()
+            const history = JSON.parse(localStorage.getItem('ai_usage_history') || '[]').filter(t => now - t < 3600000)
+            const lastUsed = parseInt(localStorage.getItem('ai_last_used') || '0', 10)
+
+            if (now - lastUsed < 30000) {
+                alert("Please wait 30 seconds before triggering AI again.")
+                return
+            }
+            if (history.length >= 10) {
+                alert("Hourly AI limit reached (10 requests/hour).")
+                return
+            }
+            localStorage.setItem('ai_last_used', now.toString())
+            localStorage.setItem('ai_usage_history', JSON.stringify([...history, now]))
+        }
+
         const userMsg = input
         setInput('')
 

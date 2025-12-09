@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../firebase'
 import { signOut } from 'firebase/auth'
 import { collection, addDoc, query, where, onSnapshot } from 'firebase/firestore'
-import { FiPlus, FiLogOut, FiLayout } from 'react-icons/fi'
+import { FiPlus, FiLogOut, FiLayout, FiHome } from 'react-icons/fi'
 
 export default function Dashboard({ user }) {
     const [boards, setBoards] = useState([])
@@ -55,6 +55,9 @@ export default function Dashboard({ user }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                     {user && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <button onClick={() => navigate('/')} style={{ background: 'transparent', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: '#555' }}>
+                                <FiHome /> Home
+                            </button>
                             <img src={user.photoURL} alt="User" style={{ width: 32, height: 32, borderRadius: '50%' }} />
                             <span>{user.displayName}</span>
                         </div>

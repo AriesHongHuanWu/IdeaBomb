@@ -76,6 +76,64 @@ export default function LandingPage({ user }) {
                 </div>
             </section>
 
+            {/* Solutions Section */}
+            <section id="solutions" style={{ padding: '80px 20px', background: '#f8f9fa' }}>
+                <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: 60 }}>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: '#202124', marginBottom: 20 }}>Tailored Solutions</h2>
+                        <p style={{ fontSize: '1.2rem', color: '#5f6368' }}>Empowering teams across every industry.</p>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 30 }}>
+                        <div style={{ background: 'white', padding: 30, borderRadius: 12, border: '1px solid #e0e0e0' }}>
+                            <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 10 }}>Designers</h4>
+                            <p style={{ color: '#5f6368' }}>Wireframe, prototype, and gather feedback in one shared space.</p>
+                        </div>
+                        <div style={{ background: 'white', padding: 30, borderRadius: 12, border: '1px solid #e0e0e0' }}>
+                            <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 10 }}>Engineers</h4>
+                            <p style={{ color: '#5f6368' }}>Map out architectures, flowcharts, and system designs collaboratively.</p>
+                        </div>
+                        <div style={{ background: 'white', padding: 30, borderRadius: 12, border: '1px solid #e0e0e0' }}>
+                            <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 10 }}>Managers</h4>
+                            <p style={{ color: '#5f6368' }}>Track projects, organize sprints, and align team goals seamlessly.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Pricing Section */}
+            <section id="pricing" style={{ padding: '80px 20px', background: '#fff' }}>
+                <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>
+                    <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: '#202124', marginBottom: 20 }}>Simple, Transparent Pricing</h2>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 30, flexWrap: 'wrap', marginTop: 50 }}>
+                        {/* Free Tier */}
+                        <div style={{ width: 300, border: '1px solid #dadce0', borderRadius: 12, padding: 30, textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Starter</h3>
+                            <div style={{ fontSize: '2.5rem', fontWeight: 700, margin: '15px 0' }}>$0 <span style={{ fontSize: '1rem', fontWeight: 400, color: '#5f6368' }}>/ month</span></div>
+                            <p style={{ color: '#5f6368', marginBottom: 30 }}>Perfect for individuals and small teams.</p>
+                            <button onClick={() => navigate(user ? '/dashboard' : '/login')} style={{ width: '100%', padding: '12px', background: 'white', border: '1px solid #dadce0', color: '#1a73e8', borderRadius: 4, fontWeight: 600, cursor: 'pointer', marginBottom: 20 }}>Get Started</button>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, color: '#5f6368', fontSize: '0.9rem' }}>
+                                <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Unlimited Boards</div>
+                                <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Real-time Collaboration</div>
+                                <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Basic AI Access</div>
+                            </div>
+                        </div>
+                        {/* Pro Tier (Coming Soon) */}
+                        <div style={{ width: 300, border: '1px solid #ea4335', borderRadius: 12, padding: 30, textAlign: 'left', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+                            <div style={{ position: 'absolute', top: 12, right: -30, background: '#ea4335', color: 'white', fontSize: '0.7rem', fontWeight: 700, padding: '5px 40px', transform: 'rotate(45deg)' }}>COMING SOON</div>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Professional</h3>
+                            <div style={{ fontSize: '2.5rem', fontWeight: 700, margin: '15px 0' }}>$2 <span style={{ fontSize: '1rem', fontWeight: 400, color: '#5f6368' }}>/ month</span></div>
+                            <p style={{ color: '#5f6368', marginBottom: 30 }}>For power users who need more.</p>
+                            <button disabled style={{ width: '100%', padding: '12px', background: '#f1f3f4', border: 'none', color: '#999', borderRadius: 4, fontWeight: 600, cursor: 'not-allowed', marginBottom: 20 }}>Current Plan</button>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, color: '#5f6368', fontSize: '0.9rem' }}>
+                                <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Everything in Starter</div>
+                                <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Advanced AI Features</div>
+                                <div><FiCheck style={{ color: '#34a853', marginRight: 8 }} /> Priority Support</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Footer with Contact Info */}
             <footer style={{ background: '#f8f9fa', padding: '60px 40px', borderTop: '1px solid #dadce0' }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 40 }}>
@@ -84,13 +142,14 @@ export default function LandingPage({ user }) {
                             <div style={{ width: 20, height: 20, background: '#5f6368', borderRadius: 4 }}></div> IdeaBomb
                         </div>
                         <div style={{ color: '#5f6368', fontSize: '0.9rem' }}>© 2025 IdeaBomb Inc. All rights reserved.</div>
+                        <div style={{ color: '#5f6368', fontSize: '0.8rem', marginTop: 10, fontWeight: 500 }}>Created by AWBest Studio</div>
                     </div>
                     <div style={{ display: 'flex', gap: 60 }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                             <span style={{ fontWeight: 600, color: '#202124' }}>Product</span>
                             <a href="#" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.9rem' }}>Overview</a>
-                            <a href="#" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.9rem' }}>Pricing</a>
-                            <a href="#" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.9rem' }}>Customers</a>
+                            <a href="#solutions" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.9rem' }}>Solutions</a>
+                            <a href="#pricing" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.9rem' }}>Pricing</a>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                             <span style={{ fontWeight: 600, color: '#202124' }}>Enterprise</span>
