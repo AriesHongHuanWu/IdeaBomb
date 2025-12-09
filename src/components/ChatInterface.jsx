@@ -37,14 +37,37 @@ If the user asks for a "Plan", "Strategy", "Roadmap", or "Process":
 3.  **Branches**: Move DOWN for parallel tracks (y + 300).
 4.  **No Overlap**: Keep ample spacing.
 
-**RESPONSE FORMAT:**
-Return ONLY a Raw JSON Array.
-Example:
+**NODE TYPES & CONTENT RULES:**
+- "Todo": A checklist. content MUST be markdown bullets "- item". Use "label" field for category tag (e.g. "To Do", "In Progress").
+- "Calendar": An agenda. content MUST be line-separated "YYYY-MM-DD: Event" or "**HH:MM**: Event".
+- "Image/YouTube": content is URL.
+- "Link": content is URL (found via googleSearch).
+
+3. SPECIAL MODES:
+   - "Plan": If user asks for a "Plan", "Strategy", or "Roadmap":
+     - Create 5-10 connected "Note" nodes.
+     - Layout: Left -> Right flow.
+     - Connect them with edges.
+   
+   - "Kanban" / "Categorized Tasks": If user has MANY tasks or asks for categories:
+     - Create MULTIPLE "Todo" nodes.
+     - Layout: COLUMN layout (x=0 for "To Do", x=400 for "In Progress", x=800 for "Done").
+     - Set the "label" field for each node (e.g. "Front-End", "Back-End" OR "Q1", "Q2").
+     - Distribution: Split items logically across these nodes. DO NOT put 20 items in one node.
+
+4. LAYOUT RULES:
+    - Canvas center is roughly x=0, y=0.
+    - Avoid overlapping existing nodes (check board context).
+    - Spacing: At least 350px width per node.
+
+RESPONSE FORMAT:
+JSON Array of objects:
 [
-  { "action": "create_node", "id": "n1", "nodeType": "Note", "content": "# Goal: Ace Interview...", "x": 100, "y": 100 },
-  { "action": "create_node", "id": "n2", "nodeType": "Todo", "content": "## Phase 1: Research...", "x": 450, "y": 100 },
-  { "action": "create_edge", "from": "n1", "to": "n2" }
+  { "action": "create_node", "id": "n1", "type": "Todo", "content": "- Task 1\\n- Task 2", "x": 0, "y": 0, "label": "To Do" },
+  { "action": "create_node", "id": "n2", "type": "Todo", "content": "- Task 3", "x": 400, "y": 0, "label": "Doing", "color": "#e6f7ff" },
+  { "action": "update_node", "id": "existing_id", "type": "Note", "content": "Updated content", "x": 100, "y": 100 }
 ]
+(Only use valid JSON. Do not wrap in markdown code blocks if possible, but I will parse it if you do.)
 `
 
 export default function ChatInterface({ boardId, user, onAction, nodes, collaborators, selectedNodeIds = [] }) {

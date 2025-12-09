@@ -300,9 +300,13 @@ export default function BoardPage({ user }) {
                 else if (a.action === 'create_link') { type = 'Link' }
 
                 // Fallback: Check 'nodeType' from JSON
-                if (a.nodeType === 'Todo') type = 'Todo'
-                if (a.nodeType === 'Calendar') type = 'Calendar'
-                if (a.nodeType === 'Link') type = 'Link'
+                if (a.nodeType === 'Todo' || a.type === 'Todo') type = 'Todo'
+                if (a.nodeType === 'Calendar' || a.type === 'Calendar') type = 'Calendar'
+                if (a.nodeType === 'Link' || a.type === 'Link') type = 'Link'
+
+                // Extract Metadata
+                if (a.label) extra.label = a.label
+                if (a.color) extra.color = a.color
 
                 // --- CONTENT PARSING & CLEANUP ---
                 // 1. Link Node: Extract URL from Markdown [Title](URL) or raw text
@@ -369,15 +373,13 @@ export default function BoardPage({ user }) {
                     })
                     extra.events = newEvents
                 }
-                if (type === 'Todo') {
-                    if (!extra.items || extra.items.length === 0) {
-                        const lines = content.split('\n')
-                        const items = lines
-                            .filter(l => l.trim().match(/^[-*] /))
-                            .map(l => ({ id: uuidv4(), text: l.replace(/^[-*] /, '').trim(), done: false }))
+                if (type === 'Todo' && (!extra.items || extra.items.length === 0)) {
+                    const lines = content.split('\n')
+                    const items = lines
+                        .filter(l => l.trim().match(/^[-*] /))
+                        .map(l => ({ id: uuidv4(), text: l.replace(/^[-*] /, '').trim(), done: false }))
 
-                        if (items.length > 0) extra.items = items
-                    }
+                    if (items.length > 0) extra.items = items
                 }
 
                 // 3. Calendar Node: Parse "YYYY-MM-DD HH:mm: Event" from content if events missing
