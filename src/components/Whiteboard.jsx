@@ -122,9 +122,7 @@ const LinkNode = ({ node, onUpdate }) => {
 }
 
 const NoteNode = ({ node, onUpdate }) => {
-    const taRef = useRef(null)
-    useEffect(() => { if (taRef.current) { taRef.current.style.height = 'auto'; taRef.current.style.height = taRef.current.scrollHeight + 'px' } }, [node.content])
-    return (<div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, color: '#555', fontWeight: 'bold', fontSize: '0.9rem' }}><FiType /> Note</div> <textarea ref={taRef} defaultValue={node.content} onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }} onBlur={e => onUpdate(node.id, { content: e.target.value, h: e.target.scrollHeight + 80 })} onPointerDown={e => e.stopPropagation()} style={{ flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none', fontSize: '1rem', lineHeight: 1.6, color: '#333', overflow: 'hidden', minHeight: 100 }} placeholder="Type something..." /> </div>)
+    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, color: '#555', fontWeight: 'bold', fontSize: '0.9rem' }}><FiType /> Note</div> <textarea defaultValue={node.content} onBlur={e => onUpdate(node.id, { content: e.target.value })} onPointerDown={e => e.stopPropagation()} style={{ flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none', fontSize: '1rem', lineHeight: 1.6, color: '#333', overflow: 'hidden' }} placeholder="Type something..." /> </div>)
 }
 
 // --- Connection Layer ---

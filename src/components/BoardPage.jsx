@@ -10,6 +10,7 @@ import { collection, onSnapshot, setDoc, doc, updateDoc, deleteDoc, arrayUnion, 
 import { FiHome, FiUserPlus, FiDownload, FiEye, FiEyeOff } from 'react-icons/fi'
 import { signOut } from 'firebase/auth'
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import { useMediaQuery } from '../hooks/useMediaQuery'
 
 export default function BoardPage({ user }) {
     const { boardId } = useParams()
@@ -27,6 +28,7 @@ export default function BoardPage({ user }) {
     const [cursors, setCursors] = useState({})
     const [isIncognito, setIsIncognito] = useState(false)
     const throttleRef = useRef(Date.now())
+    const isMobile = useMediaQuery('(max-width: 768px)')
 
     // --- Thumbnail Generator ---
     const updateThumbnail = async () => {
@@ -36,10 +38,17 @@ export default function BoardPage({ user }) {
         const pageNodes = nodes.filter(n => (n.page || 'Page 1') === 'Page 1') // Only thumbnail page 1
         if (pageNodes.length === 0) return
 
-        const minX = Math.min(...pageNodes.map(n => n.x))
-        const minY = Math.min(...pageNodes.map(n => n.y))
-        const maxX = Math.max(...pageNodes.map(n => n.x + (n.w || 320)))
-        const maxY = Math.max(...pageNodes.map(n => n.y + (n.h || 240)))
+        // Calculate bounding box
+        const nodesX = pageNodes.map(n => n.x)
+        const nodesY = pageNodes.map(n => n.y)
+        const nodesR = pageNodes.map(n => n.x + (n.w || 320))
+        const nodesB = pageNodes.map(n => n.y + (n.h || 240))
+
+        const minX = Math.min(...nodesX) - 50 // Add padding
+        const minY = Math.min(...nodesY) - 50
+        const maxX = Math.max(...nodesR) + 50
+        const maxY = Math.max(...nodesB) + 50
+
         const w = Math.max(maxX - minX, 100)
         const h = Math.max(maxY - minY, 100)
 
@@ -52,7 +61,7 @@ export default function BoardPage({ user }) {
             else if (n.type === 'Todo') { color = '#e6f7ff'; stroke = '#91d5ff' }
             else if (n.type === 'Image') { color = '#eee'; stroke = '#ddd' }
 
-            svgContent += `<rect x="${nx}" y="${ny}" width="${n.w || 300}" height="${n.h || 200}" fill="${color}" stroke="${stroke}" rx="8" />`
+            svgContent += `<rect x="${nx}" y="${ny}" width="${n.w || 320}" height="${n.h || 240}" fill="${color}" stroke="${stroke}" rx="8" />`
             if (n.content) {
                 // Very basic text truncation
                 const text = n.content.substring(0, 20).replace(/</g, '&lt;')
@@ -176,7 +185,18 @@ export default function BoardPage({ user }) {
         await setDoc(doc(db, 'boards', boardId, 'edges', id), { id, from: fromId, to: toId, page: activePage })
     }
 
-    const updateNodePosition = async (id, offset) => { const node = nodes.find(n => n.id === id); if (!node) return; try { await updateDoc(doc(db, 'boards', boardId, 'nodes', id), { x: node.x + offset.x, y: node.y + offset.y }) } catch (e) { console.error(e) } }
+    const updateNodePosition = async (id, offset) => {
+        // Optimistic Update
+        setNodes(prev => prev.map(n => n.id === id ? { ...n, x: n.x + offset.x, y: n.y + offset.y } : n));
+
+        const node = nodes.find(n => n.id === id);
+        if (!node) return;
+        try {
+            await updateDoc(doc(db, 'boards', boardId, 'nodes', id), { x: node.x + offset.x, y: node.y + offset.y })
+        } catch (e) {
+            console.error(e)
+        }
+    }
     const updateNodeData = async (id, data) => { try { await updateDoc(doc(db, 'boards', boardId, 'nodes', id), data) } catch (e) { console.error(e) } }
     const deleteNode = async (id) => {
         const batch = writeBatch(db)
@@ -395,8 +415,20 @@ export default function BoardPage({ user }) {
         <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
             <ShareModal boardId={boardId} isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
 
-            <motion.div className="glass-panel" style={{ position: 'absolute', top: 20, left: 20, right: 20, padding: '10px 20px', zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: 50, pointerEvents: 'auto' }} initial={{ y: -100 }} animate={{ y: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            {/* Top Bar - Mobile Optimized & Auto-Hide Pages */}
+            <motion.div
+                className="glass-panel"
+                style={{
+                    position: 'absolute', top: 20, left: 20, right: 20,
+                    padding: isMobile ? '8px 15px' : '10px 20px',
+                    zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    borderRadius: 50, pointerEvents: 'auto',
+                    flexWrap: isMobile ? 'wrap' : 'nowrap',
+                    gap: isMobile ? 10 : 0
+                }}
+                initial={{ y: -100 }} animate={{ y: 0 }}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 20 }}>
                     <button onClick={() => { updateThumbnail(); navigate('/') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button>
                     {isEditingTitle ? (
                         <input
@@ -422,7 +454,17 @@ export default function BoardPage({ user }) {
 
             {lastAIAction && (<div style={{ position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#333', color: 'white', padding: '10px 20px', borderRadius: 20, display: 'flex', gap: 10, alignItems: 'center' }}><span>AI completed an action. Satisfied?</span><button onClick={() => setLastAIAction(null)} style={{ background: 'green', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>Yes</button><button onClick={undoLastAIAction} style={{ background: 'red', border: 'none', color: 'white', padding: '5px 10px', borderRadius: 10, cursor: 'pointer' }}>No (Undo)</button></div>)}
 
-            <div style={{ position: 'absolute', bottom: 20, left: 20, zIndex: 150, display: 'flex', flexDirection: 'column', gap: 10, pointerEvents: 'none', maxWidth: '35vw' }}>
+            <div
+                style={{
+                    position: 'absolute', bottom: 20, left: 20, zIndex: 150,
+                    display: 'flex', flexDirection: 'column', gap: 10, pointerEvents: 'none',
+                    maxWidth: isMobile ? '80vw' : '300px',
+                    opacity: isMobile ? 1 : 0.3,
+                    transition: 'opacity 0.3s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                onMouseLeave={e => !isMobile && (e.currentTarget.style.opacity = 0.3)}
+            >
                 <div style={{ display: 'flex', gap: 5, background: 'rgba(0,0,0,0.8)', padding: '8px 12px', borderRadius: 16, pointerEvents: 'auto', overflowX: 'auto', scrollbarWidth: 'none', whiteSpace: 'nowrap' }}>
                     {pages.map(p => (
                         editingPage === p ? (
@@ -482,6 +524,6 @@ export default function BoardPage({ user }) {
                 />
             </div>
             <ChatInterface boardId={boardId} user={user} onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />
-        </div>
+        </div >
     )
 }
