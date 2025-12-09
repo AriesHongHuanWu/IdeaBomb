@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../firebase'
 import { signOut } from 'firebase/auth'
-import { collection, addDoc, query, where, onSnapshot } from 'firebase/firestore'
+import { collection, addDoc, query, where, onSnapshot, setDoc } from 'firebase/firestore'
 import { FiPlus, FiLogOut, FiLayout, FiHome, FiFolder, FiUsers, FiGrid, FiShare2, FiClock, FiMoreVertical, FiEdit2, FiTrash2, FiMove, FiShield } from 'react-icons/fi'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { updateDoc, doc, deleteDoc } from 'firebase/firestore'
@@ -55,6 +55,15 @@ export default function Dashboard({ user }) {
         }, (error) => {
             console.error("Dashboard Query Error:", error)
         })
+
+        // Sync User to Firestore (for Admin Discovery)
+        setDoc(doc(db, 'users', user.uid), {
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            lastLogin: new Date().toISOString()
+        }, { merge: true }).catch(err => console.error("User Sync Error", err))
+
         return () => unsubscribe()
     }, [user])
 

@@ -144,7 +144,7 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
 
                 // Determine User Limit
                 const userQuota = settings.userQuotas?.[user.email]
-                const dailyLimit = userQuota?.limit || 10 // Default 10 requests/day
+                const dailyLimit = userQuota?.limit || settings.defaultDailyLimit || 10 // Dynamic Default
 
                 // Check Usage
                 const today = new Date().toISOString().split('T')[0]
