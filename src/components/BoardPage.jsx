@@ -130,7 +130,7 @@ export default function BoardPage({ user }) {
     const userColor = useRef('#' + Math.floor(Math.random() * 16777215).toString(16))
 
     const handleCursorMove = (x, y) => {
-        if (isIncognito || !user || Date.now() - throttleRef.current < 50) return
+        if (isIncognito || !user || Date.now() - throttleRef.current < 200) return
         throttleRef.current = Date.now()
         setDoc(doc(db, 'boards', boardId, 'cursors', user.uid), {
             x, y, uid: user.uid, displayName: user.displayName, photoURL: user.photoURL,
