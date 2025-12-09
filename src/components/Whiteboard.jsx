@@ -13,10 +13,40 @@ const Button = ({ children, onClick, variant = 'primary', style }) => { const bg
 const ToolBtn = ({ icon, label, onClick, active }) => (<motion.button whileHover={{ y: -5 }} whileTap={{ scale: 0.95 }} onClick={onClick} title={label} style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: active ? '#007bff' : 'white', color: active ? 'white' : '#444', fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>{icon}</motion.button>)
 
 // --- Node Types ---
+// Helper to linkify text
+const Linkify = ({ text }) => {
+    if (!text) return null
+    const parts = text.split(/(https?:\/\/[^\s]+)/g)
+    return parts.map((part, i) => {
+        if (part.match(/^https?:\/\//)) {
+            return <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{ color: '#096dd9', textDecoration: 'underline', pointerEvents: 'auto' }} onPointerDown={e => e.stopPropagation()}>{part}</a>
+        }
+        return part
+    })
+}
+
 const ContentDisplay = ({ content }) => {
     if (!content) return null
-    const text = typeof content === 'string' ? content : JSON.stringify(content)
-    return <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: 10, padding: '6px 8px', background: 'rgba(0,0,0,0.03)', borderRadius: 6, fontStyle: 'italic' }}>{text}</div>
+    const str = typeof content === 'string' ? content : JSON.stringify(content)
+
+    // Check for markdown links [Title](URL)
+    const hasMdLink = str.match(/\[(.*?)\]\((.*?)\)/)
+    if (hasMdLink || str.includes('http')) {
+        const items = str.split('\n')
+        return (
+            <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: 10, padding: '6px 8px', background: 'rgba(0,0,0,0.03)', borderRadius: 6, fontStyle: 'italic', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {items.map((line, i) => {
+                    const match = line.match(/\[(.*?)\]\((.*?)\)/)
+                    if (match) {
+                        return <div key={i}><a href={match[2]} target="_blank" rel="noopener noreferrer" style={{ color: '#096dd9', display: 'flex', alignItems: 'center', gap: 4, pointerEvents: 'auto' }} onPointerDown={e => e.stopPropagation()}><FiLink size={14} /> {match[1]}</a></div>
+                    }
+                    return <div key={i}><Linkify text={line} /></div>
+                })}
+            </div>
+        )
+    }
+
+    return <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: 10, padding: '6px 8px', background: 'rgba(0,0,0,0.03)', borderRadius: 6, fontStyle: 'italic' }}>{str}</div>
 }
 
 const YouTubeNode = ({ node, onUpdate }) => {
@@ -61,7 +91,7 @@ const CalendarNode = ({ node, onUpdate }) => {
             }}>
                 <FiCalendar size={20} /> <span style={{ fontSize: '1.1rem' }}>Timeline</span>
             </div>
-            {node.content && <ContentDisplay content={node.content} />}
+            {node.content && Object.keys(events).length === 0 && <ContentDisplay content={node.content} />}
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0, padding: '0 5px' }}>
                 {sortedEvents.length === 0 && <div style={{ textAlign: 'center', color: '#aaa', marginTop: 20, fontStyle: 'italic' }}>No events scheduled</div>}
 

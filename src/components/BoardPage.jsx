@@ -333,42 +333,33 @@ export default function BoardPage({ user }) {
                 if (type === 'Calendar') {
                     const lines = content.split('\n')
                     const newEvents = { ...extra.events } // Preserve existing if any
-                    const today = new Date().toISOString().split('T')[0].slice(0, 8) // "2023-10-" helper
 
                     lines.forEach(line => {
-                        // Match "YYYY-MM-DD: Event" or "**HH:MM**: Event" or "* **HH:MM**: Event"
-                        // Regex for Date: (\d{4}-\d{2}-\d{2})
-                        // Regex for Time: (\d{1,2}:\d{2}(?: - \d{1,2}:\d{2})?)
-
-                        const dateMatch = line.match(/(\d{4}[\/-]\d{2}[\/-]\d{2})/)
-                        const timeMatch = line.match(/(\d{1,2}:\d{2})/)
+                        // Regex strategies
+                        const fullDateTimeMatch = line.match(/(\d{4}[/-]\d{2}[/-]\d{2})\s+(\d{1,2}:\d{2})/);
+                        const dateOnlyMatch = line.match(/(\d{4}[/-]\d{2}[/-]\d{2})/);
+                        const timeOnlyMatch = line.match(/(\d{1,2}:\d{2})/);
 
                         let key = null
-                        if (dateMatch) {
-                            key = dateMatch[1].replace(/\//g, '-')
-                        } else if (timeMatch) {
-                            // If only time is found, assume it's for the previously mentioned date or "today" relative to context? 
-                            // Safer to just store as Time Key if the UI handles it (Timeline UI handles time-only keys)
-                            key = timeMatch[1]
-                            // If range "09:00 - 10:00", keep just start time as key, but maybe full string is better? 
-                            // Timeline expects unique keys. 
-                            if (line.includes('-') && line.match(/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/)) {
-                                // "09:00 - 10:00" -> key "09:00"
-                                key = timeMatch[0]
+                        let cleanContent = line
+
+                        if (fullDateTimeMatch) {
+                            // "YYYY-MM-DD HH:MM" -> Key = "YYYY-MM-DD HH:MM" to be unique
+                            key = `${fullDateTimeMatch[1].replace(/\//g, '-')} ${fullDateTimeMatch[2]}`
+                            cleanContent = line.replace(fullDateTimeMatch[0], '')
+                        } else if (dateOnlyMatch) {
+                            key = dateOnlyMatch[1].replace(/\//g, '-')
+                            cleanContent = line.replace(dateOnlyMatch[0], '')
+                        } else if (timeOnlyMatch) {
+                            if (line.match(/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/)) {
+                                key = timeOnlyMatch[0]
                             }
+                            cleanContent = line.replace(/[\d:-]+/, '')
                         }
 
                         if (key) {
-                            // Extract content: Remove the date/time part and bullets
-                            let cleanContent = line.replace(/[*#\-]/g, '') // remove markdown chars
-                                .replace(dateMatch ? dateMatch[0] : '', '')
-                                .replace(timeMatch ? /[\d:-]+/ : '', '') // remove time range loosely
-                                .replace(/^[:\s]+/, '') // remove leading colon/space
-                                .trim()
-
-                            if (cleanContent) {
-                                newEvents[key] = cleanContent
-                            }
+                            cleanContent = cleanContent.replace(/[*#\-]/g, '').replace(/^[:\s]+/, '').trim()
+                            if (cleanContent) { newEvents[key] = cleanContent }
                         }
                     })
                     extra.events = newEvents

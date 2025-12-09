@@ -41,7 +41,8 @@ If the user asks for a "Plan", "Strategy", "Roadmap", or "Process":
 - "Todo": A checklist. content MUST be markdown bullets "- item". Use "label" field for category tag (e.g. "To Do", "In Progress").
 - "Calendar": An agenda. content MUST be line-separated "YYYY-MM-DD: Event" or "**HH:MM**: Event".
 - "Image/YouTube": content is URL.
-- "Link": content is URL (found via googleSearch).
+- "Link": content is URL.
+- "Resource List": Use "Note" type. List multiple URLs as markdown bullets. ([Title](URL)).
 
 3. SPECIAL MODES:
    - "Plan": If user asks for a "Plan", "Strategy", or "Roadmap":
@@ -65,6 +66,7 @@ JSON Array of objects:
 [
   { "action": "create_node", "id": "n1", "type": "Todo", "content": "- Task 1\\n- Task 2", "x": 0, "y": 0, "label": "To Do" },
   { "action": "create_node", "id": "n2", "type": "Todo", "content": "- Task 3", "x": 400, "y": 0, "label": "Doing", "color": "#e6f7ff" },
+  { "action": "create_edge", "from": "n1", "to": "n2", "label": "Next Step" },
   { "action": "update_node", "id": "existing_id", "type": "Note", "content": "Updated content", "x": 100, "y": 100 }
 ]
 (Only use valid JSON. Do not wrap in markdown code blocks if possible, but I will parse it if you do.)
