@@ -5,6 +5,10 @@ import { FiArrowLeft } from 'react-icons/fi'
 export default function PrivacyPolicy() {
     const navigate = useNavigate()
 
+    React.useEffect(() => {
+        document.title = 'Privacy Policy - IdeaBomb'
+    }, [])
+
     return (
         <div style={{ maxWidth: 800, margin: '0 auto', padding: '60px 20px', fontFamily: '"Google Sans", "Inter", sans-serif', color: '#202124' }}>
             <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, color: '#5f6368', fontSize: '1rem', marginBottom: 40, padding: 0 }}>

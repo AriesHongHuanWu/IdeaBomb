@@ -11,6 +11,10 @@ export default function Dashboard({ user }) {
     const navigate = useNavigate()
 
     useEffect(() => {
+        document.title = 'Dashboard - IdeaBomb'
+    }, [])
+
+    useEffect(() => {
         if (!user) return
         // Query: Boards owner created OR is invited to (allowedEmails contains my email)
         // To support both efficiently without composite index issues immediately, 

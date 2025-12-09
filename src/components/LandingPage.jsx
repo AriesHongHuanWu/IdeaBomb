@@ -6,6 +6,10 @@ import { FiArrowRight, FiCheck, FiCpu, FiMessageSquare, FiGrid, FiChevronDown } 
 export default function LandingPage({ user }) {
     const navigate = useNavigate()
 
+    React.useEffect(() => {
+        document.title = 'IdeaBomb - Collaborative Whiteboard'
+    }, [])
+
     return (
         <div style={{ fontFamily: '"Google Sans", "Inter", sans-serif', width: '100vw', minHeight: '100vh', background: '#ffffff', color: '#202124', overflowX: 'hidden' }}>
             {/* Header */}

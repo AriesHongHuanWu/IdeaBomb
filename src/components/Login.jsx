@@ -2,9 +2,16 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { signInWithPopup } from 'firebase/auth'
 import { auth, googleProvider } from '../firebase'
-import { FiMonitor } from 'react-icons/fi'
+import { useNavigate } from 'react-router-dom'
+import { FiMonitor, FiArrowLeft } from 'react-icons/fi'
 
 export default function Login() {
+    const navigate = useNavigate()
+
+    React.useEffect(() => {
+        document.title = 'Login - IdeaBomb'
+    }, [])
+
     const handleLogin = async () => {
         try {
             await signInWithPopup(auth, googleProvider)
@@ -17,8 +24,11 @@ export default function Login() {
     return (
         <div style={{
             width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: '#f8f9fa'
+            background: '#f8f9fa', position: 'relative'
         }}>
+            <button onClick={() => navigate('/')} style={{ position: 'absolute', top: 40, left: 40, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, color: '#5f6368', fontSize: '1rem' }}>
+                <FiArrowLeft /> Back to Home
+            </button>
             <motion.div
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 className="glass-panel"
