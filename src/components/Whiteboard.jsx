@@ -249,7 +249,7 @@ const LinkNode = ({ node, onUpdate }) => {
 }
 
 const NoteNode = ({ node, onUpdate }) => {
-    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, color: '#555', fontWeight: 'bold', fontSize: '0.9rem' }}><FiType /> Note</div> <textarea defaultValue={typeof node.content === 'string' ? node.content : JSON.stringify(node.content || '')} onBlur={e => onUpdate(node.id, { content: e.target.value })} onPointerDown={e => e.stopPropagation()} style={{ flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none', fontSize: '1rem', lineHeight: 1.6, color: '#333', overflow: 'hidden' }} placeholder="Type something..." /> </div>)
+    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, color: '#555', fontWeight: 'bold', fontSize: '0.9rem' }}><FiType /> Note</div> <textarea maxLength={1000} defaultValue={typeof node.content === 'string' ? node.content : JSON.stringify(node.content || '')} onBlur={e => onUpdate(node.id, { content: e.target.value })} onPointerDown={e => e.stopPropagation()} style={{ flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none', fontSize: '1rem', lineHeight: 1.6, color: '#333', overflow: 'hidden' }} placeholder="Type something..." /> </div>)
 }
 
 // --- Connection Layer ---

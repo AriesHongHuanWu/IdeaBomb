@@ -184,6 +184,7 @@ export default function BoardPage({ user }) {
 
     const addNode = async (type, content, extraData = {}) => {
         if (!user || !hasAccess) return null
+        if (nodes.length >= 200) { alert("Maximum stickies limit reached (200). Please delete some to add more."); return null }
         const newNode = { id: uuidv4(), type: type || 'Note', page: activePage, x: extraData.x || (window.innerWidth / 2), y: extraData.y || (window.innerHeight / 2), content: content || '', items: [], events: extraData.events || {}, src: '', videoId: '', createdAt: new Date().toISOString(), createdBy: user.uid, ...extraData }
         try { await setDoc(doc(db, 'boards', boardId, 'nodes', newNode.id), newNode); return newNode.id } catch (e) { console.error("Error adding node:", e); return null }
     }
