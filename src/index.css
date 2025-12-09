@@ -27,8 +27,13 @@ body {
   background: var(--bg-gradient);
   color: var(--text-main);
   min-height: 100vh;
-  /* overflow: hidden;  <-- Removed to allow Landing Page scroll */
-  /* user-select: none; <-- Removed to allow Landing Page select */
+  overflow-y: auto;
+  /* Force scroll */
+  overflow-x: hidden;
+}
+
+html {
+  overflow-y: auto;
 }
 
 /* Glassmorphism Class */

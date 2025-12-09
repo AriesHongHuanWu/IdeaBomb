@@ -1,7 +1,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { FiArrowRight, FiCheck, FiCpu, FiMessageSquare, FiGrid } from 'react-icons/fi'
+import { FiArrowRight, FiCheck, FiCpu, FiMessageSquare, FiGrid, FiChevronDown } from 'react-icons/fi'
 
 export default function LandingPage({ user }) {
     const navigate = useNavigate()
@@ -16,6 +16,7 @@ export default function LandingPage({ user }) {
                 </div>
                 <nav style={{ display: 'flex', gap: 30, alignItems: 'center' }}>
                     <a href="#features" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.95rem', fontWeight: 500 }}>Features</a>
+                    <a href="#tutorial" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.95rem', fontWeight: 500 }}>How It Works</a>
                     <a href="#solutions" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.95rem', fontWeight: 500 }}>Solutions</a>
                     <a href="#pricing" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.95rem', fontWeight: 500 }}>Pricing</a>
                     {user ? (
@@ -72,6 +73,21 @@ export default function LandingPage({ user }) {
                         <FeatureCard icon={<FiGrid size={40} color="#1a73e8" />} title="Infinite Canvas" desc="Break free from page limits. Organize thoughts, flowcharts, and plans on an endless whiteboard." />
                         <FeatureCard icon={<FiCpu size={40} color="#ea4335" />} title="Gemini AI Integration" desc="Use @ai to summarize discussions, generate content, and organize your board automatically." />
                         <FeatureCard icon={<FiMessageSquare size={40} color="#34a853" />} title="Real-time Collaboration" desc="Chat, comment, and co-edit with your team instantly. See cursors and updates live." />
+                    </div>
+                </div>
+            </section>
+
+            {/* How It Works (Tutorial) Section */}
+            <section id="tutorial" style={{ padding: '80px 20px', background: 'linear-gradient(180deg, #ffffff 0%, #f1f3f4 100%)' }}>
+                <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>
+                    <div style={{ textAlign: 'center', marginBottom: 60 }}>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: '#202124', marginBottom: 20 }}>How It Works</h2>
+                        <p style={{ fontSize: '1.2rem', color: '#5f6368' }}>Get started in seconds. Master it in minutes.</p>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 40, marginTop: 40 }}>
+                        <TutorialStep number="1" title="Sign Up & Create" desc="Log in with your Google account and create your first unlimited whiteboard." />
+                        <TutorialStep number="2" title="Invite Your Team" desc="Share the link or invite via email to collaborate in real-time." />
+                        <TutorialStep number="3" title="Unleash AI" desc="Type @ai in the chat or context menu to brainstorm, summarize, and create content." />
                     </div>
                 </div>
             </section>
@@ -134,6 +150,21 @@ export default function LandingPage({ user }) {
                 </div>
             </section>
 
+            {/* FAQ Section */}
+            <section id="faq" style={{ padding: '80px 20px', background: '#fff' }}>
+                <div style={{ maxWidth: 800, margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: 60 }}>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: '#202124', marginBottom: 20 }}>Frequently Asked Questions</h2>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                        <FAQItem question="Is IdeaBomb really free?" answer="Yes! The Starter plan is completely free and includes unlimited boards and real-time collaboration." />
+                        <FAQItem question="How does the AI integration work?" answer="Simply type @ai in any text note or chat message. Gemini will analyze your board context and provide intelligent suggestions, summaries, or content." />
+                        <FAQItem question="Can I invite my entire team?" answer="Absolutely. There are no limits on the number of collaborators you can invite to a board, even on the free plan." />
+                        <FAQItem question="Is my data secure?" answer="We use enterprise-grade encryption and secure Google authenticaton to ensure your ideas stay safe." />
+                    </div>
+                </div>
+            </section>
+
             {/* Footer with Contact Info */}
             <footer style={{ background: '#f8f9fa', padding: '60px 40px', borderTop: '1px solid #dadce0' }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 40 }}>
@@ -175,6 +206,31 @@ function FeatureCard({ icon, title, desc }) {
             <div style={{ marginBottom: 20 }}>{icon}</div>
             <h3 style={{ fontSize: '1.3rem', fontWeight: 600, color: '#202124', marginBottom: 12 }}>{title}</h3>
             <p style={{ fontSize: '1rem', color: '#5f6368', lineHeight: 1.5 }}>{desc}</p>
+        </div>
+    )
+}
+
+function TutorialStep({ number, title, desc }) {
+    return (
+        <div style={{ width: 300, textAlign: 'left', position: 'relative' }}>
+            <div style={{ fontSize: '4rem', fontWeight: 900, color: '#e8eaed', opacity: 0.8, position: 'absolute', top: -30, left: -10, zIndex: 0 }}>{number}</div>
+            <div style={{ position: 'relative', zIndex: 1 }}>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 600, color: '#202124', marginBottom: 15 }}>{title}</h3>
+                <p style={{ fontSize: '1rem', color: '#5f6368', lineHeight: 1.5 }}>{desc}</p>
+            </div>
+        </div>
+    )
+}
+
+function FAQItem({ question, answer }) {
+    const [isOpen, setIsOpen] = React.useState(false)
+    return (
+        <div style={{ borderBottom: '1px solid #e0e0e0', paddingBottom: 20 }}>
+            <button onClick={() => setIsOpen(!isOpen)} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', fontSize: '1.2rem', fontWeight: 500, color: '#202124', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                {question}
+                <span style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+            </button>
+            {isOpen && <p style={{ marginTop: 15, fontSize: '1rem', color: '#5f6368', lineHeight: 1.6 }}>{answer}</p>}
         </div>
     )
 }
