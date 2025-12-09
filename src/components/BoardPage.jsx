@@ -262,23 +262,22 @@ export default function BoardPage({ user }) {
         const batch = writeBatch(db)
         const idMap = {} // Local ID -> Real Firestore ID
 
+        // Layout State
+        const nodeCache = { ...Object.fromEntries(pageNodes.map(n => [n.id, n])) } // ID -> Node Object (with x,y,w,h)
+        const siblingTracker = {} // parentId -> currentYOffset (for stacking siblings)
+
+        // Find the "Frontier" (Rightmost X) to start independent chains
+        let globalFrontierX = pageNodes.length > 0 ? Math.max(...pageNodes.map(n => n.x + (n.w || 320))) + 100 : 100
+        let globalGridCount = 0
+
         // Helper: Extract YouTube ID
         const getYTId = (u) => { const m = u?.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/); return (m && m[2].length === 11) ? m[2] : null }
-
-        // Smart Layout Calculation
-        const existingMaxX = pageNodes.length > 0 ? Math.max(...pageNodes.map(n => n.x + (n.w || 320))) : 0
-        const startX = Math.max(100, existingMaxX + 100) // Start 100px after the rightmost node
-        const GRID_COLS = 3
-        const COL_WIDTH = 350
-        const ROW_HEIGHT = 400
-
-        let createCount = 0
 
         for (const a of actionList) {
             // --- CREATION ---
             if (['create_node', 'create_calendar_plan', 'create_video', 'create_link'].includes(a.action)) {
                 const newId = uuidv4()
-                if (a.id) idMap[a.id] = newId
+                if (a.id) idMap[a.id] = newId // Map local AI ID (e.g. "n1") to Firestore ID
 
                 let type = a.nodeType || 'Note'
                 let content = a.content || ''
@@ -289,7 +288,6 @@ export default function BoardPage({ user }) {
                 else if (a.action === 'create_video') { type = 'YouTube' }
                 else if (a.action === 'create_link') { type = 'Link' }
 
-                // Smart Property Extraction
                 if (type === 'YouTube') {
                     const u = a.url || (content.startsWith('http') ? content : '')
                     const vid = a.videoId || getYTId(u)
@@ -303,23 +301,56 @@ export default function BoardPage({ user }) {
                     if (!extra.events && a.events) extra.events = a.events
                 }
 
-                // Smart Grid Positioning
-                const col = createCount % GRID_COLS
-                const row = Math.floor(createCount / GRID_COLS)
-                const x = a.x !== undefined ? a.x : startX + (col * COL_WIDTH)
-                const y = a.y !== undefined ? a.y : 150 + (row * ROW_HEIGHT)
+                // --- LAYOUT LOGIC ---
+                let x = 0, y = 0, w = 320, h = 300 // Default dimensions
 
-                createCount++
+                // 1. Find a Parent (Source of connection)
+                // Look for an edge in this batch where 'to' is THIS node
+                const parentEdge = actionList.find(act => act.action === 'create_edge' && act.to === a.id)
+                let parentNode = null
+
+                if (parentEdge) {
+                    const parentLocalId = parentEdge.from
+                    // Try to resolve parent ID: Is it a new node (mapped) or existing?
+                    const resolvedParentId = idMap[parentLocalId] || parentLocalId
+                    parentNode = nodeCache[resolvedParentId] // Look in cache (contains both old and new)
+                }
+
+                if (parentNode) {
+                    // CONTEXTUAL PLACEMENT
+                    // Stack vertically relative to parent
+                    const pId = parentNode.id
+                    if (siblingTracker[pId] === undefined) {
+                        siblingTracker[pId] = parentNode.y // Start at parent level
+                    } else {
+                        siblingTracker[pId] += (h + 50) // Increment by height + gap
+                    }
+
+                    x = parentNode.x + (parentNode.w || 320) + 100 // Right of parent
+                    y = siblingTracker[pId]
+                } else {
+                    // INDEPENDENT / GLOBAL PLACEMENT
+                    const GRID_COLS = 3
+                    const col = globalGridCount % GRID_COLS
+                    const row = Math.floor(globalGridCount / GRID_COLS)
+
+                    x = globalFrontierX + (col * 350)
+                    y = 150 + (row * 400)
+                    globalGridCount++
+                }
+
+                // Store in Cache for future children
+                nodeCache[newId] = { id: newId, x, y, w, h }
 
                 batch.set(doc(db, 'boards', boardId, 'nodes', newId), {
                     id: newId, type, content, page: activePage, x, y, items: [], events: {}, src: '', videoId: '', ...extra,
                     createdAt: new Date().toISOString(), createdBy: user.uid,
-                    aiStatus: 'suggested' // Mark for UI glow
+                    aiStatus: 'suggested'
                 })
                 createdIds.push(newId)
             }
 
-            // --- UPDATE (New Feature) ---
+            // --- UPDATE ---
             else if (a.action === 'update_node') {
                 const targetNode = pageNodes.find(n => n.id === a.id || (n.content && n.content.includes(a.content_match)))
                 if (targetNode) {
@@ -327,6 +358,9 @@ export default function BoardPage({ user }) {
                     if (a.content) updates.content = a.content
                     if (a.data) Object.assign(updates, a.data)
                     batch.update(doc(db, 'boards', boardId, 'nodes', targetNode.id), updates)
+
+                    // Update Cache in case downstream nodes depend on it (though we don't update w/h here significantly yet)
+                    if (a.content) nodeCache[targetNode.id].content = a.content
                 }
             }
 
@@ -340,16 +374,16 @@ export default function BoardPage({ user }) {
                 matches.forEach(t => {
                     batch.delete(doc(db, 'boards', boardId, 'nodes', t.id))
                     edges.filter(e => e.from === t.id || e.to === t.id).forEach(e => batch.delete(doc(db, 'boards', boardId, 'edges', e.id)))
+                    delete nodeCache[t.id]
                 })
             }
         }
 
-        // Pass 2: Edges (Connections)
+        // Pass 2: Edges
         actionList.forEach(a => {
             if (a.action === 'create_edge') {
-                // Resolves local ID (from this batch) OR valid existing ID
-                const fromId = idMap[a.from] || (nodes.find(n => n.id === a.from) ? a.from : null)
-                const toId = idMap[a.to] || (nodes.find(n => n.id === a.to) ? a.to : null)
+                const fromId = idMap[a.from] || (nodeCache[a.from] ? a.from : null)
+                const toId = idMap[a.to] || (nodeCache[a.to] ? a.to : null)
 
                 if (fromId && toId) {
                     const edgeId = uuidv4()
