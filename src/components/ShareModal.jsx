@@ -15,12 +15,13 @@ export default function ShareModal({ boardId, isOpen, onClose }) {
         e.preventDefault()
         if (!email.trim() || !boardId) return
         setLoading(true)
+        const emailToInvite = email.trim().toLowerCase()
         try {
-            await updateDoc(doc(db, 'boards', boardId), { allowedEmails: arrayUnion(email.trim()) })
+            await updateDoc(doc(db, 'boards', boardId), { allowedEmails: arrayUnion(emailToInvite) })
             const subject = encodeURIComponent("Invitation: Collaborate on Whiteboard")
-            const body = encodeURIComponent(`Hi,\n\nI've enabled access for you on my whiteboard. Please log in with this Google Email (${email}).\n\nLink: ${window.location.href}\n\nThanks!`)
-            window.location.href = `mailto:${email}?subject=${subject}&body=${body}`
-            alert(`Access granted to ${email}. Check your email app to send the link!`)
+            const body = encodeURIComponent(`Hi,\n\nI've enabled access for you on my whiteboard. Please log in with this Google Email (${emailToInvite}).\n\nLink: ${window.location.href}\n\nThanks!`)
+            window.location.href = `mailto:${emailToInvite}?subject=${subject}&body=${body}`
+            alert(`Access granted to ${emailToInvite}. Check your email app to send the link!`)
             setEmail('')
         } catch (error) { console.error("Invite failed", error); alert("Failed to invite: " + error.message) }
         finally { setLoading(false) }

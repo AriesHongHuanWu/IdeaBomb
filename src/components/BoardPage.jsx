@@ -33,7 +33,8 @@ export default function BoardPage({ user }) {
         const unsub = onSnapshot(doc(db, 'boards', boardId), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data()
-                setBoardTitle(data.title); const isOwner = data.createdBy === user.uid; const isAllowed = data.allowedEmails?.includes(user.email) || isOwner;
+                setBoardTitle(data.title); const isOwner = data.createdBy === user.uid;
+                const isAllowed = data.allowedEmails?.some(e => e.toLowerCase() === (user.email || '').toLowerCase()) || isOwner;
                 if (data.allowedEmails && !isAllowed) { setHasAccess(false) } else { setHasAccess(true) }
             } else { setBoardTitle('Board Not Found') }
         }, (error) => { if (error.code === 'permission-denied') setHasAccess(false) })
