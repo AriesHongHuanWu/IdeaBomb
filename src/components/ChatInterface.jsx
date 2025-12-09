@@ -185,13 +185,26 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                 const response = result.response.text()
 
                 // Extract JSON
-                let cleanText = response.replace(/```json/g, '').replace(/```/g, '').trim()
-                const jsonMatch = cleanText.match(/\[.*\]/s)
+                let cleanText = response.replace(/```json/g, '').replace(/```javascript/g, '').replace(/```/g, '').trim()
+
+                // Try to find a JSON Array first
+                let jsonMatch = cleanText.match(/\[[\s\S]*\]/)
+
+                // If no array, try to find a JSON Object
+                if (!jsonMatch) {
+                    jsonMatch = cleanText.match(/\{[\s\S]*\}/)
+                }
 
                 if (jsonMatch) {
                     try {
-                        const actions = JSON.parse(jsonMatch[0])
-                        onAction(actions)
+                        let parsed = JSON.parse(jsonMatch[0])
+                        // If it's a single object, wrap it in an array
+                        if (!Array.isArray(parsed)) {
+                            parsed = [parsed]
+                        }
+
+                        onAction(parsed)
+
                         // Add AI Response
                         await addDoc(collection(db, 'boards', boardId, 'messages'), {
                             role: 'model',
@@ -201,8 +214,9 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                             isAI: true
                         })
                     } catch (e) {
+                        console.error("JSON Parse Error:", e)
                         await addDoc(collection(db, 'boards', boardId, 'messages'), {
-                            role: 'model', content: response, createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
+                            role: 'model', content: "I tried to generate a plan but I made a mistake in the format. Please try again.", createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
                         })
                     }
                 } else {

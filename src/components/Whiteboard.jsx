@@ -13,10 +13,17 @@ const Button = ({ children, onClick, variant = 'primary', style }) => { const bg
 const ToolBtn = ({ icon, label, onClick, active }) => (<motion.button whileHover={{ y: -5 }} whileTap={{ scale: 0.95 }} onClick={onClick} title={label} style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: active ? '#007bff' : 'white', color: active ? 'white' : '#444', fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>{icon}</motion.button>)
 
 // --- Node Types ---
+const ContentDisplay = ({ content }) => {
+    if (!content) return null
+    const text = typeof content === 'string' ? content : JSON.stringify(content)
+    return <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: 10, padding: '6px 8px', background: 'rgba(0,0,0,0.03)', borderRadius: 6, fontStyle: 'italic' }}>{text}</div>
+}
+
 const YouTubeNode = ({ node, onUpdate }) => {
     const [url, setUrl] = useState(''); const videoId = node.videoId
     const handleEmbed = () => { const m = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/); if (m && m[2].length === 11) { onUpdate(node.id, { videoId: m[2] }) } else alert("Invalid URL") }
-    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#FF0000', fontWeight: 'bold' }}><FiYoutube size={18} /> YouTube Video</div> {videoId ? (<div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', background: 'black', position: 'relative' }}> <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${videoId}`} frameBorder="0" allowFullScreen style={{ pointerEvents: 'auto' }} onPointerDown={e => e.stopPropagation()} /> <button onClick={() => onUpdate(node.id, { videoId: null })} style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiX /></button> </div>) : (<div onPointerDown={e => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10 }}> {node.content ? (<div style={{ textAlign: 'center' }}> <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '0.8rem', maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Suggested: <strong>{node.content.replace('Search:', '')}</strong></p> <Button onClick={() => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(node.content.replace('Search:', ''))}`, '_blank')}>Search YouTube</Button> <Button variant="danger" onClick={() => onUpdate(node.id, { content: '' })} style={{ marginTop: 5, fontSize: '0.7rem', padding: '4px 8px' }}>Clear</Button> </div>) : (<><Input placeholder="Paste YouTube URL..." value={url} onChange={e => setUrl(e.target.value)} /><Button onClick={handleEmbed}>Embed</Button></>)} </div>)} </div>)
+    const validContent = typeof node.content === 'string' ? node.content : ''
+    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#FF0000', fontWeight: 'bold' }}><FiYoutube size={18} /> YouTube Video</div> {videoId ? (<div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', background: 'black', position: 'relative' }}> <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${videoId}`} frameBorder="0" allowFullScreen style={{ pointerEvents: 'auto' }} onPointerDown={e => e.stopPropagation()} /> <button onClick={() => onUpdate(node.id, { videoId: null })} style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiX /></button> </div>) : (<div onPointerDown={e => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10 }}> {validContent ? (<div style={{ textAlign: 'center' }}> <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '0.8rem', maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Suggested: <strong>{validContent.replace('Search:', '')}</strong></p> <Button onClick={() => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(validContent.replace('Search:', ''))}`, '_blank')}>Search YouTube</Button> <Button variant="danger" onClick={() => onUpdate(node.id, { content: '' })} style={{ marginTop: 5, fontSize: '0.7rem', padding: '4px 8px' }}>Clear</Button> </div>) : (<><Input placeholder="Paste YouTube URL..." value={url} onChange={e => setUrl(e.target.value)} /><Button onClick={handleEmbed}>Embed</Button></>)} </div>)} </div>)
 }
 const TodoNode = ({ node, onUpdate }) => {
     const items = node.items || []; const [newItem, setNewItem] = useState(''); const toggle = (i) => { const n = [...items]; n[i].done = !n[i].done; onUpdate(node.id, { items: n }) }
@@ -33,7 +40,7 @@ const CalendarNode = ({ node, onUpdate }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#e67e22', fontWeight: 800, fontSize: '1.1rem', borderBottom: '1px solid #eee', paddingBottom: 8 }}>
                 <FiCalendar size={20} /> Agenda
             </div>
-            {node.content && <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: 10, padding: '6px 8px', background: 'rgba(0,0,0,0.03)', borderRadius: 6, fontStyle: 'italic' }}>{node.content}</div>}
+            {node.content && <ContentDisplay content={node.content} />}
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 4 }}>
                 {sortedEvents.length === 0 && <div style={{ textAlign: 'center', color: '#aaa', marginTop: 20, fontSize: '0.9rem' }}>No events planned</div>}
                 {sortedEvents.map(([d, t]) => {
@@ -79,21 +86,22 @@ const ImageNode = ({ node, onUpdate }) => {
 }
 
 const LinkNode = ({ node, onUpdate }) => {
+    const validContent = typeof node.content === 'string' ? node.content : ''
     const [url, setUrl] = useState(node.url || '');
     const saveUrl = () => { if (url) onUpdate(node.id, { url, content: url }) }
     let hostname = ''; let isValid = false
-    try { if (node.content) { hostname = new URL(node.content).hostname; isValid = true } } catch (e) { }
+    try { if (validContent) { hostname = new URL(validContent).hostname; isValid = true } } catch (e) { }
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#3498db', fontWeight: 'bold' }}><FiGlobe size={18} /> Web Link</div>
             {isValid ? (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
-                    <a href={node.content} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, background: 'rgba(255,255,255,0.5)', borderRadius: 12, textDecoration: 'none', color: '#333', border: '1px solid rgba(0,0,0,0.1)' }}>
+                    <a href={validContent} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, background: 'rgba(255,255,255,0.5)', borderRadius: 12, textDecoration: 'none', color: '#333', border: '1px solid rgba(0,0,0,0.1)' }}>
                         <img src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=64`} style={{ width: 32, height: 32, borderRadius: 4 }} onError={(e) => e.target.style.display = 'none'} />
                         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
                             <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{hostname}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#666' }}>{node.content}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#666' }}>{validContent}</div>
                         </div>
                         <FiArrowRight style={{ marginLeft: 'auto' }} />
                     </a>
@@ -101,14 +109,14 @@ const LinkNode = ({ node, onUpdate }) => {
                 </div>
             ) : (
                 <div style={{ display: 'flex', gap: 5, marginTop: 'auto', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                    {node.content && node.content.startsWith('Search:') ? (
+                    {validContent && validContent.startsWith('Search:') ? (
                         <div style={{ textAlign: 'center' }}>
-                            <p style={{ margin: '0 0 10px 0', color: '#666' }}>Suggested: <strong>{node.content.replace('Search:', '')}</strong></p>
-                            <Button onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(node.content.replace('Search:', ''))}`, '_blank')}>Search Google</Button>
+                            <p style={{ margin: '0 0 10px 0', color: '#666' }}>Suggested: <strong>{validContent.replace('Search:', '')}</strong></p>
+                            <Button onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(validContent.replace('Search:', ''))}`, '_blank')}>Search Google</Button>
                         </div>
                     ) : (
                         <>
-                            {node.content && <p style={{ fontSize: '0.8rem', color: 'red', wordBreak: 'break-all' }}>Invalid URL: {node.content}</p>}
+                            {validContent && <p style={{ fontSize: '0.8rem', color: 'red', wordBreak: 'break-all' }}>Invalid URL: {validContent}</p>}
                             <div style={{ display: 'flex', gap: 5, width: '100%' }}>
                                 <Input placeholder="https://example.com" value={url} onChange={e => setUrl(e.target.value)} />
                                 <Button onClick={saveUrl}>Save</Button>
@@ -122,7 +130,7 @@ const LinkNode = ({ node, onUpdate }) => {
 }
 
 const NoteNode = ({ node, onUpdate }) => {
-    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, color: '#555', fontWeight: 'bold', fontSize: '0.9rem' }}><FiType /> Note</div> <textarea defaultValue={node.content} onBlur={e => onUpdate(node.id, { content: e.target.value })} onPointerDown={e => e.stopPropagation()} style={{ flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none', fontSize: '1rem', lineHeight: 1.6, color: '#333', overflow: 'hidden' }} placeholder="Type something..." /> </div>)
+    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, color: '#555', fontWeight: 'bold', fontSize: '0.9rem' }}><FiType /> Note</div> <textarea defaultValue={typeof node.content === 'string' ? node.content : JSON.stringify(node.content || '')} onBlur={e => onUpdate(node.id, { content: e.target.value })} onPointerDown={e => e.stopPropagation()} style={{ flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none', fontSize: '1rem', lineHeight: 1.6, color: '#333', overflow: 'hidden' }} placeholder="Type something..." /> </div>)
 }
 
 // --- Connection Layer ---

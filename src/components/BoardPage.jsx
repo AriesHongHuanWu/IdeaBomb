@@ -280,7 +280,7 @@ export default function BoardPage({ user }) {
                 if (a.id) idMap[a.id] = newId // Map local AI ID (e.g. "n1") to Firestore ID
 
                 let type = a.nodeType || 'Note'
-                let content = a.content || ''
+                let content = typeof a.content === 'string' ? a.content : (a.content ? JSON.stringify(a.content) : '')
                 let extra = a.data || {}
 
                 // Unified Type Handling
