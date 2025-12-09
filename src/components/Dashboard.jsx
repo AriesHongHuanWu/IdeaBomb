@@ -179,7 +179,7 @@ export default function Dashboard({ user }) {
                     <NavItem icon={<FiLayout />} label="My Boards" active={activeView === 'created'} onClick={() => { setActiveView('created'); setSelectedFolder(null) }} isMobile={isMobile} />
                     <NavItem icon={<FiShare2 />} label="Shared with me" active={activeView === 'shared'} onClick={() => { setActiveView('shared'); setSelectedFolder(null) }} isMobile={isMobile} />
 
-                    {['aries0d0f@gmail.com', 'aries.wu@ideabomb.com'].includes(user?.email) && (
+                    {['aries0d0f@gmail.com', 'aries.wu@ideabomb.com'].includes(user?.email?.toLowerCase()) && (
                         <NavItem icon={<FiShield />} label="Admin Console" active={false} onClick={() => navigate('/admin')} isMobile={isMobile} />
                     )}
 
