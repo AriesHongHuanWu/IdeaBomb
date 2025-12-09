@@ -122,7 +122,7 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
             try {
                 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
                 const model = genAI.getGenerativeModel({
-                    model: "models/gemini-1.5-flash",
+                    model: "models/gemini-2.5-flash-lite",
                     tools: [{ googleSearch: {} }]
                 })
 
