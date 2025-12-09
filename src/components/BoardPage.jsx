@@ -174,7 +174,11 @@ export default function BoardPage({ user }) {
             await updateDoc(doc(db, 'boards', boardId, 'nodes', nodeId), { content: text })
         } catch (e) {
             console.error(e)
-            alert("AI Error: " + e.message)
+            if (e.message.includes('429') || e.toString().includes('429')) {
+                alert("✨ AI Brain needs a moment! (Rate Limit Reached)\nPlease wait 1 minute before trying again.")
+            } else {
+                alert("AI Error: " + e.message)
+            }
         }
     }
 
@@ -508,7 +512,8 @@ export default function BoardPage({ user }) {
 
     const addNewPage = () => { const p = `Page ${pages.length + 1}`; setPages([...pages, p]); setActivePage(p) }
     const displayNodes = nodes.filter(n => (n.page || 'Page 1') === activePage)
-    const displayEdges = edges.filter(e => (e.page || 'Page 1') === activePage)
+    const nodeIds = new Set(displayNodes.map(n => n.id))
+    const displayEdges = edges.filter(e => (e.page || 'Page 1') === activePage && nodeIds.has(e.from) && nodeIds.has(e.to))
 
     const renamePage = async (oldName, newName) => {
         if (!newName.trim() || newName === oldName) return
