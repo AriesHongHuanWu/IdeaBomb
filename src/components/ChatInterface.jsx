@@ -218,11 +218,27 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                             <div style={{ background: 'rgba(0,0,0,0.05)', padding: '10px 15px', borderRadius: '15px 15px 15px 0', alignSelf: 'flex-start', maxWidth: '85%', fontSize: '0.9rem', lineHeight: 1.5, color: '#444' }}>
                                 I am your Whiteboard Assistant. Try saying "Create a marketing plan"!
                             </div>
-                            {messages.map((msg, i) => (
-                                <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', background: msg.role === 'user' ? 'linear-gradient(135deg, #4facfe, #00f2fe)' : 'white', color: msg.role === 'user' ? 'white' : '#333', padding: '10px 15px', borderRadius: msg.role === 'user' ? '15px 15px 0 15px' : '15px 15px 15px 0', maxWidth: '85%', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', fontSize: '0.95rem', border: msg.role === 'model' ? '1px solid #eee' : 'none' }}>
-                                    {msg.content}
-                                </motion.div>
-                            ))}
+                            {messages.map((msg, i) => {
+                                const isMe = msg.uid === user?.uid
+                                const isAI = msg.role === 'model' || msg.isAI
+                                const align = isMe ? 'flex-end' : 'flex-start'
+                                return (
+                                    <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ alignSelf: align, maxWidth: '85%', display: 'flex', flexDirection: 'column', alignItems: align }}>
+                                        {!isMe && !isAI && <span style={{ fontSize: '0.7rem', color: '#666', marginBottom: 2, marginLeft: 4 }}>{msg.sender || 'User'}</span>}
+                                        <div style={{
+                                            background: isMe ? 'linear-gradient(135deg, #4facfe, #00f2fe)' : (isAI ? 'white' : '#f1f3f4'),
+                                            color: isMe ? 'white' : '#333',
+                                            padding: '10px 15px',
+                                            borderRadius: isMe ? '15px 15px 0 15px' : '15px 15px 15px 0',
+                                            boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+                                            fontSize: '0.95rem',
+                                            border: isAI ? '1px solid #eee' : 'none'
+                                        }}>
+                                            {msg.content}
+                                        </div>
+                                    </motion.div>
+                                )
+                            })}
                             {isLoading && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ alignSelf: 'flex-start', background: '#f0f0f0', padding: '8px 12px', borderRadius: 12, fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>Thinking...</motion.div>}
                             <div ref={messagesEndRef} />
                         </div>

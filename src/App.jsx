@@ -6,6 +6,8 @@ import BoardPage from './components/BoardPage'
 import { auth } from './firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 
+import LandingPage from './components/LandingPage'
+
 function App() {
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -19,18 +21,22 @@ function App() {
     }, [])
 
     if (loading) {
-        return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>
-    }
-
-    if (!user) {
-        return <Login />
+        return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif', color: '#666' }}>Loading...</div>
     }
 
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<Dashboard user={user} />} />
-                <Route path="/board/:boardId" element={<BoardPage user={user} />} />
+                {/* Public Landing Page */}
+                <Route path="/" element={<LandingPage user={user} />} />
+
+                {/* Auth Routes */}
+                <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+
+                {/* Protected Routes */}
+                <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to="/login" />} />
+                <Route path="/board/:boardId" element={user ? <BoardPage user={user} /> : <Navigate to="/login" />} />
+
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>
         </BrowserRouter>

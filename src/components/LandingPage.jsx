@@ -1,0 +1,121 @@
+import React from 'react'
+import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { FiArrowRight, FiCheck, FiCpu, FiMessageSquare, FiGrid } from 'react-icons/fi'
+
+export default function LandingPage({ user }) {
+    const navigate = useNavigate()
+
+    return (
+        <div style={{ fontFamily: '"Google Sans", "Inter", sans-serif', width: '100vw', minHeight: '100vh', background: '#ffffff', color: '#202124', overflowX: 'hidden' }}>
+            {/* Header */}
+            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 40px', position: 'fixed', top: 0, width: '100%', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)', zIndex: 1000, borderBottom: '1px solid #f1f3f4' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 'bold', fontSize: '1.4rem', color: '#5f6368', cursor: 'pointer' }} onClick={() => navigate('/')}>
+                    <div style={{ width: 24, height: 24, background: 'linear-gradient(135deg, #4285f4, #34a853, #fbbc05, #ea4335)', borderRadius: 4 }}></div>
+                    IdeaBomb <span style={{ fontWeight: 400, opacity: 0.7 }}>Enterprise</span>
+                </div>
+                <nav style={{ display: 'flex', gap: 30, alignItems: 'center' }}>
+                    <a href="#features" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.95rem', fontWeight: 500 }}>Features</a>
+                    <a href="#solutions" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.95rem', fontWeight: 500 }}>Solutions</a>
+                    <a href="#pricing" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.95rem', fontWeight: 500 }}>Pricing</a>
+                    {user ? (
+                        <button onClick={() => navigate('/dashboard')} style={{ background: '#1a73e8', color: 'white', border: 'none', padding: '10px 24px', borderRadius: 4, fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', transition: 'box-shadow 0.2s' }}>Go to Dashboard</button>
+                    ) : (
+                        <button onClick={() => navigate('/login')} style={{ background: '#1a73e8', color: 'white', border: 'none', padding: '10px 24px', borderRadius: 4, fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', transition: 'box-shadow 0.2s' }}>Sign In</button>
+                    )}
+                </nav>
+            </header>
+
+            {/* Hero Section */}
+            <section style={{ paddingTop: 160, paddingBottom: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', maxWidth: 1200, margin: '0 auto', paddingLeft: 20, paddingRight: 20 }}>
+                <motion.h1
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: 'easeOut' }}
+                    style={{ fontSize: '4rem', lineHeight: 1.1, fontWeight: 700, color: '#202124', marginBottom: 24, maxWidth: 900 }}
+                >
+                    Collaborate without limits. Create with intelligence.
+                </motion.h1>
+                <motion.p
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.8 }}
+                    style={{ fontSize: '1.25rem', color: '#5f6368', maxWidth: 700, lineHeight: 1.6, marginBottom: 40 }}
+                >
+                    IdeaBomb brings your team together in a unified workspace powered by Gemini AI. Whiteboard, chat, and manage projects in real-time.
+                </motion.p>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.8 }} style={{ display: 'flex', gap: 20 }}>
+                    <button onClick={() => navigate(user ? '/dashboard' : '/login')} style={{ background: '#1a73e8', color: 'white', border: 'none', padding: '16px 36px', borderRadius: 4, fontWeight: 600, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(26,115,232,0.3)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        Get Started <FiArrowRight />
+                    </button>
+                    <button style={{ background: 'transparent', color: '#1a73e8', border: '1px solid #dadce0', padding: '16px 36px', borderRadius: 4, fontWeight: 600, fontSize: '1.1rem', cursor: 'pointer' }}>Contact Sales</button>
+                </motion.div>
+
+                {/* Hero Image Mockup */}
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, duration: 1 }} style={{ marginTop: 80, width: '100%', borderRadius: 16, border: '1px solid #dadce0', boxShadow: '0 20px 60px rgba(0,0,0,0.1)', overflow: 'hidden', maxWidth: 1000 }}>
+                    <div style={{ background: '#f1f3f4', padding: '12px 20px', display: 'flex', gap: 8, alignItems: 'center', borderBottom: '1px solid #e0e0e0' }}>
+                        <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ff5f56' }}></div>
+                        <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ffbd2e' }}></div>
+                        <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#27c93f' }}></div>
+                        <div style={{ background: 'white', borderRadius: 4, flex: 1, margin: '0 20px', height: 28, display: 'flex', alignItems: 'center', paddingLeft: 10, fontSize: '0.8rem', color: '#888' }}>ideabomb.app/board/marketing-plan</div>
+                    </div>
+                    <div style={{ height: 500, background: 'linear-gradient(0deg, #fff 0%, #f8f9fa 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ fontSize: '1.5rem', color: '#ccc', fontWeight: 500 }}>Interactive Workspace Preview</div>
+                    </div>
+                </motion.div>
+            </section>
+
+            {/* Features Section */}
+            <section id="features" style={{ padding: '80px 20px', background: '#fff' }}>
+                <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: 60 }}>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: '#202124', marginBottom: 20 }}>Why choose IdeaBomb?</h2>
+                        <p style={{ fontSize: '1.2rem', color: '#5f6368' }}>Enterprise-grade security meets consumer-grade simplicity.</p>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 40 }}>
+                        <FeatureCard icon={<FiGrid size={40} color="#1a73e8" />} title="Infinite Canvas" desc="Break free from page limits. Organize thoughts, flowcharts, and plans on an endless whiteboard." />
+                        <FeatureCard icon={<FiCpu size={40} color="#ea4335" />} title="Gemini AI Integration" desc="Use @ai to summarize discussions, generate content, and organize your board automatically." />
+                        <FeatureCard icon={<FiMessageSquare size={40} color="#34a853" />} title="Real-time Collaboration" desc="Chat, comment, and co-edit with your team instantly. See cursors and updates live." />
+                    </div>
+                </div>
+            </section>
+
+            {/* Footer with Contact Info */}
+            <footer style={{ background: '#f8f9fa', padding: '60px 40px', borderTop: '1px solid #dadce0' }}>
+                <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 40 }}>
+                    <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 'bold', fontSize: '1.2rem', color: '#5f6368', marginBottom: 20 }}>
+                            <div style={{ width: 20, height: 20, background: '#5f6368', borderRadius: 4 }}></div> IdeaBomb
+                        </div>
+                        <div style={{ color: '#5f6368', fontSize: '0.9rem' }}>© 2025 IdeaBomb Inc. All rights reserved.</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 60 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <span style={{ fontWeight: 600, color: '#202124' }}>Product</span>
+                            <a href="#" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.9rem' }}>Overview</a>
+                            <a href="#" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.9rem' }}>Pricing</a>
+                            <a href="#" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.9rem' }}>Customers</a>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <span style={{ fontWeight: 600, color: '#202124' }}>Enterprise</span>
+                            <a href="#" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.9rem' }}>Security</a>
+                            <a href="#" style={{ textDecoration: 'none', color: '#5f6368', fontSize: '0.9rem' }}>Compliance</a>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <span style={{ fontWeight: 600, color: '#202124' }}>Contact</span>
+                            <div style={{ color: '#5f6368', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                Email: <a href="mailto:arieswu001@gmail.com" style={{ color: '#1a73e8', textDecoration: 'none' }}>arieswu001@gmail.com</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    )
+}
+
+function FeatureCard({ icon, title, desc }) {
+    return (
+        <div style={{ padding: 30, background: 'white', border: '1px solid #dadce0', borderRadius: 12, transition: 'transform 0.2s', cursor: 'default' }}>
+            <div style={{ marginBottom: 20 }}>{icon}</div>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 600, color: '#202124', marginBottom: 12 }}>{title}</h3>
+            <p style={{ fontSize: '1rem', color: '#5f6368', lineHeight: 1.5 }}>{desc}</p>
+        </div>
+    )
+}
