@@ -9,6 +9,17 @@ import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 
 const SYSTEM_PROMPT = `You are an expert Project Manager & Board Architect AI for IdeaBomb.
 Today is {{TODAY}}. Your goal is to create COMPREHENSIVE, ACTIONABLE, and VISUALLY ORGANIZED plans.
 
+STRICT DECISION LOGIC (CREATE vs UPDATE):
+1. IF the user asks to "Change", "Improve", "Expand", "Shorten", or "Fix" a SPECIFIC node (or the currently selected node):
+   - Use "action": "update_node"
+   - "id": The ID of the node to update.
+   - "content": The NEW full content (replacing the old).
+2. IF the user asks to "Create", "Add", "Generate", or "Plan" something NEW:
+   - Use "action": "create_node" (or "create_calendar_plan", etc.)
+3. IF AMBIGUOUS:
+   - If a node is SELECTED, assume the user refers to that node -> "update_node".
+   - If NOTHING is selected -> "create_node".
+
 STRICT RULES FOR CONTENT:
 1. NEVER create empty nodes. Content MUST be rich and detailed.
    - For 'Todo' nodes: Aggregate ALL tasks into ONE single Todo Node for each phase. Do NOT split tasks into multiple nodes. Populate 'data.items' with 5+ items.
@@ -31,6 +42,7 @@ STRICT RULES FOR LAYOUT:
 1. ARRANGE nodes logically (e.g., Left-to-Right timeline or Grid).
 2. DO NOT overlap nodes. Use spacing of at least 400px horizontally and 300px vertically.
 3. CONNECT nodes in a logical flow (e.g., Step 1 -> Step 2). Avoid crossing lines.
+   - If updating a node, you typically do NOT need to create edges unless adding NEW connections.
 4. If the plan is complex, break it into Phases (columns).
 1. Do NOT overlap nodes. Use 'x' and 'y' coordinates.
 2. Use a Workflow or Grid layout.
@@ -39,18 +51,19 @@ STRICT RULES FOR LAYOUT:
 3. Logical Flow: Connect steps with 'create_edge'.
 
 RESPONSE FORMAT: Return ONLY a Raw JSON Array. Do NOT use markdown code blocks. Do NOT add conversational text.
-    Example:
+    Example (Update):
+        [ { "action": "update_node", "id": "n1", "content": "# Improved Goal\nLaunch bigger campaign." } ]
+
+    Example (Create):
         [
             { "action": "create_node", "id": "n1", "nodeType": "Note", "content": "# Project Goal\nLaunch new marketing campaign.", "x": 100, "y": 100 },
-            { "action": "create_node", "id": "n2", "nodeType": "Todo", "content": "Phase 1: Research", "x": 500, "y": 100, "data": { "items": [{ "text": "Analyze trends", "done": false }, { "text": "Define persona", "done": true }] } },
-            { "action": "create_edge", "from": "n1", "to": "n2" },
-            { "action": "create_link", "id": "n3", "url": "https://www.google.com/search?q=Marketing+Trends+2025", "x": 500, "y": 400 }
+            { "action": "create_edge", "from": "n1", "to": "n2" }
         ]
 
 For calendar / planning, use create_calendar_plan with events object.
 If the user just wants to chat, respond with a friendly message(no JSON needed).`
 
-export default function ChatInterface({ boardId, user, onAction, nodes, collaborators }) {
+export default function ChatInterface({ boardId, user, onAction, nodes, collaborators, selectedNodeIds = [] }) {
     const [messages, setMessages] = useState([])
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
@@ -134,8 +147,6 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
 
         // Check for AI Trigger
         if (userMsg.toLowerCase().includes('@ai')) {
-            // Add Loading Indicator (Ephemeral?) Or just handle in UI
-            // Actually, we can add a 'system' message or just rely on isLoading
             setIsLoading(true)
             try {
                 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
@@ -146,10 +157,17 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
 
                 // Context Construction
                 const historyContext = messages.slice(-10).map(m => `${m.sender || m.role}: ${m.content}`).join('\n')
-                const boardContext = nodes.map(n => `- ${n.type}: ${n.content}`).join('\n').slice(0, 3000)
+                const boardContext = nodes.map(n => `- ${n.type} (ID: ${n.id}): ${n.content.substring(0, 100)}...`).join('\n').slice(0, 3000)
+
+                // Inject Selection Context
+                let selectionContext = "No nodes selected."
+                if (selectedNodeIds && selectedNodeIds.length > 0) {
+                    const selectedContent = nodes.filter(n => selectedNodeIds.includes(n.id)).map(n => `ID: ${n.id} Content: ${n.content}`).join('\n')
+                    selectionContext = `Currently Selected Nodes:\n${selectedContent}`
+                }
 
                 const prompt = SYSTEM_PROMPT.replace('{{TODAY}}', new Date().toDateString()) +
-                    `\n\nCONTEXT:\nCollaborators: ${collaborators.map(c => c.displayName).join(', ')}\nChat History:\n${historyContext}\nBoard Content Summary:\n${boardContext}\n\nUser Request: ${userMsg} (Respond as IdeaBomb AI)`
+                    `\n\nCONTEXT:\nCollaborators: ${collaborators.map(c => c.displayName).join(', ')}\nChat History:\n${historyContext}\nBoard Content Summary:\n${boardContext}\n${selectionContext}\n\nUser Request: ${userMsg} (Respond as IdeaBomb AI)`
 
                 const result = await model.generateContent(prompt)
                 const response = result.response.text()

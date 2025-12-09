@@ -316,9 +316,13 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
 }
 
 
-export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge, cursors, onCursorMove, onAIRequest }) {
+export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge, cursors, onCursorMove, onAIRequest, onSelectionChange }) {
     const [scale, setScale] = useState(1); const [offset, setOffset] = useState({ x: 0, y: 0 })
     const [selectedIds, setSelectedIds] = useState([])
+
+    useEffect(() => {
+        if (onSelectionChange) onSelectionChange(selectedIds)
+    }, [selectedIds, onSelectionChange])
     const containerRef = useRef()
     const [isDraggingCanvas, setIsDraggingCanvas] = useState(false)
     const [connectMode, setConnectMode] = useState(false)
