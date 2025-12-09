@@ -173,6 +173,7 @@ export default function LandingPage({ user }) {
                         <div style={{ width: isMobile ? '100%' : 300, border: '1px solid #dadce0', borderRadius: 12, padding: 30, textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
                             <h3 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Starter</h3>
                             <div style={{ fontSize: '2.5rem', fontWeight: 700, margin: '15px 0' }}>$0 <span style={{ fontSize: '1rem', fontWeight: 400, color: '#5f6368' }}>/ month</span></div>
+                            <div style={{ fontSize: '0.9rem', color: '#1a73e8', fontWeight: 600, marginBottom: 5 }}>All Features Free for Beta</div>
                             <p style={{ color: '#5f6368', marginBottom: 30 }}>Perfect for getting started with AI collaboration.</p>
                             {user ? (
                                 <button disabled style={{ width: '100%', padding: '12px', background: '#e8f0fe', border: 'none', color: '#1967d2', borderRadius: 4, fontWeight: 700, cursor: 'default', marginBottom: 20 }}>Current Plan</button>

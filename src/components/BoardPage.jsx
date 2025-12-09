@@ -429,7 +429,7 @@ export default function BoardPage({ user }) {
                 initial={{ y: -100 }} animate={{ y: 0 }}
             >
                 <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 20 }}>
-                    <button onClick={() => { updateThumbnail(); navigate('/') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button>
+                    <button onClick={() => { updateThumbnail(); navigate('/dashboard') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button>
                     {isEditingTitle ? (
                         <input
                             value={tempTitle}
