@@ -1197,7 +1197,15 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
             if (e.ctrlKey || e.metaKey) {
                 e.preventDefault()
                 const s = e.deltaY > 0 ? 0.9 : 1.1
-                setScale(prev => Math.min(Math.max(prev * s, 0.2), 5))
+                // Calculate min scale to fit the entire canvas
+                const fitScale = Math.min(
+                    window.innerWidth / (canvasSize.w || 3000),
+                    window.innerHeight / (canvasSize.h || 2000)
+                )
+                // Allow zooming out to fit the canvas, or down to 0.1, whichever is smaller
+                const minScale = Math.min(fitScale, 0.1)
+
+                setScale(prev => Math.min(Math.max(prev * s, minScale), 5))
             } else {
                 e.preventDefault()
                 setOffset(p => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }))
@@ -1205,7 +1213,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
         }
         container.addEventListener('wheel', onWheel, { passive: false })
         return () => container.removeEventListener('wheel', onWheel)
-    }, [])
+    }, [canvasSize])
 
     // Context Menu State
     const [contextMenu, setContextMenu] = useState(null) // {x, y, type, targetId}
