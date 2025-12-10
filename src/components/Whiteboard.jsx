@@ -30,8 +30,46 @@ const useDebounce = (callback, delay) => {
     return (...args) => { clearTimeout(timeoutRef.current); timeoutRef.current = setTimeout(() => callback(...args), delay) }
 }
 const Input = (props) => (<input {...props} style={{ width: '100%', padding: '10px', borderRadius: 12, border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)', outline: 'none', transition: 'all 0.2s', ...props.style }} onFocus={(e) => { e.target.style.background = 'white'; e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)' }} onBlur={(e) => { e.target.style.background = 'rgba(255,255,255,0.5)'; e.target.style.boxShadow = 'none'; if (props.onBlur) props.onBlur(e) }} />)
-const Button = ({ children, onClick, variant = 'primary', style }) => { const bg = variant === 'danger' ? 'linear-gradient(135deg, #FF6B6B, #FF8787)' : 'linear-gradient(135deg, #4facfe, #00f2fe)'; return (<motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onClick} style={{ background: bg, border: 'none', color: 'white', padding: '8px 16px', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, boxShadow: '0 4px 10px rgba(0,0,0,0.1)', ...style }}> {children} </motion.button>) }
-const ToolBtn = ({ icon, label, onClick, active }) => (<motion.button whileHover={{ y: -5 }} whileTap={{ scale: 0.95 }} onClick={onClick} title={label} style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: active ? '#007bff' : 'white', color: active ? 'white' : '#444', fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>{icon}</motion.button>)
+const Button = ({ children, onClick, variant = 'primary', style }) => {
+    const isDanger = variant === 'danger';
+    const bg = isDanger ? 'linear-gradient(135deg, #FF6B6B, #FF8787)' : 'linear-gradient(135deg, #3b82f6, #06b6d4)';
+    const shadow = isDanger ? '0 4px 15px rgba(255, 107, 107, 0.4)' : '0 4px 15px rgba(59, 130, 246, 0.4)';
+    return (
+        <motion.button
+            whileHover={{ scale: 1.05, translateY: -1, boxShadow: shadow }}
+            whileTap={{ scale: 0.96 }}
+            onClick={onClick}
+            style={{
+                background: bg, border: 'none', color: 'white', padding: '10px 20px',
+                borderRadius: 14, cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                transition: 'box-shadow 0.2s', ...style
+            }}
+        >
+            {children}
+        </motion.button>
+    )
+}
+const ToolBtn = ({ icon, label, onClick, active }) => (
+    <motion.button
+        whileHover={{ scale: 1.1, translateY: -4 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={onClick}
+        title={label}
+        style={{
+            width: 48, height: 48, borderRadius: 16, border: 'none',
+            background: active ? 'linear-gradient(135deg, #2563eb, #3b82f6)' : 'rgba(255,255,255,0.8)',
+            backdropFilter: 'blur(10px)',
+            color: active ? 'white' : '#64748b',
+            fontSize: '1.4rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            boxShadow: active ? '0 8px 20px rgba(37, 99, 235, 0.3)' : '0 4px 6px rgba(0,0,0,0.05)',
+            border: active ? 'none' : '1px solid rgba(255,255,255,0.5)'
+        }}
+    >
+        {icon}
+    </motion.button>
+)
 
 // --- Node Types ---
 const EmbedNode = ({ node, onUpdate }) => {
@@ -2000,11 +2038,20 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                                 { id: 'avatar', label: 'Avatar', category: 'Visuals', icon: <FiUser size={24} color="#c8d6e5" />, action: () => { onAddNode('Avatar'); setToolboxOpen(false) } },
                                 { id: 'quote', label: 'Quote', category: 'Visuals', icon: <FiMessageSquare size={24} color="#ff6b6b" />, action: () => { onAddNode('Quote'); setToolboxOpen(false) } },
                                 { id: 'dice', label: 'Dice', category: 'Visuals', icon: <FiGrid size={24} color="#e74c3c" />, action: () => { onAddNode('Dice'); setToolboxOpen(false) } },
-                            ].filter(item => item.category === toolboxTab).map(item => (
-                                <div key={item.id} onClick={item.action} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '12px 8px', borderRadius: 16, transition: '0.2s', background: 'rgba(0,0,0,0.02)' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.06)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'}>
+                            ].filter(item => item.category === toolboxTab).map((item, index) => (
+                                <motion.div
+                                    key={item.id}
+                                    onClick={item.action}
+                                    initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    transition={{ delay: index * 0.04, type: 'spring', stiffness: 300, damping: 20 }}
+                                    whileHover={{ scale: 1.05, backgroundColor: 'rgba(0,0,0,0.06)' }}
+                                    whileTap={{ scale: 0.95 }}
+                                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '12px 8px', borderRadius: 16, background: 'rgba(0,0,0,0.02)' }}
+                                >
                                     <div style={{ width: 48, height: 48, background: 'white', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>{item.icon}</div>
                                     <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#555' }}>{item.label}</span>
-                                </div>
+                                </motion.div>
                             ))}
                         </div>
                     </motion.div>
