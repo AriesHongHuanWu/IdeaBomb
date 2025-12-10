@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { BsStars } from 'react-icons/bs'
-import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw } from 'react-icons/fi'
+import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw, FiLayout, FiBarChart2 } from 'react-icons/fi'
 
 // --- Utilities ---
 const useDebounce = (callback, delay) => {
@@ -14,21 +14,24 @@ const ToolBtn = ({ icon, label, onClick, active }) => (<motion.button whileHover
 
 // --- Node Types ---
 const EmbedNode = ({ node, onUpdate }) => {
+    const [isHovered, setIsHovered] = useState(false)
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', background: 'transparent' }}>
-            {/* Floating Drag Handle / Header */}
+        <div
+            style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', background: 'transparent' }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            {/* Floating Drag Handle / Header - Only visible on hover */}
             <div
                 className="drag-handle"
                 style={{
-                    position: 'absolute', top: 10, left: 10, right: 10, height: 32,
-                    background: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(8px)',
-                    borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    fontSize: '0.8rem', fontWeight: 600, color: '#333',
-                    cursor: 'grab', zIndex: 10, boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                    border: '1px solid rgba(255,255,255,0.5)', transition: '0.2s'
+                    position: 'absolute', top: -15, left: '50%', transform: 'translateX(-50%)', height: 28,
+                    background: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)',
+                    borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    padding: '0 12px', fontSize: '0.75rem', fontWeight: 600, color: 'white',
+                    cursor: 'grab', zIndex: 50, opacity: isHovered ? 1 : 0, transition: 'opacity 0.2s, top 0.2s',
+                    pointerEvents: isHovered ? 'auto' : 'none', whiteSpace: 'nowrap'
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.6)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.4)'}
             >
                 {node.title === 'Spotify' && <FiMusic />}
                 {node.title === 'BandLab' && <FiMic />}
@@ -47,7 +50,6 @@ const EmbedNode = ({ node, onUpdate }) => {
                     sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
                 />
             </div>
-            {/* Resize Handle is provided by parent DraggableNode usually via ResizableBox, but we ensure content fills it */}
         </div>
     )
 }
@@ -112,6 +114,93 @@ const TimerNode = ({ node, onUpdate }) => {
                         <button onClick={() => adjust(60)} style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: 4, border: '1px solid #eee', background: 'transparent', cursor: 'pointer' }} onPointerDown={e => e.stopPropagation()}>+1m</button>
                     </div>
                 )}
+            </div>
+        </div>
+    )
+}
+
+const LabelNode = ({ node, onUpdate }) => {
+    return (
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center' }}>
+            <textarea
+                value={node.content}
+                onChange={e => onUpdate(node.id, { content: e.target.value })}
+                placeholder="Title..."
+                style={{
+                    width: '100%', background: 'transparent',
+                    border: 'none', fontSize: '2.5rem', fontWeight: '800',
+                    color: node.color || '#333', resize: 'none', outline: 'none',
+                    fontFamily: 'Outfit, sans-serif', lineHeight: 1.2, height: 'auto', overflow: 'hidden'
+                }}
+                onPointerDown={e => e.stopPropagation()}
+            />
+        </div>
+    )
+}
+
+const SectionNode = ({ node, onUpdate }) => {
+    return (
+        <div style={{ width: '100%', height: '100%', border: '2px dashed rgba(0,0,0,0.15)', background: node.color || 'rgba(0,0,0,0.02)', borderRadius: 24, padding: 20, display: 'flex', flexDirection: 'column' }}>
+            <div className="drag-handle" style={{ height: 30, cursor: 'grab', marginBottom: 10, display: 'flex', alignItems: 'center' }}>
+                <FiLayout style={{ marginRight: 10, color: '#999' }} />
+                <input
+                    value={node.title || ''}
+                    onChange={e => onUpdate(node.id, { title: e.target.value })}
+                    placeholder="Section Name"
+                    style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', color: '#555', fontWeight: 700, outline: 'none', width: '100%' }}
+                    onPointerDown={e => e.stopPropagation()}
+                />
+            </div>
+        </div>
+    )
+}
+
+const DiceNode = ({ node, onUpdate }) => {
+    const roll = () => {
+        const val = Math.floor(Math.random() * 6) + 1
+        onUpdate(node.id, { value: val })
+    }
+    return (
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'white', borderRadius: 20 }} onClick={roll}>
+            <motion.div
+                key={node.value}
+                initial={{ rotate: 180, scale: 0.5 }}
+                animate={{ rotate: 0, scale: 1 }}
+                style={{ fontSize: '4rem', fontWeight: 'bold', color: '#333' }}
+            >
+                {node.value || 1}
+            </motion.div>
+            <div style={{ fontSize: '0.9rem', color: '#999', marginTop: 10, fontWeight: 600 }}>Click to Roll</div>
+        </div>
+    )
+}
+
+const PollNode = ({ node, onUpdate }) => {
+    const options = node.options || [{ id: 1, text: 'Yes', votes: 0 }, { id: 2, text: 'No', votes: 0 }]
+
+    const vote = (optId) => {
+        const newOpts = options.map(o => o.id === optId ? { ...o, votes: o.votes + 1 } : o)
+        onUpdate(node.id, { options: newOpts })
+    }
+
+    const addOption = () => {
+        const newOpts = [...options, { id: Date.now(), text: `Option ${options.length + 1}`, votes: 0 }]
+        onUpdate(node.id, { options: newOpts })
+    }
+
+    return (
+        <div style={{ padding: 15, background: 'white', borderRadius: 20, height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: 15, color: '#333', display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.1rem' }}><FiBarChart2 color="#007bff" /> Poll</div>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {options.map(opt => (
+                    <div key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }} onPointerDown={e => e.stopPropagation()}>
+                        <button onClick={() => vote(opt.id)} style={{ flex: 1, padding: '10px 14px', borderRadius: 12, border: '1px solid #eee', background: '#f9f9f9', textAlign: 'left', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'} onMouseLeave={e => e.currentTarget.style.background = '#f9f9f9'}>
+                            <span style={{ fontWeight: 500 }}>{opt.text}</span>
+                            <span style={{ fontWeight: 'bold', color: 'white', background: '#007bff', padding: '2px 8px', borderRadius: 10, fontSize: '0.8rem' }}>{opt.votes}</span>
+                        </button>
+                    </div>
+                ))}
+                <button onClick={addOption} style={{ marginTop: 5, padding: 8, border: '1px dashed #ccc', background: 'transparent', borderRadius: 12, color: '#888', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }} onPointerDown={e => e.stopPropagation()}>+ Add Option</button>
             </div>
         </div>
     )
@@ -510,7 +599,11 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
                 {node.type === 'Link' && <LinkNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Embed' && <EmbedNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Timer' && <TimerNode node={node} onUpdate={onUpdateData} />}
-                {(!['Todo', 'Calendar', 'Image', 'YouTube', 'Link', 'Embed', 'Timer'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Label' && <LabelNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Section' && <SectionNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Dice' && <DiceNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Poll' && <PollNode node={node} onUpdate={onUpdateData} />}
+                {(!['Todo', 'Calendar', 'Image', 'YouTube', 'Link', 'Embed', 'Timer', 'Label', 'Section', 'Dice', 'Poll'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
             </div>
 
             {/* AI Suggestion Controls */}
@@ -543,6 +636,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     }, [selectedIds, onSelectionChange])
     const containerRef = useRef()
     const [isDraggingCanvas, setIsDraggingCanvas] = useState(false)
+    const [toolboxTab, setToolboxTab] = useState('All')
     const [connectMode, setConnectMode] = useState(false)
     const [connectStartId, setConnectStartId] = useState(null)
     const [selectionBox, setSelectionBox] = useState(null)
@@ -877,26 +971,46 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                         exit={{ opacity: 0, y: 20, scale: 0.9 }}
                         style={{
                             position: 'absolute', bottom: 90, left: '50%', transform: 'translateX(-50%)',
-                            background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(12px)',
-                            padding: '12px', borderRadius: 20,
-                            boxShadow: '0 10px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.4) inset',
-                            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12,
-                            zIndex: 100, minWidth: 280
+                            background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(16px)',
+                            padding: '16px', borderRadius: 24,
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.5) inset',
+                            zIndex: 100, minWidth: 320, maxWidth: 400
                         }}
                     >
-                        {[
-                            { id: 'link', label: 'Bookmark', icon: <FiGlobe size={24} color="#3498db" />, action: () => { onAddNode('Link'); setToolboxOpen(false) } },
-                            { id: 'timer', label: 'Timer', icon: <FiClock size={24} color="#f39c12" />, action: () => { onAddNode('Timer', '', { duration: 300 }); setToolboxOpen(false) } },
-                            { id: 'spotify', label: 'Spotify', icon: <FiMusic size={24} color="#1DB954" />, action: () => promptEmbed('Spotify', 'https://open.spotify.com/embed/track/...') },
-                            { id: 'bandlab', label: 'BandLab', icon: <FiMic size={24} color="#F50" />, action: () => promptEmbed('BandLab', 'https://www.bandlab.com/embed/...') },
-                            { id: 'youtube', label: 'YouTube', icon: <FiYoutube size={24} color="#FF0000" />, action: () => { onAddNode('YouTube'); setToolboxOpen(false) } },
-                            { id: 'generic', label: 'Embed', icon: <FiCode size={24} color="#333" />, action: () => promptEmbed('Embed', 'Paste URL or <iframe> code') },
-                        ].map(item => (
-                            <div key={item.id} onClick={item.action} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', padding: 8, borderRadius: 12, transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                <div style={{ width: 44, height: 44, background: 'white', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>{item.icon}</div>
-                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#555' }}>{item.label}</span>
-                            </div>
-                        ))}
+                        <div style={{ marginBottom: 12, display: 'flex', gap: 10, borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: 8 }}>
+                            {['All', 'Media', 'Widgets', 'Fun'].map(tab => (
+                                <button key={tab}
+                                    onClick={() => setToolboxTab(tab)}
+                                    style={{
+                                        background: toolboxTab === tab ? '#333' : 'transparent',
+                                        color: toolboxTab === tab ? 'white' : '#777',
+                                        padding: '4px 12px', borderRadius: 20, border: 'none',
+                                        fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: '0.2s'
+                                    }}
+                                >
+                                    {tab}
+                                </button>
+                            ))}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                            {[
+                                { id: 'link', label: 'Bookmark', category: 'All Widgets', icon: <FiGlobe size={24} color="#3498db" />, action: () => { onAddNode('Link'); setToolboxOpen(false) } },
+                                { id: 'timer', label: 'Timer', category: 'Widgets', icon: <FiClock size={24} color="#f39c12" />, action: () => { onAddNode('Timer', '', { duration: 300 }); setToolboxOpen(false) } },
+                                { id: 'label', label: 'Label', category: 'Widgets', icon: <FiType size={24} color="#333" />, action: () => { onAddNode('Label', 'Heading'); setToolboxOpen(false) } },
+                                { id: 'section', label: 'Section', category: 'Widgets', icon: <FiLayout size={24} color="#9b59b6" />, action: () => { onAddNode('Section', '', { w: 400, h: 300 }); setToolboxOpen(false) } },
+                                { id: 'poll', label: 'Poll', category: 'Widgets', icon: <FiBarChart2 size={24} color="#007bff" />, action: () => { onAddNode('Poll'); setToolboxOpen(false) } },
+                                { id: 'spotify', label: 'Spotify', category: 'Media', icon: <FiMusic size={24} color="#1DB954" />, action: () => promptEmbed('Spotify', 'https://open.spotify.com/embed/track/...') },
+                                { id: 'bandlab', label: 'BandLab', category: 'Media', icon: <FiMic size={24} color="#F50" />, action: () => promptEmbed('BandLab', 'https://www.bandlab.com/embed/...') },
+                                { id: 'youtube', label: 'YouTube', category: 'Media', icon: <FiYoutube size={24} color="#FF0000" />, action: () => { onAddNode('YouTube'); setToolboxOpen(false) } },
+                                { id: 'dice', label: 'Dice', category: 'Fun', icon: <FiGrid size={24} color="#e74c3c" />, action: () => { onAddNode('Dice'); setToolboxOpen(false) } },
+                                { id: 'generic', label: 'Embed', category: 'Media', icon: <FiCode size={24} color="#333" />, action: () => promptEmbed('Embed', 'Paste URL or <iframe> code') },
+                            ].filter(item => toolboxTab === 'All' || (toolboxTab === 'Media' && (item.category === 'Media' || item.id === 'youtube' || item.id === 'spotify' || item.id === 'bandlab' || item.id === 'generic')) || (toolboxTab === 'Widgets' && (item.category === 'Widgets' || item.id === 'link' || item.id === 'timer' || item.id === 'label' || item.id === 'section' || item.id === 'poll')) || (toolboxTab === 'Fun' && (item.id === 'dice'))).map(item => (
+                                <div key={item.id} onClick={item.action} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', padding: 8, borderRadius: 12, transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                    <div style={{ width: 44, height: 44, background: 'white', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>{item.icon}</div>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#555' }}>{item.label}</span>
+                                </div>
+                            ))}
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
