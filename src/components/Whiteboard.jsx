@@ -1284,12 +1284,13 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
             <div style={{
                 position: 'absolute', left: 0, top: 0,
                 width: canvasSize.w, height: canvasSize.h,
-                background: '#f8f9fa',
-                border: '5px solid #333',
+                background: '#fff', // Pure white canvas
+                borderRadius: 32,
+                boxShadow: '0 0 0 1px rgba(0,0,0,0.05), 0 20px 60px rgba(0,0,0,0.1)', // Subtle elegant shadow
                 transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0',
-                boxShadow: '0 0 50px rgba(0,0,0,0.5)'
+                pointerEvents: 'none' // Key fix: Allows clicks to pass through to container for panning
             }}>
-                <div className="grid-bg" style={{ width: '100%', height: '100%', backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.6, pointerEvents: 'none' }} />
+                <div className="grid-bg" style={{ width: '100%', height: '100%', backgroundImage: 'radial-gradient(#e5e7eb 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.8 }} />
             </div>
 
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
