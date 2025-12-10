@@ -865,17 +865,60 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             let newX = startLeft
             let newY = startTop
 
+            // 1. Calculate Unconstrained Dimensions
             if (dir.includes('e')) newW = Math.max(200, startW + dx)
             if (dir.includes('s')) newH = Math.max(150, startH + dy)
             if (dir.includes('w')) {
-                const w = Math.max(200, startW - dx)
-                newW = w
-                newX = startLeft + (startW - w)
+                // Width changes opposite to dx
+                const proposedW = Math.max(200, startW - dx)
+                // If we hit min width, we stop moving X
+                if (proposedW === 200) {
+                    newW = 200
+                    newX = startLeft + (startW - 200)
+                } else {
+                    newW = proposedW
+                    newX = startLeft + (startW - proposedW) // or startLeft + dx, roughly
+                }
             }
             if (dir.includes('n')) {
-                const h = Math.max(150, startH - dy)
-                newH = h
-                newY = startTop + (startH - h)
+                const proposedH = Math.max(150, startH - dy)
+                if (proposedH === 150) {
+                    newH = 150
+                    newY = startTop + (startH - 150)
+                } else {
+                    newH = proposedH
+                    newY = startTop + (startH - proposedH)
+                }
+            }
+
+            // 2. Clamp to Canvas Boundaries (if canvasSize exists)
+            if (canvasSize) {
+                // Clamp Left (only if moving left)
+                if (dir.includes('w')) {
+                    if (newX < 0) {
+                        newX = 0
+                        newW = (startLeft + startW) - 0 // Keep right edge fixed
+                    }
+                }
+                // Clamp Top (only if moving top)
+                if (dir.includes('n')) {
+                    if (newY < 0) {
+                        newY = 0
+                        newH = (startTop + startH) - 0 // Keep bottom edge fixed
+                    }
+                }
+                // Clamp Right (only if moving right)
+                if (dir.includes('e')) {
+                    if (newX + newW > canvasSize.w) {
+                        newW = canvasSize.w - newX
+                    }
+                }
+                // Clamp Bottom (only if moving bottom)
+                if (dir.includes('s')) {
+                    if (newY + newH > canvasSize.h) {
+                        newH = canvasSize.h - newY
+                    }
+                }
             }
 
             setSize({ w: newW, h: newH })
@@ -885,12 +928,6 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         const onUp = () => {
             window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp);
             onUpdateData(node.id, { w: size.w, h: size.h });
-            onUpdatePosition(node.id, { x: x.get() - startLeft, y: y.get() - startTop }) // Actually x.get() is absolute, need relative delta? No, onUpdatePosition usually takes delta or abs?
-            // Wait, existing handling uses delta for drag. For resize, let's just assume we update data.
-            // Actually, if we moved x/y (left/top resize), we need to update position too.
-            // Let's verify onUpdatePosition signature. It takes (id, delta) or (id, {x,y})?
-            // In handleDragStart: onUpdatePosition(node.id, { x: dx, y: dy }) -> Delta.
-            // So if we resize Left, we must update position.
             if (x.get() !== startLeft || y.get() !== startTop) {
                 onUpdatePosition(node.id, { x: x.get() - startLeft, y: y.get() - startTop })
             }
