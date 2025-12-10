@@ -91,9 +91,20 @@ export default function BoardPage({ user }) {
     // Stable User Color
     const userColor = useRef('#' + Math.floor(Math.random() * 16777215).toString(16))
 
-    const handleCursorMove = (x, y) => {
-        if (isIncognito || !user || Date.now() - throttleRef.current < 200) return
+    const handleCursorMove = (dataOrX, maybeY) => {
+        if (isIncognito || !user || Date.now() - throttleRef.current < 100) return
         throttleRef.current = Date.now()
+
+        let x, y
+        if (typeof dataOrX === 'object') {
+            x = dataOrX.x; y = dataOrX.y
+        } else {
+            x = dataOrX; y = maybeY
+        }
+
+        // Safety check to prevent crash
+        if (x === undefined || y === undefined || isNaN(x) || isNaN(y)) return
+
         setDoc(doc(db, 'boards', boardId, 'cursors', user.uid), {
             x, y, uid: user.uid, displayName: user.displayName, photoURL: user.photoURL,
             color: userColor.current, page: activePage,

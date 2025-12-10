@@ -375,19 +375,62 @@ const PomodoroNode = ({ node, onUpdate }) => {
 }
 
 const NotifyNode = ({ node, onUpdate }) => {
-    const notify = () => {
+    const [timeLeft, setTimeLeft] = useState('')
+
+    // Check permission on mount
+    useEffect(() => {
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+    }, [])
+
+    const scheduleNotification = () => {
         if (!("Notification" in window)) {
             alert("This browser does not support desktop notification");
-        } else if (Notification.permission === "granted") {
+            return;
+        }
+
+        if (Notification.permission === "granted") {
             new Notification(node.text || "Hello from Whiteboard!");
+            // Clear schedule if it was a scheduled firing
+            if (node.scheduledTime && new Date(node.scheduledTime) <= new Date()) {
+                onUpdate(node.id, { scheduledTime: '' })
+            }
         } else if (Notification.permission !== "denied") {
-            Notification.requestPermission().then(function (permission) {
-                if (permission === "granted") {
-                    new Notification(node.text || "Hello from Whiteboard!");
-                }
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") scheduleNotification();
             });
         }
     }
+
+    // Timer Logic
+    useEffect(() => {
+        if (!node.scheduledTime) {
+            setTimeLeft('')
+            return
+        }
+
+        const checkTime = () => {
+            const now = new Date().getTime()
+            const target = new Date(node.scheduledTime).getTime()
+            const diff = target - now
+
+            if (diff <= 0) {
+                scheduleNotification()
+                onUpdate(node.id, { scheduledTime: '' }) // Reset
+            } else {
+                // Formatting time left
+                if (diff > 86400000) setTimeLeft(Math.floor(diff / 86400000) + 'd')
+                else if (diff > 3600000) setTimeLeft(Math.floor(diff / 3600000) + 'h')
+                else if (diff > 60000) setTimeLeft(Math.floor(diff / 60000) + 'm')
+                else setTimeLeft(Math.floor(diff / 1000) + 's')
+            }
+        }
+
+        const timer = setInterval(checkTime, 1000)
+        checkTime() // Initial check
+        return () => clearInterval(timer)
+    }, [node.scheduledTime, node.text])
 
     return (
         <div style={{
@@ -396,9 +439,13 @@ const NotifyNode = ({ node, onUpdate }) => {
             borderRadius: 16, display: 'flex', flexDirection: 'column',
             padding: 16, color: 'white', boxShadow: '0 4px 15px rgba(118, 75, 162, 0.3)'
         }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontWeight: 700 }}>
-                <FiBell /> <span>Notifier</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+                    <FiBell /> <span>Notifier</span>
+                </div>
+                {timeLeft && <span style={{ fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)', padding: '2px 8px', borderRadius: 10 }}>in {timeLeft}</span>}
             </div>
+
             <textarea
                 value={node.text || ''}
                 onChange={e => onUpdate(node.id, { text: e.target.value })}
@@ -411,13 +458,30 @@ const NotifyNode = ({ node, onUpdate }) => {
                     resize: 'none', marginBottom: 10
                 }}
             />
-            <button onClick={notify} onPointerDown={e => e.stopPropagation()} style={{
-                background: 'white', color: '#764ba2', border: 'none',
-                padding: '8px', borderRadius: 8, fontWeight: 'bold',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5
-            }}>
-                <FiSend size={14} /> Send Now
-            </button>
+
+            <div style={{ display: 'flex', gap: 5 }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                    <input
+                        type="datetime-local"
+                        value={node.scheduledTime || ''}
+                        onChange={e => onUpdate(node.id, { scheduledTime: e.target.value })}
+                        style={{
+                            width: '100%', padding: '6px', borderRadius: 8, border: 'none',
+                            fontSize: '0.8rem', cursor: 'pointer', background: 'rgba(255,255,255,0.9)', color: '#333'
+                        }}
+                        onPointerDown={e => e.stopPropagation()}
+                    />
+                    {!node.scheduledTime && <FiClock style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: '#666', pointerEvents: 'none' }} />}
+                </div>
+
+                <button onClick={scheduleNotification} onPointerDown={e => e.stopPropagation()} title="Send Now" style={{
+                    background: 'white', color: '#764ba2', border: 'none',
+                    width: 32, borderRadius: 8, fontWeight: 'bold',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                    <FiSend size={14} />
+                </button>
+            </div>
         </div>
     )
 }
