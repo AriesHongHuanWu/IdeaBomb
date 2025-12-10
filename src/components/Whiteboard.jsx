@@ -1262,8 +1262,8 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); setIsDragging(false)
             ignoreSyncRef.current = Date.now() + 2000
             if (onDragEnd) onDragEnd(node.id)
-            const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1)
-            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: dx, y: dy })
+            const dx = x.get() - startNodeX; const dy = y.get() - startNodeY
+            if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) onUpdatePosition(node.id, { x: dx, y: dy })
         }
         window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
     }
