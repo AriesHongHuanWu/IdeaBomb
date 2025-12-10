@@ -641,10 +641,58 @@ const LinkNode = ({ node, onUpdate }) => {
 }
 
 const NoteNode = ({ node, onUpdate }) => {
+    const [hover, setHover] = useState(false)
+    const isHandwriting = node.font !== 'sans'
+    const isTransparent = node.color === 'transparent'
+
+    const colors = [
+        '#fff740', // Yellow
+        '#ccff90', // Green
+        '#fdcfe8', // Pink
+        '#cbf0f8', // Blue
+        '#ffffff', // White
+        'transparent' // None
+    ]
+
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: node.color || '#fff740', padding: 0, borderRadius: 0, boxShadow: '2px 2px 10px rgba(0,0,0,0.15)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', color: 'rgba(0,0,0,0.6)', fontWeight: 'bold', fontSize: '0.8rem', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-                <FiType /> Note
+        <div
+            style={{
+                height: '100%', display: 'flex', flexDirection: 'column',
+                background: node.color || '#fff740',
+                padding: 0,
+                borderRadius: isTransparent ? 0 : 0,
+                boxShadow: isTransparent ? 'none' : '2px 2px 10px rgba(0,0,0,0.15)',
+                transition: 'background 0.2s'
+            }}
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', color: 'rgba(0,0,0,0.6)', fontWeight: 'bold', fontSize: '0.8rem', borderBottom: isTransparent ? 'none' : '1px solid rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <FiType /> Note
+                </div>
+                {/* Controls */}
+                <div style={{ display: 'flex', gap: 4, opacity: hover ? 1 : 0, transition: '0.2s', pointerEvents: hover ? 'auto' : 'none' }} onPointerDown={e => e.stopPropagation()}>
+                    <button onClick={() => onUpdate(node.id, { font: isHandwriting ? 'sans' : 'hand' })} style={{ background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 4, cursor: 'pointer', padding: '2px 6px', fontSize: '0.7rem' }}>
+                        {isHandwriting ? 'Aa' : '✍️'}
+                    </button>
+                    {colors.map(c => (
+                        <div
+                            key={c}
+                            onClick={() => onUpdate(node.id, { color: c })}
+                            style={{
+                                width: 16, height: 16, borderRadius: '50%',
+                                background: c === 'transparent' ?
+                                    'conic-gradient(#eee 0% 25%, white 25% 50%, #eee 50% 75%, white 75%) 0 0 / 8px 8px' : c,
+                                border: '1px solid rgba(0,0,0,0.1)',
+                                cursor: 'pointer',
+                                transform: node.color === c ? 'scale(1.2)' : 'scale(1)',
+                                boxShadow: node.color === c ? '0 0 0 2px #333' : 'none'
+                            }}
+                            title={c === 'transparent' ? 'No Background' : ''}
+                        />
+                    ))}
+                </div>
             </div>
             <textarea
                 maxLength={1000}
@@ -654,7 +702,7 @@ const NoteNode = ({ node, onUpdate }) => {
                 style={{
                     flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none',
                     fontSize: '1.4rem', lineHeight: 1.4, color: '#333', overflow: 'hidden', padding: '10px 15px',
-                    fontFamily: '"Kalam", cursive'
+                    fontFamily: isHandwriting ? '"Kalam", cursive' : '"Inter", sans-serif'
                 }}
                 placeholder="Type something..."
             />
