@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { BsStars } from 'react-icons/bs'
-import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw, FiLayout, FiBarChart2 } from 'react-icons/fi'
+import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw, FiLayout, FiBarChart2, FiSmile, FiStar, FiCircle, FiUser, FiColumns, FiActivity, FiTerminal, FiMessageSquare, FiCheckCircle } from 'react-icons/fi'
 
 // --- Utilities ---
 const useDebounce = (callback, delay) => {
@@ -135,6 +135,121 @@ const StickerNode = ({ node, onUpdate }) => {
     return (
         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}>
             <div style={{ fontSize: '8rem', userSelect: 'none' }}>{node.content || '😎'}</div>
+        </div>
+    )
+}
+
+// --- New Widgets (10 Items) ---
+const ProgressNode = ({ node, onUpdate }) => {
+    return (
+        <div style={{ width: '100%', height: '100%', padding: 20, background: 'white', borderRadius: 20, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <h4 style={{ margin: '0 0 10px 0', color: '#555' }}>Progress: {node.progress || 0}%</h4>
+            <div style={{ padding: '0 10px' }}>
+                <input type="range" min="0" max="100" value={node.progress || 0} onChange={e => onUpdate(node.id, { progress: parseInt(e.target.value) })} style={{ width: '100%' }} onPointerDown={e => e.stopPropagation()} />
+            </div>
+        </div>
+    )
+}
+
+const RatingNode = ({ node, onUpdate }) => {
+    return (
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, background: 'white', borderRadius: 20 }}>
+            {[1, 2, 3, 4, 5].map(v => (
+                <FiStar key={v} size={28} fill={(node.rating || 0) >= v ? '#f1c40f' : 'none'} color={((node.rating || 0) >= v) ? '#f1c40f' : '#ccc'} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); onUpdate(node.id, { rating: v }) }} />
+            ))}
+        </div>
+    )
+}
+
+const ShapeNode = ({ node, onUpdate }) => {
+    const shapes = { circle: '50%', square: '0%', rounded: '20%' }
+    const s = node.shape || 'circle'
+    return (
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '100%', height: '100%', background: node.color || '#3498db', borderRadius: shapes[s], transition: 'all 0.3s' }} onClick={() => {
+                const keys = Object.keys(shapes); const next = keys[(keys.indexOf(s) + 1) % keys.length]
+                onUpdate(node.id, { shape: next })
+            }} />
+        </div>
+    )
+}
+
+const AvatarNode = ({ node, onUpdate }) => {
+    return (
+        <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', border: '4px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {node.src ? <img src={node.src} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <FiUser size={48} color="#aaa" />}
+        </div>
+    )
+}
+
+const KanbanNode = ({ node, onUpdate }) => {
+    return (
+        <div style={{ width: '100%', height: '100%', background: 'white', borderRadius: 16, padding: 10, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontWeight: 'bold', borderBottom: '1px solid #eee', paddingBottom: 5, marginBottom: 5 }}>To Do</div>
+            <div style={{ flex: 1, background: '#f9f9f9', borderRadius: 8, padding: 5 }}>
+                <div style={{ padding: 4, background: 'white', marginBottom: 4, borderRadius: 4, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontSize: '0.8rem' }}>Task 1</div>
+                <div style={{ padding: 4, background: 'white', marginBottom: 4, borderRadius: 4, boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontSize: '0.8rem' }}>Task 2</div>
+            </div>
+        </div>
+    )
+}
+
+const ClockNode = ({ node, onUpdate }) => {
+    const [time, setTime] = useState(new Date())
+    useEffect(() => { const t = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(t) }, [])
+    return (
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#333', color: '#0f0', fontFamily: 'monospace', fontSize: '2rem', borderRadius: 12, border: '4px solid #555' }}>
+            {time.toLocaleTimeString()}
+        </div>
+    )
+}
+
+const QuoteNode = ({ node, onUpdate }) => {
+    const quotes = ["Think big.", "Just do it.", "Stay hungry.", "Code is poetry."]
+    return (
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 20, fontStyle: 'italic', background: '#fff8dc', borderRadius: 0, boxShadow: '5px 5px 0 rgba(0,0,0,0.1)' }}>
+            "{node.quote || quotes[0]}"
+        </div>
+    )
+}
+
+const CodeNode = ({ node, onUpdate }) => {
+    return (
+        <div style={{ width: '100%', height: '100%', background: '#282c34', borderRadius: 12, padding: 16, color: '#abb2bf', fontFamily: 'monospace', fontSize: '0.9rem', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f56' }} />
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ffbd2e' }} />
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#27c93f' }} />
+            </div>
+            <textarea
+                value={node.code || '// Write code here...'}
+                onChange={e => onUpdate(node.id, { code: e.target.value })}
+                style={{ width: '100%', height: 'calc(100% - 20px)', background: 'transparent', border: 'none', color: 'inherit', outline: 'none', resize: 'none' }}
+                onPointerDown={e => e.stopPropagation()}
+            />
+        </div>
+    )
+}
+
+const EmojiNode = ({ node, onUpdate }) => {
+    const emojis = ['👍', '👎', '🔥', '🎉', '❤️', '🚀', '🤔', '👀', '✅', '❌']
+    return (
+        <div style={{ width: '100%', height: '100%', background: 'white', borderRadius: 20, padding: 10, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5, overflow: 'hidden' }}>
+            {emojis.map(e => (
+                <div key={e} style={{ fontSize: '1.5rem', cursor: 'pointer', textAlign: 'center', padding: 5, borderRadius: 5, transition: '0.2s' }} onClick={(ev) => { ev.stopPropagation(); onUpdate(node.id, { selected: e }) }} onMouseEnter={ev => ev.target.style.background = '#f0f0f0'} onMouseLeave={ev => ev.target.style.background = 'transparent'}>
+                    {e}
+                </div>
+            ))}
+        </div>
+    )
+}
+
+const PomodoroNode = ({ node, onUpdate }) => {
+    // Reusing Timer logic but simplified for 25m
+    return (
+        <div style={{ width: '100%', height: '100%', background: '#e74c3c', color: 'white', borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>25:00</div>
+            <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>FOCUS</div>
         </div>
     )
 }
@@ -623,7 +738,19 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
                 {node.type === 'Section' && <SectionNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Dice' && <DiceNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Poll' && <PollNode node={node} onUpdate={onUpdateData} />}
-                {(!['Todo', 'Calendar', 'Image', 'YouTube', 'Link', 'Embed', 'Timer', 'Label', 'Section', 'Dice', 'Poll'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Counter' && <CounterNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Sticker' && <StickerNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Progress' && <ProgressNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Rating' && <RatingNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Shape' && <ShapeNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Avatar' && <AvatarNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Kanban' && <KanbanNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Clock' && <ClockNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Quote' && <QuoteNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Code' && <CodeNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Emoji' && <EmojiNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Pomodoro' && <PomodoroNode node={node} onUpdate={onUpdateData} />}
+                {(!['Todo', 'Calendar', 'Image', 'YouTube', 'Link', 'Embed', 'Timer', 'Label', 'Section', 'Dice', 'Poll', 'Counter', 'Sticker', 'Progress', 'Rating', 'Shape', 'Avatar', 'Kanban', 'Clock', 'Quote', 'Code', 'Emoji', 'Pomodoro'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
             </div>
 
             {/* AI Suggestion Controls */}
@@ -1049,6 +1176,16 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                                 { id: 'poll', label: 'Poll', category: 'Widgets', icon: <FiBarChart2 size={24} color="#007bff" />, action: () => { onAddNode('Poll'); setToolboxOpen(false) } },
                                 { id: 'counter', label: 'Counter', category: 'Widgets', icon: <FiPlus size={24} color="#52c41a" />, action: () => { onAddNode('Counter', '', { count: 0 }); setToolboxOpen(false) } },
                                 { id: 'sticker', label: 'Sticker', category: 'Fun', icon: <FiSmile size={24} color="#f1c40f" />, action: () => { onAddNode('Sticker', '😎'); setToolboxOpen(false) } },
+                                { id: 'progress', label: 'Progress', category: 'Widgets', icon: <FiActivity size={24} color="#00d2d3" />, action: () => { onAddNode('Progress', '', { progress: 50 }); setToolboxOpen(false) } },
+                                { id: 'rating', label: 'Rating', category: 'Widgets', icon: <FiStar size={24} color="#feca57" />, action: () => { onAddNode('Rating', '', { rating: 3 }); setToolboxOpen(false) } },
+                                { id: 'kanban', label: 'Kanban', category: 'Widgets', icon: <FiColumns size={24} color="#5f27cd" />, action: () => { onAddNode('Kanban', '', { w: 300, h: 400 }); setToolboxOpen(false) } },
+                                { id: 'clock', label: 'Clock', category: 'Widgets', icon: <FiClock size={24} color="#ff9f43" />, action: () => { onAddNode('Clock'); setToolboxOpen(false) } },
+                                { id: 'quote', label: 'Quote', category: 'Fun', icon: <FiMessageSquare size={24} color="#ff6b6b" />, action: () => { onAddNode('Quote'); setToolboxOpen(false) } },
+                                { id: 'code', label: 'Code', category: 'Widgets', icon: <FiTerminal size={24} color="#222f3e" />, action: () => { onAddNode('Code', '', { w: 400, h: 300 }); setToolboxOpen(false) } },
+                                { id: 'emoji', label: 'Emoji', category: 'Fun', icon: <FiSmile size={24} color="#ff9ff3" />, action: () => { onAddNode('Emoji', '', { w: 250, h: 100 }); setToolboxOpen(false) } },
+                                { id: 'pomodoro', label: 'Pomodoro', category: 'Widgets', icon: <FiCheckCircle size={24} color="#ee5253" />, action: () => { onAddNode('Pomodoro'); setToolboxOpen(false) } },
+                                { id: 'shape', label: 'Shape', category: 'Widgets', icon: <FiCircle size={24} color="#54a0ff" />, action: () => { onAddNode('Shape'); setToolboxOpen(false) } },
+                                { id: 'avatar', label: 'Avatar', category: 'Widgets', icon: <FiUser size={24} color="#c8d6e5" />, action: () => { onAddNode('Avatar'); setToolboxOpen(false) } },
                                 { id: 'spotify', label: 'Spotify', category: 'Media', icon: <FiMusic size={24} color="#1DB954" />, action: () => promptEmbed('Spotify', 'https://open.spotify.com/embed/track/...') },
                                 { id: 'bandlab', label: 'BandLab', category: 'Media', icon: <FiMic size={24} color="#F50" />, action: () => promptEmbed('BandLab', 'https://www.bandlab.com/embed/...') },
                                 { id: 'youtube', label: 'YouTube', category: 'Media', icon: <FiYoutube size={24} color="#FF0000" />, action: () => { onAddNode('YouTube'); setToolboxOpen(false) } },
