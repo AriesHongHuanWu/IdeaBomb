@@ -841,7 +841,7 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode, tempEdge, dragOverr
 }
 
 // --- Draggable Node (Resizable + Handles) ---
-const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onDragEnd, magnetMode, canvasSize }) => {
+const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onResize, onResizeEnd, onDragEnd, magnetMode, canvasSize }) => {
     const x = useMotionValue(node.x); const y = useMotionValue(node.y);
     const [isHovered, setIsHovered] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
@@ -961,9 +961,11 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             setSize({ w: newW, h: newH })
             if (dir.includes('w')) x.set(newX)
             if (dir.includes('n')) y.set(newY)
+            if (onResize) onResize(node.id, { x: newX, y: newY, w: newW, h: newH })
         }
         const onUp = () => {
             window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp);
+            if (onResizeEnd) onResizeEnd(node.id)
             onUpdateData(node.id, { w: size.w, h: size.h });
             if (x.get() !== startLeft || y.get() !== startTop) {
                 onUpdatePosition(node.id, { x: x.get() - startLeft, y: y.get() - startTop })
@@ -1111,7 +1113,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
         const h = n ? n.h || 240 : 240
         const cx = clamp(x, 0, canvasSize.w - w)
         const cy = clamp(y, 0, canvasSize.h - h)
-        setDragOverrides(prev => ({ ...prev, [id]: { x: cx, y: cy } }))
+        setDragOverrides(prev => ({ ...prev, [id]: { ...(prev[id] || {}), x: cx, y: cy } }))
     }
 
     const handleDragEndNode = (id) => {
@@ -1380,60 +1382,66 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
 
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
                 <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} tempEdge={tempEdge} dragOverrides={dragOverrides} />
-                {nodes.map(node => (
-                    <DraggableNode key={node.id} magnetMode={magnetMode} canvasSize={canvasSize} node={node} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id}
-                        onDrag={(e, data) => {
-                            if (magnetMode) {
-                                const SNAP_DIST = 10
-                                let { x, y } = data
-                                const w = node.w || 320; const h = node.h || 240
+                {nodes.map(node => {
+                    const override = dragOverrides[node.id]
+                    const effectiveNode = override ? { ...node, ...override } : node
+                    return (
+                        <DraggableNode key={node.id} magnetMode={magnetMode} canvasSize={canvasSize} node={effectiveNode} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id}
+                            onDrag={(id, x, y) => {
+                                if (magnetMode) {
+                                    const SNAP_DIST = 10
+                                    const w = node.w || 320; const h = node.h || 240
+                                    // Find closest snap lines from OTHER nodes
+                                    const others = nodes.filter(n => n.id !== id)
+                                    let snappedX = x; let snappedY = y
 
-                                // Find closest snap lines from OTHER nodes
-                                const others = nodes.filter(n => n.id !== node.id)
-                                let snappedX = x; let snappedY = y
+                                    for (const other of others) {
+                                        const ow = other.w || 320; const oh = other.h || 240
+                                        // X-Axis Snapping (Left-Left, Right-Right, Left-Right, Right-Left)
+                                        if (Math.abs(x - other.x) < SNAP_DIST) snappedX = other.x // L-L
+                                        else if (Math.abs(x - (other.x + ow)) < SNAP_DIST) snappedX = other.x + ow // L-R
+                                        else if (Math.abs((x + w) - other.x) < SNAP_DIST) snappedX = other.x - w // R-L
+                                        else if (Math.abs((x + w) - (other.x + ow)) < SNAP_DIST) snappedX = other.x + ow - w // R-R
 
-                                for (const other of others) {
-                                    const ow = other.w || 320; const oh = other.h || 240
-                                    // X-Axis Snapping (Left-Left, Right-Right, Left-Right, Right-Left)
-                                    if (Math.abs(x - other.x) < SNAP_DIST) snappedX = other.x // L-L
-                                    else if (Math.abs(x - (other.x + ow)) < SNAP_DIST) snappedX = other.x + ow // L-R
-                                    else if (Math.abs((x + w) - other.x) < SNAP_DIST) snappedX = other.x - w // R-L
-                                    else if (Math.abs((x + w) - (other.x + ow)) < SNAP_DIST) snappedX = other.x + ow - w // R-R
-
-                                    // Y-Axis Snapping (Top-Top, Bottom-Bottom, Top-Bottom, Bottom-Top)
-                                    if (Math.abs(y - other.y) < SNAP_DIST) snappedY = other.y // T-T
-                                    else if (Math.abs(y - (other.y + oh)) < SNAP_DIST) snappedY = other.y + oh // T-B
-                                    else if (Math.abs((y + h) - other.y) < SNAP_DIST) snappedY = other.y - h // B-T
-                                    else if (Math.abs((y + h) - (other.y + oh)) < SNAP_DIST) snappedY = other.y + oh - h // B-B
+                                        // Y-Axis Snapping (Top-Top, Bottom-Bottom, Top-Bottom, Bottom-Top)
+                                        if (Math.abs(y - other.y) < SNAP_DIST) snappedY = other.y // T-T
+                                        else if (Math.abs(y - (other.y + oh)) < SNAP_DIST) snappedY = other.y + oh // T-B
+                                        else if (Math.abs((y + h) - other.y) < SNAP_DIST) snappedY = other.y - h // B-B
+                                        else if (Math.abs((y + h) - (other.y + oh)) < SNAP_DIST) snappedY = other.y + oh - h // B-B
+                                    }
+                                    handleDragNode(id, snappedX, snappedY)
+                                } else {
+                                    handleDragNode(id, x, y)
                                 }
-                                handleDragNode(e, { ...data, x: snappedX, y: snappedY })
-                            } else {
-                                handleDragNode(e, data)
-                            }
-                        }} onDragEnd={handleDragEndNode}
-                        onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }}
-                        onConnectStart={connectMode ? ((id) => { if (connectStartId) { onAddEdge(connectStartId, id); setConnectStartId(null); setConnectMode(false) } else { setConnectStartId(id) } }) : null}
-                        onEdgeStart={(id, e) => {
-                            const startX = (e.clientX - offset.x) / scale; const startY = (e.clientY - offset.y) / scale
-                            const { left, top } = containerRef.current.getBoundingClientRect()
-                            setTempEdge({ from: id, to: { x: (e.clientX - left - offset.x) / scale, y: (e.clientY - top - offset.y) / scale } })
-                            const onEdgeMove = (me) => {
-                                const mx = (me.clientX - left - offset.x) / scale; const my = (me.clientY - top - offset.y) / scale
-                                setTempEdge(prev => prev ? ({ ...prev, to: { x: mx, y: my } }) : null)
-                            }
-                            const onEdgeUp = (ue) => {
-                                window.removeEventListener('pointermove', onEdgeMove); window.removeEventListener('pointerup', onEdgeUp)
-                                const ux = (ue.clientX - left - offset.x) / scale; const uy = (ue.clientY - top - offset.y) / scale
-                                const hitNode = nodes.find(n => ux >= n.x && ux <= n.x + (n.w || 320) && uy >= n.y && uy <= n.y + (n.h || 240))
-                                if (hitNode && hitNode.id !== id) { onAddEdge(id, hitNode.id) }
-                                setTempEdge(null)
-                            }
-                            window.addEventListener('pointermove', onEdgeMove); window.addEventListener('pointerup', onEdgeUp)
-                        }}
-                        onUpdatePosition={handleNodeUpdatePos} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} onContextMenu={(e) => handleNodeContextMenu(e, node.id)}
-                    />
-                ))}
-                {cursors && Object.values(cursors).map(c => (
+                            }}
+                            onResize={(id, bounds) => {
+                                setDragOverrides(prev => ({ ...prev, [id]: { ...prev[id], ...bounds } }))
+                            }}
+                            onResizeEnd={handleDragEndNode}
+                            onDragEnd={handleDragEndNode}
+                            onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }}
+                            onConnectStart={connectMode ? ((id) => { if (connectStartId) { onAddEdge(connectStartId, id); setConnectStartId(null); setConnectMode(false) } else { setConnectStartId(id) } }) : null}
+                            onEdgeStart={(id, e) => {
+                                const startX = (e.clientX - offset.x) / scale; const startY = (e.clientY - offset.y) / scale
+                                const { left, top } = containerRef.current.getBoundingClientRect()
+                                setTempEdge({ from: id, to: { x: (e.clientX - left - offset.x) / scale, y: (e.clientY - top - offset.y) / scale } })
+                                const onEdgeMove = (me) => {
+                                    const mx = (me.clientX - left - offset.x) / scale; const my = (me.clientY - top - offset.y) / scale
+                                    setTempEdge(prev => prev ? ({ ...prev, to: { x: mx, y: my } }) : null)
+                                }
+                                const onEdgeUp = (ue) => {
+                                    window.removeEventListener('pointermove', onEdgeMove); window.removeEventListener('pointerup', onEdgeUp)
+                                    const ux = (ue.clientX - left - offset.x) / scale; const uy = (ue.clientY - top - offset.y) / scale
+                                    const hitNode = nodes.find(n => ux >= n.x && ux <= n.x + (n.w || 320) && uy >= n.y && uy <= n.y + (n.h || 240))
+                                    if (hitNode && hitNode.id !== id) { onAddEdge(id, hitNode.id) }
+                                    setTempEdge(null)
+                                }
+                                window.addEventListener('pointermove', onEdgeMove); window.addEventListener('pointerup', onEdgeUp)
+                            }}
+                            onUpdatePosition={handleNodeUpdatePos} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} onContextMenu={(e) => handleNodeContextMenu(e, node.id)}
+                        />
+                    )
+                })}{cursors && Object.values(cursors).map(c => (
                     <div key={c.uid} style={{ position: 'absolute', left: c.x, top: c.y, pointerEvents: 'none', zIndex: 9999, transition: 'all 0.1s linear' }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill={c.color || '#f00'} stroke="white" strokeWidth="2" style={{ transform: 'rotate(-15deg)', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}><path d="M4 4l11 4-5 2 4 8-3 2-4-8-3 4z" /></svg>
                         <div style={{ background: c.color || '#f00', color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', marginTop: 4, whiteSpace: 'nowrap', transform: 'translateX(10px)' }}>{c.displayName || 'User'}</div>
