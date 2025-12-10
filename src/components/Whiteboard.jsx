@@ -1027,8 +1027,6 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     const [pinchDist, setPinchDist] = useState(null)
     const [startScale, setStartScale] = useState(1)
 
-    const [canvasSize, setCanvasSize] = useState({ w: 3000, h: 2000 })
-
     // Helper to clamp
     const clamp = (val, min, max) => Math.min(Math.max(val, min), max)
 
