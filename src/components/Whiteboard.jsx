@@ -899,12 +899,7 @@ const CalendarNode = ({ node, onUpdate }) => {
             </form>
         </div>
     )
-        < FiPlus />
-                    </button >
-                </div >
-            </div >
-        </div >
-    )
+
 }
 const ImageNode = ({ node, onUpdate }) => {
     const up = (e) => { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onloadend = () => onUpdate(node.id, { src: r.result }); r.readAsDataURL(f) } }
