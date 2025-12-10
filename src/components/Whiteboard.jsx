@@ -3,6 +3,8 @@ import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { BsStars } from 'react-icons/bs'
 import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw, FiLayout, FiBarChart2, FiSmile, FiStar, FiCircle, FiUser, FiColumns, FiActivity, FiTerminal, FiMessageSquare, FiCheckCircle } from 'react-icons/fi'
 
+import { useMediaQuery } from '../hooks/useMediaQuery'
+
 // --- Utilities ---
 const useDebounce = (callback, delay) => {
     const timeoutRef = useRef(null)
@@ -1210,7 +1212,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                 )}
             </AnimatePresence>
 
-            <motion.div className="glass-panel" style={{ position: 'absolute', bottom: 30, left: '50%', x: '-50%', padding: '12px 24px', display: 'flex', gap: 20, borderRadius: 24, zIndex: 100, pointerEvents: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.1)', maxWidth: '90vw', overflowX: 'auto' }} initial={{ y: 100 }} animate={{ y: 0 }}>
+            <motion.div className="glass-panel" style={{ position: 'absolute', bottom: useMediaQuery('(max-width: 768px)') ? 85 : 30, left: '50%', x: '-50%', padding: '12px 24px', display: 'flex', gap: 20, borderRadius: 24, zIndex: 100, pointerEvents: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.1)', maxWidth: '90vw', overflowX: 'auto' }} initial={{ y: 100 }} animate={{ y: 0 }}>
                 <ToolBtn icon={<FiType />} label="Note" onClick={() => onAddNode('Note')} />
                 <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => onAddNode('Todo')} />
                 <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode('Calendar')} />

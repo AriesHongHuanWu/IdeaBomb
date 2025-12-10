@@ -721,7 +721,7 @@ export default function BoardPage({ user }) {
 
             <div style={{ width: '100%', height: '100%' }}>
                 <Whiteboard
-                    cursors={Object.fromEntries(Object.entries(cursors).filter(([_, c]) => (c.page || 'Page 1') === activePage))}
+                    cursors={Object.fromEntries(Object.entries(cursors).filter(([_, c]) => (c.page || 'Page 1') === activePage && (!c.lastActive || (Date.now() - new Date(c.lastActive).getTime() < 60000))))}
                     onCursorMove={handleCursorMove}
                     nodes={displayNodes}
                     edges={displayEdges}
