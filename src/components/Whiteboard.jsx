@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { BsStars } from 'react-icons/bs'
-import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare } from 'react-icons/fi'
+import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw } from 'react-icons/fi'
 
 // --- Utilities ---
 const useDebounce = (callback, delay) => {
@@ -38,6 +38,72 @@ const EmbedNode = ({ node, onUpdate }) => {
         </div>
     )
 }
+
+const TimerNode = ({ node, onUpdate }) => {
+    const [timeLeft, setTimeLeft] = useState(node.duration || 300)
+
+    useEffect(() => {
+        if (!node.isRunning || !node.startedAt) {
+            setTimeLeft(node.duration || 300)
+            return
+        }
+        const interval = setInterval(() => {
+            const elapsed = (Date.now() - new Date(node.startedAt).getTime()) / 1000
+            const remaining = Math.max(Math.ceil((node.duration || 300) - elapsed), 0)
+            setTimeLeft(remaining)
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [node.startedAt, node.isRunning, node.duration])
+
+    const toggle = () => {
+        if (node.isRunning) {
+            onUpdate(node.id, { isRunning: false, duration: timeLeft, startedAt: null })
+        } else {
+            onUpdate(node.id, { isRunning: true, startedAt: new Date().toISOString() })
+        }
+    }
+
+    const reset = () => {
+        onUpdate(node.id, { isRunning: false, duration: 300, startedAt: null })
+    }
+
+    const adjust = (delta) => {
+        if (node.isRunning) return
+        onUpdate(node.id, { duration: Math.max((node.duration || 300) + delta, 10) })
+    }
+
+    const format = (s) => {
+        const m = Math.floor(s / 60)
+        const sec = s % 60
+        return `${m}:${sec.toString().padStart(2, '0')}`
+    }
+
+    return (
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white', borderRadius: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#f39c12', fontWeight: 'bold' }}><FiClock size={18} /> Timer</div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontSize: '2.5rem', fontWeight: 'bold', fontFamily: 'monospace', color: '#333' }}>
+                    {format(timeLeft)}
+                </div>
+                <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                    <button onClick={toggle} style={{ width: 40, height: 40, borderRadius: '50%', border: 'none', background: node.isRunning ? '#ff4d4f' : '#2ecc71', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onPointerDown={e => e.stopPropagation()}>
+                        {node.isRunning ? <FiPause /> : <FiPlay style={{ marginLeft: 2 }} />}
+                    </button>
+                    <button onClick={reset} style={{ width: 40, height: 40, borderRadius: '50%', border: 'none', background: '#f0f0f0', color: '#555', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onPointerDown={e => e.stopPropagation()}>
+                        <FiRotateCcw />
+                    </button>
+                </div>
+                {!node.isRunning && (
+                    <div style={{ display: 'flex', gap: 5, marginTop: 10 }}>
+                        <button onClick={() => adjust(-60)} style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: 4, border: '1px solid #eee', background: 'transparent', cursor: 'pointer' }} onPointerDown={e => e.stopPropagation()}>-1m</button>
+                        <button onClick={() => adjust(60)} style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: 4, border: '1px solid #eee', background: 'transparent', cursor: 'pointer' }} onPointerDown={e => e.stopPropagation()}>+1m</button>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
+
 const EmbedNodeWrapper = ({ node }) => {
     // We need to enable pointer events on iframe for interaction, but dragging relies on the header.
     // The drag-handle class in header connects to DraggableNode.
@@ -430,7 +496,8 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
                 {node.type === 'YouTube' && <YouTubeNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Link' && <LinkNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Embed' && <EmbedNode node={node} onUpdate={onUpdateData} />}
-                {(!['Todo', 'Calendar', 'Image', 'YouTube', 'Link', 'Embed'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Timer' && <TimerNode node={node} onUpdate={onUpdateData} />}
+                {(!['Todo', 'Calendar', 'Image', 'YouTube', 'Link', 'Embed', 'Timer'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
             </div>
 
             {/* AI Suggestion Controls */}
@@ -785,6 +852,8 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                         }}
                     >
                         {[
+                            { id: 'link', label: 'Bookmark', icon: <FiGlobe size={24} color="#3498db" />, action: () => { onAddNode('Link'); setToolboxOpen(false) } },
+                            { id: 'timer', label: 'Timer', icon: <FiClock size={24} color="#f39c12" />, action: () => { onAddNode('Timer', '', { duration: 300 }); setToolboxOpen(false) } },
                             { id: 'spotify', label: 'Spotify', icon: <FiMusic size={24} color="#1DB954" />, action: () => promptEmbed('Spotify', 'https://open.spotify.com/embed/track/...') },
                             { id: 'bandlab', label: 'BandLab', icon: <FiMic size={24} color="#F50" />, action: () => promptEmbed('BandLab', 'https://www.bandlab.com/embed/...') },
                             { id: 'youtube', label: 'YouTube', icon: <FiYoutube size={24} color="#FF0000" />, action: () => { onAddNode('YouTube'); setToolboxOpen(false) } },
@@ -804,7 +873,6 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                 <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => onAddNode('Todo')} />
                 <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode('Calendar')} />
                 <ToolBtn icon={<FiImage />} label="Image" onClick={() => onAddNode('Image')} />
-                <ToolBtn icon={<FiGlobe />} label="Link" onClick={() => onAddNode('Link')} />
                 <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
                 <ToolBtn icon={<FiLink />} label="Connect" active={connectMode} onClick={() => { setConnectMode(!connectMode); setConnectStartId(null) }} />
                 <ToolBtn icon={<FiGrid />} label="Toolbox" active={toolboxOpen} onClick={() => setToolboxOpen(!toolboxOpen)} />
@@ -831,13 +899,23 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                                     <label style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: '#666', fontWeight: 600 }}>URL or Embed Code</label>
                                     <input
                                         autoFocus
+                                        style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid #ddd', fontSize: '1rem', outline: 'none', background: '#f9f9f9', transition: '0.2s' }}
+                                        placeholder={embedModal.provider === 'Spotify' ? 'Spotify Track/Album URL' : 'Paste Embed Code or URL'}
                                         value={embedModal.url}
                                         onChange={e => setEmbedModal({ ...embedModal, url: e.target.value })}
-                                        placeholder={`Paste ${embedModal.provider} link here...`}
-                                        style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid #ddd', fontSize: '1rem', outline: 'none', background: '#f9f9f9', transition: '0.2s' }}
                                         onFocus={e => { e.target.style.background = 'white'; e.target.style.borderColor = '#4facfe'; e.target.style.boxShadow = '0 0 0 3px rgba(79, 172, 254, 0.2)' }}
                                         onBlur={e => { e.target.style.background = '#f9f9f9'; e.target.style.borderColor = '#ddd'; e.target.style.boxShadow = 'none' }}
                                     />
+                                    {embedModal.provider !== 'Embed' && (
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                                            <button type="button" onClick={() => {
+                                                const query = 'site:' + (embedModal.provider === 'Spotify' ? 'open.spotify.com' : 'bandlab.com') + ' ' + (embedModal.url || 'music');
+                                                window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank')
+                                            }} style={{ background: 'transparent', border: 'none', color: '#007bff', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 5 }}>
+                                                <FiGlobe /> Search {embedModal.provider}
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                                     <button type="button" onClick={() => setEmbedModal(null)} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#f0f0f0', color: '#666', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>

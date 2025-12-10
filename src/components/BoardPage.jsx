@@ -190,6 +190,7 @@ export default function BoardPage({ user }) {
     }
 
     const addEdge = async (fromId, toId) => {
+        if (fromId === toId) return
         const id = uuidv4()
         await setDoc(doc(db, 'boards', boardId, 'edges', id), { id, from: fromId, to: toId, page: activePage })
     }
