@@ -32,6 +32,50 @@ export default function BoardPage({ user }) {
     const isMobile = useMediaQuery('(max-width: 768px)')
     const [pageConfigs, setPageConfigs] = useState({})
 
+    // --- Undo/Redo Logic ---
+    const [history, setHistory] = useState([])
+    const [future, setFuture] = useState([])
+
+    const recordAction = (action) => {
+        setHistory(prev => [...prev.slice(-49), action])
+        setFuture([])
+    }
+
+    const undo = async () => {
+        if (history.length === 0) return
+        const action = history[history.length - 1]
+        setHistory(prev => prev.slice(0, -1))
+        setFuture(prev => [action, ...prev])
+        try { await action.undo() } catch (e) { console.error("Undo failed:", e) }
+    }
+
+    const redo = async () => {
+        if (future.length === 0) return
+        const action = future[0]
+        setFuture(prev => prev.slice(1))
+        setHistory(prev => [...prev, action])
+        try { await action.redo() } catch (e) { console.error("Redo failed:", e) }
+    }
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            // Check for focused inputs
+            if (['INPUT', 'TEXTAREA'].includes(e.target.tagName) || e.target.isContentEditable) return
+
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+                e.preventDefault()
+                if (e.shiftKey) redo()
+                else undo()
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+                e.preventDefault()
+                redo()
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [history, future])
+
     // --- Data Sync ---
     useEffect(() => {
         if (!boardId || !user) return
@@ -154,11 +198,30 @@ export default function BoardPage({ user }) {
         }
     }
 
-    const addNode = async (type, content, extraData = {}) => {
+    const addNode = async (type, content, extraData = {}, skipHistory = false) => {
         if (!user || !hasAccess) return null
         if (nodes.length >= 200) { alert("Maximum stickies limit reached (200). Please delete some to add more."); return null }
-        const newNode = { id: uuidv4(), type: type || 'Note', page: activePage, x: extraData.x || (window.innerWidth / 2), y: extraData.y || (window.innerHeight / 2), content: content || '', items: [], events: extraData.events || {}, src: '', videoId: '', createdAt: new Date().toISOString(), createdBy: user.uid, ...extraData }
-        try { await setDoc(doc(db, 'boards', boardId, 'nodes', newNode.id), newNode); return newNode.id } catch (e) { console.error("Error adding node:", e); return null }
+
+        const id = extraData.id || uuidv4()
+        const newNode = {
+            id, type: type || 'Note', page: activePage,
+            x: extraData.x || (window.innerWidth / 2), y: extraData.y || (window.innerHeight / 2),
+            content: content || '', items: [], events: extraData.events || {},
+            src: '', videoId: '', createdAt: new Date().toISOString(), createdBy: user.uid,
+            ...extraData
+        }
+
+        try {
+            await setDoc(doc(db, 'boards', boardId, 'nodes', newNode.id), newNode);
+
+            if (!skipHistory) {
+                recordAction({
+                    undo: async () => deleteNode(newNode.id, true),
+                    redo: async () => addNode(type, content, { ...extraData, id: newNode.id }, true)
+                })
+            }
+            return newNode.id
+        } catch (e) { console.error("Error adding node:", e); return null }
     }
 
     const addEdge = async (fromId, toId) => {
@@ -179,12 +242,41 @@ export default function BoardPage({ user }) {
             console.error(e)
         }
     }
-    const updateNodeData = async (id, data) => { try { await updateDoc(doc(db, 'boards', boardId, 'nodes', id), data) } catch (e) { console.error(e) } }
-    const deleteNode = async (id) => {
+    const updateNodeData = async (id, data, skipHistory = false) => {
+        const node = nodes.find(n => n.id === id)
+        if (!node) return
+        try {
+            await updateDoc(doc(db, 'boards', boardId, 'nodes', id), data)
+            if (!skipHistory) {
+                const undoData = {}
+                Object.keys(data).forEach(k => undoData[k] = node[k])
+                recordAction({
+                    undo: async () => updateNodeData(id, undoData, true),
+                    redo: async () => updateNodeData(id, data, true)
+                })
+            }
+        } catch (e) { console.error(e) }
+    }
+    const deleteNode = async (id, skipHistory = false) => {
+        const node = nodes.find(n => n.id === id)
+        const relatedEdges = edges.filter(e => e.from === id || e.to === id)
+
         const batch = writeBatch(db)
         batch.delete(doc(db, 'boards', boardId, 'nodes', id))
-        edges.filter(e => e.from === id || e.to === id).forEach(e => batch.delete(doc(db, 'boards', boardId, 'edges', e.id)))
+        relatedEdges.forEach(e => batch.delete(doc(db, 'boards', boardId, 'edges', e.id)))
         await batch.commit()
+
+        if (!skipHistory && node) {
+            recordAction({
+                undo: async () => {
+                    const b = writeBatch(db)
+                    b.set(doc(db, 'boards', boardId, 'nodes', node.id), node)
+                    relatedEdges.forEach(e => b.set(doc(db, 'boards', boardId, 'edges', e.id), e))
+                    await b.commit()
+                },
+                redo: async () => deleteNode(id, true)
+            })
+        }
     }
     const batchUpdateNodes = async (updates) => { if (!updates.length) return; const batch = writeBatch(db); updates.forEach(({ id, data }) => batch.update(doc(db, 'boards', boardId, 'nodes', id), data)); await batch.commit() }
     const handleBatchDelete = async (ids) => {
