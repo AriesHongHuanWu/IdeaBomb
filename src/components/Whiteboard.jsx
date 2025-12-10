@@ -851,9 +851,10 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
     const [isHovered, setIsHovered] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
     const [isResizing, setIsResizing] = useState(false)
+    const ignoreSyncRef = useRef(0)
     const [size, setSize] = useState({ w: node.w || 320, h: node.h || 240 })
-    useEffect(() => { if (!isDragging && !isResizing) { x.set(node.x); y.set(node.y) } }, [node.x, node.y, isDragging, isResizing])
-    useEffect(() => { if (!isResizing) setSize({ w: node.w || 320, h: node.h || 240 }) }, [node.w, node.h, isResizing]) // Sync external updates
+    useEffect(() => { if (!isDragging && !isResizing && Date.now() > ignoreSyncRef.current) { x.set(node.x); y.set(node.y) } }, [node.x, node.y, isDragging, isResizing])
+    useEffect(() => { if (!isResizing && Date.now() > ignoreSyncRef.current) setSize({ w: node.w || 320, h: node.h || 240 }) }, [node.w, node.h, isResizing]) // Sync external updates
 
     const handleDragStart = (e) => {
         if (onConnectStart || e.button !== 0 || e.target.closest('button') || e.target.closest('input') || e.target.closest('.no-drag') || e.target.closest('.drag-handle') === false && e.target.closest('.glass-panel') === null && !e.target.classList.contains('glass-panel')) return
@@ -886,6 +887,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         }
         const onUp = (be) => {
             window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); setIsDragging(false)
+            ignoreSyncRef.current = Date.now() + 2000
             if (onDragEnd) onDragEnd(node.id)
             const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1)
             if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: dx, y: dy })
@@ -973,6 +975,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         const onUp = () => {
             window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp);
             setIsResizing(false)
+            ignoreSyncRef.current = Date.now() + 2000
             if (onResizeEnd) onResizeEnd(node.id)
             onUpdateData(node.id, { w: size.w, h: size.h });
             if (x.get() !== startLeft || y.get() !== startTop) {
