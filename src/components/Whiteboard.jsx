@@ -1481,6 +1481,8 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             onClick={(e) => { e.stopPropagation(); if (onConnectStart) { onConnectStart(node.id) } else { onSelect(e) } }}
             onContextMenu={(e) => { onSelect(e) }}
             onHoverStart={() => setIsHovered(true)} onHoverEnd={() => setIsHovered(false)}
+            whileHover={{ scale: 1.03, zIndex: 60 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isSelected || isDragging ? 50 : 10, width: size.w, height: size.h }}
         >
             {/* Handles - Only allow resize if selected or hovered */}
@@ -1818,7 +1820,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                 }
             }
 
-            onAddNode('Embed', '', { src: finalSrc, title: embedModal.provider })
+            addCenteredNode('Embed', '', { src: finalSrc, title: embedModal.provider })
             setEmbedModal(null)
         }
     }
@@ -1852,7 +1854,15 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [selectedIds, onBatchDelete, onDeleteNode, onCopy, onPaste, nodes])
 
-    // Track mouse for paste position
+    // Helper to add node at CENTER of viewport
+    const addCenteredNode = (type, content = '', extra = {}) => {
+        const cx = (window.innerWidth / 2 - offset.x) / scale
+        const cy = ((window.innerHeight) / 2 - offset.y) / scale
+        const w = extra.w || 250 // Approx default width
+        const h = extra.h || 100
+        onAddNode(type, content, { ...extra, x: cx - w / 2, y: cy - h / 2 })
+    }
+
     const mousePos = useRef({ x: 0, y: 0 })
     const handleGlobalMouseMove = (e) => {
         const { left, top } = containerRef.current ? containerRef.current.getBoundingClientRect() : { left: 0, top: 0 }
@@ -2032,35 +2042,35 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, maxHeight: 300, overflowY: 'auto', padding: 4 }}>
                             {[
                                 // General
-                                { id: 'link', label: 'Bookmark', category: 'General', icon: <FiGlobe size={24} color="#3498db" />, action: () => { onAddNode('Link'); setToolboxOpen(false) } },
-                                { id: 'label', label: 'Label', category: 'General', icon: <FiType size={24} color="#333" />, action: () => { onAddNode('Label', 'Heading'); setToolboxOpen(false) } },
-                                { id: 'section', label: 'Section', category: 'General', icon: <FiLayout size={24} color="#9b59b6" />, action: () => { onAddNode('Section', '', { w: 400, h: 300 }); setToolboxOpen(false) } },
-                                { id: 'timer', label: 'Timer', category: 'General', icon: <FiClock size={24} color="#f39c12" />, action: () => { onAddNode('Timer', '', { duration: 300 }); setToolboxOpen(false) } },
-                                { id: 'clock', label: 'Clock', category: 'General', icon: <FiClock size={24} color="#ff9f43" />, action: () => { onAddNode('Clock'); setToolboxOpen(false) } },
-                                { id: 'pomodoro', label: 'Pomodoro', category: 'General', icon: <FiCheckCircle size={24} color="#ee5253" />, action: () => { onAddNode('Pomodoro'); setToolboxOpen(false) } },
+                                { id: 'link', label: 'Bookmark', category: 'General', icon: <FiGlobe size={24} color="#3498db" />, action: () => { addCenteredNode('Link'); setToolboxOpen(false) } },
+                                { id: 'label', label: 'Label', category: 'General', icon: <FiType size={24} color="#333" />, action: () => { addCenteredNode('Label', 'Heading'); setToolboxOpen(false) } },
+                                { id: 'section', label: 'Section', category: 'General', icon: <FiLayout size={24} color="#9b59b6" />, action: () => { addCenteredNode('Section', '', { w: 400, h: 300 }); setToolboxOpen(false) } },
+                                { id: 'timer', label: 'Timer', category: 'General', icon: <FiClock size={24} color="#f39c12" />, action: () => { addCenteredNode('Timer', '', { duration: 300 }); setToolboxOpen(false) } },
+                                { id: 'clock', label: 'Clock', category: 'General', icon: <FiClock size={24} color="#ff9f43" />, action: () => { addCenteredNode('Clock'); setToolboxOpen(false) } },
+                                { id: 'pomodoro', label: 'Pomodoro', category: 'General', icon: <FiCheckCircle size={24} color="#ee5253" />, action: () => { addCenteredNode('Pomodoro'); setToolboxOpen(false) } },
 
                                 // Interaction
-                                { id: 'poll', label: 'Poll', category: 'Interaction', icon: <FiBarChart2 size={24} color="#007bff" />, action: () => { onAddNode('Poll'); setToolboxOpen(false) } },
-                                { id: 'counter', label: 'Counter', category: 'Interaction', icon: <FiPlus size={24} color="#52c41a" />, action: () => { onAddNode('Counter', '', { count: 0 }); setToolboxOpen(false) } },
-                                { id: 'rating', label: 'Rating', category: 'Interaction', icon: <FiStar size={24} color="#feca57" />, action: () => { onAddNode('Rating', '', { rating: 3 }); setToolboxOpen(false) } },
-                                { id: 'progress', label: 'Progress', category: 'Interaction', icon: <FiActivity size={24} color="#00d2d3" />, action: () => { onAddNode('Progress', '', { progress: 50 }); setToolboxOpen(false) } },
-                                { id: 'kanban', label: 'Kanban', category: 'Interaction', icon: <FiColumns size={24} color="#5f27cd" />, action: () => { onAddNode('Kanban', '', { w: 300, h: 400 }); setToolboxOpen(false) } },
-                                { id: 'notify', label: 'Notify', category: 'Interaction', icon: <FiBell size={24} color="#667eea" />, action: () => { onAddNode('Notify'); setToolboxOpen(false) } },
+                                { id: 'poll', label: 'Poll', category: 'Interaction', icon: <FiBarChart2 size={24} color="#007bff" />, action: () => { addCenteredNode('Poll'); setToolboxOpen(false) } },
+                                { id: 'counter', label: 'Counter', category: 'Interaction', icon: <FiPlus size={24} color="#52c41a" />, action: () => { addCenteredNode('Counter', '', { count: 0 }); setToolboxOpen(false) } },
+                                { id: 'rating', label: 'Rating', category: 'Interaction', icon: <FiStar size={24} color="#feca57" />, action: () => { addCenteredNode('Rating', '', { rating: 3 }); setToolboxOpen(false) } },
+                                { id: 'progress', label: 'Progress', category: 'Interaction', icon: <FiActivity size={24} color="#00d2d3" />, action: () => { addCenteredNode('Progress', '', { progress: 50 }); setToolboxOpen(false) } },
+                                { id: 'kanban', label: 'Kanban', category: 'Interaction', icon: <FiColumns size={24} color="#5f27cd" />, action: () => { addCenteredNode('Kanban', '', { w: 300, h: 400 }); setToolboxOpen(false) } },
+                                { id: 'notify', label: 'Notify', category: 'Interaction', icon: <FiBell size={24} color="#667eea" />, action: () => { addCenteredNode('Notify'); setToolboxOpen(false) } },
 
                                 // Media
-                                { id: 'youtube', label: 'YouTube', category: 'Media', icon: <FiYoutube size={24} color="#FF0000" />, action: () => { onAddNode('YouTube'); setToolboxOpen(false) } },
+                                { id: 'youtube', label: 'YouTube', category: 'Media', icon: <FiYoutube size={24} color="#FF0000" />, action: () => { addCenteredNode('YouTube'); setToolboxOpen(false) } },
                                 { id: 'spotify', label: 'Spotify', category: 'Media', icon: <FiMusic size={24} color="#1DB954" />, action: () => promptEmbed('Spotify', 'https://open.spotify.com/embed/track/...') },
                                 { id: 'bandlab', label: 'BandLab', category: 'Media', icon: <FiMic size={24} color="#F50" />, action: () => promptEmbed('BandLab', 'https://www.bandlab.com/embed/...') },
-                                { id: 'code', label: 'Code', category: 'Media', icon: <FiTerminal size={24} color="#222f3e" />, action: () => { onAddNode('Code', '', { w: 400, h: 300 }); setToolboxOpen(false) } },
+                                { id: 'code', label: 'Code', category: 'Media', icon: <FiTerminal size={24} color="#222f3e" />, action: () => { addCenteredNode('Code', '', { w: 400, h: 300 }); setToolboxOpen(false) } },
                                 { id: 'generic', label: 'Embed', category: 'Media', icon: <FiCode size={24} color="#333" />, action: () => promptEmbed('Embed', 'Paste URL or <iframe> code') },
 
                                 // Visuals
-                                { id: 'sticker', label: 'Sticker', category: 'Visuals', icon: <FiSmile size={24} color="#f1c40f" />, action: () => { onAddNode('Sticker', '😎'); setToolboxOpen(false) } },
-                                { id: 'emoji', label: 'Emoji', category: 'Visuals', icon: <FiSmile size={24} color="#ff9ff3" />, action: () => { onAddNode('Emoji', '', { w: 250, h: 100 }); setToolboxOpen(false) } },
-                                { id: 'shape', label: 'Shape', category: 'Visuals', icon: <FiCircle size={24} color="#54a0ff" />, action: () => { onAddNode('Shape'); setToolboxOpen(false) } },
-                                { id: 'avatar', label: 'Avatar', category: 'Visuals', icon: <FiUser size={24} color="#c8d6e5" />, action: () => { onAddNode('Avatar'); setToolboxOpen(false) } },
-                                { id: 'quote', label: 'Quote', category: 'Visuals', icon: <FiMessageSquare size={24} color="#ff6b6b" />, action: () => { onAddNode('Quote'); setToolboxOpen(false) } },
-                                { id: 'dice', label: 'Dice', category: 'Visuals', icon: <FiGrid size={24} color="#e74c3c" />, action: () => { onAddNode('Dice'); setToolboxOpen(false) } },
+                                { id: 'sticker', label: 'Sticker', category: 'Visuals', icon: <FiSmile size={24} color="#f1c40f" />, action: () => { addCenteredNode('Sticker', '😎'); setToolboxOpen(false) } },
+                                { id: 'emoji', label: 'Emoji', category: 'Visuals', icon: <FiSmile size={24} color="#ff9ff3" />, action: () => { addCenteredNode('Emoji', '', { w: 250, h: 100 }); setToolboxOpen(false) } },
+                                { id: 'shape', label: 'Shape', category: 'Visuals', icon: <FiCircle size={24} color="#54a0ff" />, action: () => { addCenteredNode('Shape'); setToolboxOpen(false) } },
+                                { id: 'avatar', label: 'Avatar', category: 'Visuals', icon: <FiUser size={24} color="#c8d6e5" />, action: () => { addCenteredNode('Avatar'); setToolboxOpen(false) } },
+                                { id: 'quote', label: 'Quote', category: 'Visuals', icon: <FiMessageSquare size={24} color="#ff6b6b" />, action: () => { addCenteredNode('Quote'); setToolboxOpen(false) } },
+                                { id: 'dice', label: 'Dice', category: 'Visuals', icon: <FiGrid size={24} color="#e74c3c" />, action: () => { addCenteredNode('Dice'); setToolboxOpen(false) } },
                             ].filter(item => item.category === toolboxTab).map((item, index) => (
                                 <motion.div
                                     key={item.id}
@@ -2082,10 +2092,10 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
             </AnimatePresence>
 
             <motion.div className="glass-panel" style={{ position: 'absolute', bottom: useMediaQuery('(max-width: 768px)') ? 85 : 30, left: '50%', x: '-50%', padding: '12px 24px', display: 'flex', gap: 20, borderRadius: 24, zIndex: 100, pointerEvents: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.1)', maxWidth: '90vw', overflowX: 'auto' }} initial={{ y: 100 }} animate={{ y: 0 }}>
-                <ToolBtn icon={<FiType />} label="Note" onClick={() => onAddNode('Note')} />
-                <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => onAddNode('Todo')} />
-                <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode('Calendar')} />
-                <ToolBtn icon={<FiImage />} label="Image" onClick={() => onAddNode('Image')} />
+                <ToolBtn icon={<FiType />} label="Note" onClick={() => addCenteredNode('Note')} />
+                <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => addCenteredNode('Todo')} />
+                <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => addCenteredNode('Calendar')} />
+                <ToolBtn icon={<FiImage />} label="Image" onClick={() => addCenteredNode('Image')} />
                 <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
                 <ToolBtn icon={<FiTarget />} label="Magnet" active={magnetMode} onClick={() => setMagnetMode(!magnetMode)} />
                 <ToolBtn icon={<FiGrid />} label="Toolbox" active={toolboxOpen} onClick={() => setToolboxOpen(!toolboxOpen)} />
