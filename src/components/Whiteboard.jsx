@@ -845,9 +845,10 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
     const x = useMotionValue(node.x); const y = useMotionValue(node.y);
     const [isHovered, setIsHovered] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
+    const [isResizing, setIsResizing] = useState(false)
     const [size, setSize] = useState({ w: node.w || 320, h: node.h || 240 })
-    useEffect(() => { if (!isDragging) { x.set(node.x); y.set(node.y) } }, [node.x, node.y, isDragging])
-    useEffect(() => { setSize({ w: node.w || 320, h: node.h || 240 }) }, [node.w, node.h]) // Sync external updates
+    useEffect(() => { if (!isDragging && !isResizing) { x.set(node.x); y.set(node.y) } }, [node.x, node.y, isDragging, isResizing])
+    useEffect(() => { if (!isResizing) setSize({ w: node.w || 320, h: node.h || 240 }) }, [node.w, node.h, isResizing]) // Sync external updates
 
     const handleDragStart = (e) => {
         if (onConnectStart || e.button !== 0 || e.target.closest('button') || e.target.closest('input') || e.target.closest('.no-drag') || e.target.closest('.drag-handle') === false && e.target.closest('.glass-panel') === null && !e.target.classList.contains('glass-panel')) return
@@ -892,6 +893,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         const startX = e.clientX; const startY = e.clientY
         const startW = size.w; const startH = size.h
         const startLeft = x.get(); const startTop = y.get()
+        setIsResizing(true)
 
         const onMove = (mv) => {
             const dx = (mv.clientX - startX) / (scale || 1)
@@ -965,6 +967,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         }
         const onUp = () => {
             window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp);
+            setIsResizing(false)
             if (onResizeEnd) onResizeEnd(node.id)
             onUpdateData(node.id, { w: size.w, h: size.h });
             if (x.get() !== startLeft || y.get() !== startTop) {
