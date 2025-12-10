@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { BsStars } from 'react-icons/bs'
-import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw, FiLayout, FiBarChart2, FiSmile, FiStar, FiCircle, FiUser, FiColumns, FiActivity, FiTerminal, FiMessageSquare, FiCheckCircle, FiTarget, FiBell, FiSend, FiUnlink } from 'react-icons/fi'
+import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw, FiLayout, FiBarChart2, FiSmile, FiStar, FiCircle, FiUser, FiColumns, FiActivity, FiTerminal, FiMessageSquare, FiCheckCircle, FiTarget, FiBell, FiSend } from 'react-icons/fi'
 
 import { useMediaQuery } from '../hooks/useMediaQuery'
 
@@ -57,7 +57,7 @@ const ToolBtn = ({ icon, label, onClick, active }) => (
         onClick={onClick}
         title={label}
         style={{
-            width: 48, height: 48, borderRadius: 16, border: 'none',
+            width: 48, height: 48, borderRadius: 16,
             background: active ? 'linear-gradient(135deg, #2563eb, #3b82f6)' : 'rgba(255,255,255,0.8)',
             backdropFilter: 'blur(10px)',
             color: active ? 'white' : '#64748b',
@@ -1222,7 +1222,7 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
                 }} onPointerDown={e => e.preventDefault() /* Prevent losing focus */}>
                     <button onClick={execLink} title="Add Link" style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}><FiLink size={14} /></button>
                     <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.2)' }} />
-                    <button onClick={execUnlink} title="Remove Link" style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', display: 'flex' }}><FiUnlink size={14} /></button>
+                    <button onClick={execUnlink} title="Remove Link" style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', display: 'flex' }}><FiTrash2 size={14} /></button>
                 </div>
             )}
         </div>
