@@ -5,6 +5,20 @@ import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGr
 
 import { useMediaQuery } from '../hooks/useMediaQuery'
 
+// Helper for scalable UI elements based on node width
+const getScale = (w) => {
+    const s = Math.max((w || 320) / 320, 1) // Minimum scale 1
+    return {
+        rad: Math.min(12 * s, 48),
+        p: Math.min(16 * s, 64),
+        gap: Math.min(8 * s, 32),
+        fsHead: `clamp(1rem, ${1 * s}rem, 3rem)`,
+        fsBody: `clamp(0.9rem, ${0.9 * s}rem, 4rem)`,
+        icon: Math.min(Math.max(18 * s, 18), 64),
+        mb: Math.min(10 * s, 40)
+    }
+}
+
 // --- Utilities ---
 const useDebounce = (callback, delay) => {
     const timeoutRef = useRef(null)
@@ -236,17 +250,18 @@ const QuoteNode = ({ node, onUpdate }) => {
 }
 
 const CodeNode = ({ node, onUpdate }) => {
+    const { rad, p, gap, fsBody, icon, mb } = getScale(node.w)
     return (
-        <div style={{ width: '100%', height: '100%', background: '#282c34', borderRadius: 12, padding: 16, color: '#abb2bf', fontFamily: 'monospace', fontSize: '0.9rem', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f56' }} />
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ffbd2e' }} />
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#27c93f' }} />
+        <div style={{ width: '100%', height: '100%', background: '#282c34', borderRadius: rad, padding: p, color: '#abb2bf', fontFamily: 'monospace', fontSize: fsBody, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', gap: gap, marginBottom: mb, flexShrink: 0 }}>
+                <div style={{ width: icon * 0.6, height: icon * 0.6, borderRadius: '50%', background: '#ff5f56' }} />
+                <div style={{ width: icon * 0.6, height: icon * 0.6, borderRadius: '50%', background: '#ffbd2e' }} />
+                <div style={{ width: icon * 0.6, height: icon * 0.6, borderRadius: '50%', background: '#27c93f' }} />
             </div>
             <textarea
                 value={node.code || '// Write code here...'}
                 onChange={e => onUpdate(node.id, { code: e.target.value })}
-                style={{ width: '100%', height: 'calc(100% - 20px)', background: 'transparent', border: 'none', color: 'inherit', outline: 'none', resize: 'none' }}
+                style={{ flex: 1, width: '100%', background: 'transparent', border: 'none', color: 'inherit', outline: 'none', resize: 'none', fontSize: 'inherit', lineHeight: 1.5 }}
                 onPointerDown={e => e.stopPropagation()}
             />
         </div>
@@ -381,6 +396,7 @@ const DiceNode = ({ node, onUpdate }) => {
 const PollNode = ({ node, onUpdate }) => {
     const options = node.options || [{ id: 1, text: 'Yes', votes: 0 }, { id: 2, text: 'No', votes: 0 }]
     const totalVotes = options.reduce((acc, curr) => acc + curr.votes, 0) || 1
+    const { rad, p, gap, fsHead, icon, mb, fsBody } = getScale(node.w)
 
     const vote = (optId) => {
         const hasVoted = localStorage.getItem(`poll_${node.id}`)
@@ -402,15 +418,15 @@ const PollNode = ({ node, onUpdate }) => {
     }
 
     return (
-        <div style={{ padding: 20, background: 'white', borderRadius: 20, height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: 15, color: '#333', display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.2rem' }}><FiBarChart2 color="#007bff" /> Poll</div>
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ padding: p, background: 'white', borderRadius: rad, height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: mb, color: '#333', display: 'flex', alignItems: 'center', gap: gap, fontSize: fsHead }}><FiBarChart2 color="#007bff" size={icon} /> Poll</div>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: gap }}>
                 {options.map(opt => {
                     const percent = Math.round((opt.votes / totalVotes) * 100)
                     const isWinner = opt.votes === Math.max(...options.map(o => o.votes)) && opt.votes > 0
                     return (
                         <div key={opt.id} onClick={() => vote(opt.id)} onPointerDown={e => e.stopPropagation()} style={{ cursor: 'pointer', position: 'relative' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontWeight: 500, fontSize: '0.9rem', color: '#444' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontWeight: 500, fontSize: fsBody, color: '#444' }}>
                                 <span>{opt.text} {isWinner && '👑'}</span>
                                 <span>{opt.votes}</span>
                             </div>
@@ -425,7 +441,7 @@ const PollNode = ({ node, onUpdate }) => {
                     )
                 })}
             </div>
-            <button onClick={addOption} style={{ marginTop: 15, width: '100%', padding: '10px', border: '1px dashed #ccc', background: '#fafafa', borderRadius: 12, color: '#666', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, transition: '0.2s' }} onPointerDown={e => e.stopPropagation()}>+ Add Option</button>
+            <button onClick={addOption} style={{ marginTop: 15, width: '100%', padding: '10px', border: '1px dashed #ccc', background: '#fafafa', borderRadius: 12, color: '#666', cursor: 'pointer', fontSize: fsBody, fontWeight: 600, transition: '0.2s' }} onPointerDown={e => e.stopPropagation()}>+ Add Option</button>
         </div>
     )
 }
@@ -476,14 +492,18 @@ const YouTubeNode = ({ node, onUpdate }) => {
     const [url, setUrl] = useState(''); const videoId = node.videoId
     const handleEmbed = () => { const m = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/); if (m && m[2].length === 11) { onUpdate(node.id, { videoId: m[2] }) } else alert("Invalid URL") }
     const validContent = typeof node.content === 'string' ? node.content : ''
-    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#FF0000', fontWeight: 'bold' }}><FiYoutube size={18} /> YouTube Video</div> {videoId ? (<div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', background: 'black', position: 'relative' }}> <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${videoId}`} frameBorder="0" allowFullScreen style={{ pointerEvents: 'auto' }} onPointerDown={e => e.stopPropagation()} /> <button onClick={() => onUpdate(node.id, { videoId: null })} style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiX /></button> </div>) : (<div onPointerDown={e => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10 }}> {validContent ? (<div style={{ textAlign: 'center' }}> <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '0.8rem', maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Suggested: <strong>{validContent.replace('Search:', '')}</strong></p> <Button onClick={() => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(validContent.replace('Search:', ''))}`, '_blank')}>Search YouTube</Button> <Button variant="danger" onClick={() => onUpdate(node.id, { content: '' })} style={{ marginTop: 5, fontSize: '0.7rem', padding: '4px 8px' }}>Clear</Button> </div>) : (<><Input placeholder="Paste YouTube URL..." value={url} onChange={e => setUrl(e.target.value)} /><Button onClick={handleEmbed}>Embed</Button></>)} </div>)} </div>)
+    const { rad, p, gap, fsHead, icon, mb } = getScale(node.w)
+
+    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: gap, marginBottom: mb, color: '#FF0000', fontWeight: 'bold', fontSize: fsHead }}><FiYoutube size={icon} /> YouTube Video</div> {videoId ? (<div style={{ flex: 1, borderRadius: rad, overflow: 'hidden', background: 'black', position: 'relative' }}> <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${videoId}`} frameBorder="0" allowFullScreen style={{ pointerEvents: 'auto' }} onPointerDown={e => e.stopPropagation()} /> <button onClick={() => onUpdate(node.id, { videoId: null })} style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiX /></button> </div>) : (<div onPointerDown={e => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10 }}> {validContent ? (<div style={{ textAlign: 'center' }}> <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '0.8rem', maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Suggested: <strong>{validContent.replace('Search:', '')}</strong></p> <Button onClick={() => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(validContent.replace('Search:', ''))}`, '_blank')}>Search YouTube</Button> <Button variant="danger" onClick={() => onUpdate(node.id, { content: '' })} style={{ marginTop: 5, fontSize: '0.7rem', padding: '4px 8px' }}>Clear</Button> </div>) : (<><Input placeholder="Paste YouTube URL..." value={url} onChange={e => setUrl(e.target.value)} /><Button onClick={handleEmbed}>Embed</Button></>)} </div>)} </div>)
 }
 const TodoNode = ({ node, onUpdate }) => {
     const items = node.items || []; const [newItem, setNewItem] = useState(''); const toggle = (i) => { const n = [...items]; n[i].done = !n[i].done; onUpdate(node.id, { items: n }) }
-    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--primary)', fontWeight: 'bold' }}>
-                <FiCheckSquare size={18} />
+    const { rad, p, gap, fsHead, icon, mb, fsBody } = getScale(node.w)
+
+    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: rad }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: mb }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: gap, color: 'var(--primary)', fontWeight: 'bold', fontSize: fsHead }}>
+                <FiCheckSquare size={icon} />
                 <span>To-Do List</span>
             </div>
             {node.label && (
@@ -504,15 +524,16 @@ const CalendarNode = ({ node, onUpdate }) => {
     const [text, setText] = useState('');
     const addEvent = () => { if (date && text) { onUpdate(node.id, { events: { ...events, [date]: text } }); setText('') } };
     const sortedEvents = Object.entries(events).sort((a, b) => new Date(a[0]) - new Date(b[0]))
+    const { rad, p, gap, fsHead, icon, mb } = getScale(node.w)
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <div style={{
-                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 15,
-                background: 'linear-gradient(135deg, #FF9966, #FF5E62)', padding: '10px 15px',
-                borderRadius: 12, color: 'white', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(255, 94, 98, 0.3)'
+                display: 'flex', alignItems: 'center', gap: gap, marginBottom: mb,
+                background: 'linear-gradient(135deg, #FF9966, #FF5E62)', padding: `${p / 2}px ${p}px`,
+                borderRadius: rad, color: 'white', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(255, 94, 98, 0.3)'
             }}>
-                <FiCalendar size={20} /> <span style={{ fontSize: '1.1rem' }}>Timeline</span>
+                <FiCalendar size={icon} /> <span style={{ fontSize: fsHead }}>Timeline</span>
             </div>
             {node.content && Object.keys(events).length === 0 && <ContentDisplay content={node.content} />}
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0, padding: '0 5px' }}>
@@ -593,7 +614,8 @@ const CalendarNode = ({ node, onUpdate }) => {
 }
 const ImageNode = ({ node, onUpdate }) => {
     const up = (e) => { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onloadend = () => onUpdate(node.id, { src: r.result }); r.readAsDataURL(f) } }
-    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#9b59b6', fontWeight: 'bold' }}><FiImage size={18} /> Image</div> <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.03)', borderRadius: 12, overflow: 'hidden', position: 'relative' }}> {node.src ? (<> <img src={node.src} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> <button onClick={() => onUpdate(node.id, { src: '' })} style={{ position: 'absolute', bottom: 10, right: 10, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 30, height: 30, cursor: 'pointer' }} onPointerDown={e => e.stopPropagation()}><FiX /></button> </>) : (<div style={{ textAlign: 'center' }} onPointerDown={e => e.stopPropagation()}> <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Upload Image</p> <input type="file" onChange={up} style={{ maxWidth: 180, marginTop: 10 }} /> </div>)} </div> </div>)
+    const { rad, gap, fsHead, icon, mb } = getScale(node.w)
+    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: gap, marginBottom: mb, color: '#9b59b6', fontWeight: 'bold', fontSize: fsHead }}><FiImage size={icon} /> Image</div> <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.03)', borderRadius: rad, overflow: 'hidden', position: 'relative' }}> {node.src ? (<> <img src={node.src} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> <button onClick={() => onUpdate(node.id, { src: '' })} style={{ position: 'absolute', bottom: 10, right: 10, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 30, height: 30, cursor: 'pointer' }} onPointerDown={e => e.stopPropagation()}><FiX /></button> </>) : (<div style={{ textAlign: 'center' }} onPointerDown={e => e.stopPropagation()}> <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Upload Image</p> <input type="file" onChange={up} style={{ maxWidth: 180, marginTop: 10 }} /> </div>)} </div> </div>)
 }
 
 const LinkNode = ({ node, onUpdate }) => {
@@ -602,10 +624,11 @@ const LinkNode = ({ node, onUpdate }) => {
     const saveUrl = () => { if (url) onUpdate(node.id, { url, content: url }) }
     let hostname = ''; let isValid = false
     try { if (validContent) { hostname = new URL(validContent).hostname; isValid = true } } catch (e) { }
+    const { rad, gap, fsHead, icon, mb } = getScale(node.w)
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, color: '#3498db', fontWeight: 'bold' }}><FiGlobe size={18} /> Web Link</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: gap, marginBottom: mb, color: '#3498db', fontWeight: 'bold', fontSize: fsHead }}><FiGlobe size={icon} /> Web Link</div>
             {isValid ? (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
                     <a href={validContent} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, background: 'rgba(255,255,255,0.5)', borderRadius: 12, textDecoration: 'none', color: '#333', border: '1px solid rgba(0,0,0,0.1)' }}>
@@ -644,10 +667,7 @@ const NoteNode = ({ node, onUpdate }) => {
     const [hover, setHover] = useState(false)
     const isHandwriting = node.font !== 'sans'
     const isTransparent = node.color === 'transparent'
-
-    // Auto-scale font based on width (Base 320px = 1.4rem ~ 22px) -> ratio approx 0.07
-    // We clamp it between 1rem and 5rem to avoid too small/large text
-    const fontSize = `clamp(1rem, ${Math.max(node.w || 320, 200) * 0.005}rem, 5rem)`
+    const { rad, p, gap, fsHead, fsBody, icon } = getScale(node.w)
 
     const colors = [
         '#fff740', // Yellow
@@ -671,12 +691,12 @@ const NoteNode = ({ node, onUpdate }) => {
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
         >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', color: 'rgba(0,0,0,0.6)', fontWeight: 'bold', fontSize: '0.8rem', borderBottom: isTransparent ? 'none' : '1px solid rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <FiType /> Note
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${p / 2}px ${p}px`, color: 'rgba(0,0,0,0.6)', fontWeight: 'bold', fontSize: fsHead, borderBottom: isTransparent ? 'none' : '1px solid rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: gap }}>
+                    <FiType size={icon} /> Note
                 </div>
                 {/* Controls */}
-                <div style={{ display: 'flex', gap: 4, opacity: hover ? 1 : 0, transition: '0.2s', pointerEvents: hover ? 'auto' : 'none' }} onPointerDown={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', gap: 4, opacity: hover ? 1 : 0, transition: '0.2s', pointerEvents: hover ? 'auto' : 'none', transform: `scale(${Math.max((node.w || 0) / 320, 1)})`, transformOrigin: 'right center' }} onPointerDown={e => e.stopPropagation()}>
                     <button onClick={() => onUpdate(node.id, { font: isHandwriting ? 'sans' : 'hand' })} style={{ background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 4, cursor: 'pointer', padding: '2px 6px', fontSize: '0.7rem' }}>
                         {isHandwriting ? 'Aa' : '✍️'}
                     </button>
@@ -705,7 +725,7 @@ const NoteNode = ({ node, onUpdate }) => {
                 onPointerDown={e => e.stopPropagation()}
                 style={{
                     flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none',
-                    fontSize: fontSize, lineHeight: 1.4, color: '#333', overflow: 'hidden', padding: '10px 15px',
+                    fontSize: fsBody, lineHeight: 1.4, color: '#333', overflow: 'hidden', padding: `${p}px`,
                     fontFamily: isHandwriting ? '"Kalam", cursive' : '"Inter", sans-serif'
                 }}
                 placeholder="Type something..."
