@@ -747,7 +747,9 @@ const NoteNode = ({ node, onUpdate }) => {
                 onPointerDown={e => e.stopPropagation()}
                 style={{
                     flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none',
-                    fontSize: fsBody, lineHeight: 1.4, color: '#333', overflow: 'hidden', padding: `${p}px`,
+                    fontSize: '1rem', // Fixed font size as requested
+                    lineHeight: 1.5, color: '#333', overflow: 'hidden',
+                    padding: '12px', // Fixed padding for consistency
                     fontFamily: isHandwriting ? '"Kalam", cursive' : '"Inter", sans-serif'
                 }}
                 placeholder="Type something..."
