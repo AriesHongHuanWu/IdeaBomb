@@ -471,7 +471,7 @@ const NotifyNode = ({ node, onUpdate }) => {
                         }}
                         onPointerDown={e => e.stopPropagation()}
                     />
-                    {!node.scheduledTime && <FiClock style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: '#666', pointerEvents: 'none' }} />}
+
                 </div>
 
                 <button onClick={scheduleNotification} onPointerDown={e => e.stopPropagation()} title="Send Now" style={{
