@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { BsStars } from 'react-icons/bs'
-import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw, FiLayout, FiBarChart2, FiSmile, FiStar, FiCircle, FiUser, FiColumns, FiActivity, FiTerminal, FiMessageSquare, FiCheckCircle, FiMagnet } from 'react-icons/fi'
+import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw, FiLayout, FiBarChart2, FiSmile, FiStar, FiCircle, FiUser, FiColumns, FiActivity, FiTerminal, FiMessageSquare, FiCheckCircle, FiTarget } from 'react-icons/fi'
 
 import { useMediaQuery } from '../hooks/useMediaQuery'
 
@@ -641,7 +641,25 @@ const LinkNode = ({ node, onUpdate }) => {
 }
 
 const NoteNode = ({ node, onUpdate }) => {
-    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, color: '#555', fontWeight: 'bold', fontSize: '0.9rem' }}><FiType /> Note</div> <textarea maxLength={1000} defaultValue={typeof node.content === 'string' ? node.content : JSON.stringify(node.content || '')} onBlur={e => onUpdate(node.id, { content: e.target.value })} onPointerDown={e => e.stopPropagation()} style={{ flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none', fontSize: '1rem', lineHeight: 1.6, color: '#333', overflow: 'hidden' }} placeholder="Type something..." /> </div>)
+    return (
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: node.color || '#fff740', padding: 0, borderRadius: 0, boxShadow: '2px 2px 10px rgba(0,0,0,0.15)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', color: 'rgba(0,0,0,0.6)', fontWeight: 'bold', fontSize: '0.8rem', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                <FiType /> Note
+            </div>
+            <textarea
+                maxLength={1000}
+                defaultValue={typeof node.content === 'string' ? node.content : JSON.stringify(node.content || '')}
+                onBlur={e => onUpdate(node.id, { content: e.target.value })}
+                onPointerDown={e => e.stopPropagation()}
+                style={{
+                    flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none',
+                    fontSize: '1.4rem', lineHeight: 1.4, color: '#333', overflow: 'hidden', padding: '10px 15px',
+                    fontFamily: '"Kalam", cursive'
+                }}
+                placeholder="Type something..."
+            />
+        </div>
+    )
 }
 
 // --- Connection Layer ---
@@ -734,7 +752,7 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode, tempEdge, dragOverr
 }
 
 // --- Draggable Node (Resizable + Handles) ---
-const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onDragEnd, magnetMode }) => {
+const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onDragEnd, magnetMode, canvasSize }) => {
     const x = useMotionValue(node.x); const y = useMotionValue(node.y);
     const [isHovered, setIsHovered] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
@@ -760,6 +778,12 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             if (magnetMode) {
                 curX = Math.round(curX / 50) * 50
                 curY = Math.round(curY / 50) * 50
+            }
+
+            // Canvas Clamp
+            if (canvasSize) {
+                curX = Math.min(Math.max(curX, 0), canvasSize.w - size.w)
+                curY = Math.min(Math.max(curY, 0), canvasSize.h - size.h)
             }
 
             x.set(curX); y.set(curY)
@@ -894,8 +918,19 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     const [pinchDist, setPinchDist] = useState(null)
     const [startScale, setStartScale] = useState(1)
 
+    const [canvasSize, setCanvasSize] = useState({ w: 3000, h: 2000 })
+
+    // Helper to clamp
+    const clamp = (val, min, max) => Math.min(Math.max(val, min), max)
+
     const handleDragNode = (id, x, y) => {
-        setDragOverrides(prev => ({ ...prev, [id]: { x, y } }))
+        // Clamp Node to Canvas
+        const n = nodes.find(n => n.id === id)
+        const w = n ? n.w || 320 : 320
+        const h = n ? n.h || 240 : 240
+        const cx = clamp(x, 0, canvasSize.w - w)
+        const cy = clamp(y, 0, canvasSize.h - h)
+        setDragOverrides(prev => ({ ...prev, [id]: { x: cx, y: cy } }))
     }
 
     const handleDragEndNode = (id) => {
@@ -1141,12 +1176,22 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
 
     return (
 
-        <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={(e) => { handlePointerMove(e); handleGlobalMouseMove(e) }} onPointerUp={handlePointerUp} onContextMenu={handleBgContextMenu} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#f8f9fa', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
-            <div className="grid-bg" style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0', opacity: 0.6, pointerEvents: 'none' }} />
+        <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={(e) => { handlePointerMove(e); handleGlobalMouseMove(e) }} onPointerUp={handlePointerUp} onContextMenu={handleBgContextMenu} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#e0e0e0', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
+            <div style={{
+                position: 'absolute', left: 0, top: 0,
+                width: canvasSize.w, height: canvasSize.h,
+                background: '#f8f9fa',
+                border: '5px solid #333',
+                transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0',
+                boxShadow: '0 0 50px rgba(0,0,0,0.5)'
+            }}>
+                <div className="grid-bg" style={{ width: '100%', height: '100%', backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.6, pointerEvents: 'none' }} />
+            </div>
+
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
                 <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} tempEdge={tempEdge} dragOverrides={dragOverrides} />
                 {nodes.map(node => (
-                    <DraggableNode key={node.id} magnetMode={magnetMode} node={node} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id}
+                    <DraggableNode key={node.id} magnetMode={magnetMode} canvasSize={canvasSize} node={node} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id}
                         onDrag={(e, data) => {
                             if (magnetMode) {
                                 const SNAP_DIST = 10
@@ -1317,7 +1362,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                 <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode('Calendar')} />
                 <ToolBtn icon={<FiImage />} label="Image" onClick={() => onAddNode('Image')} />
                 <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
-                <ToolBtn icon={<FiMagnet />} label="Magnet" active={magnetMode} onClick={() => setMagnetMode(!magnetMode)} />
+                <ToolBtn icon={<FiTarget />} label="Magnet" active={magnetMode} onClick={() => setMagnetMode(!magnetMode)} />
                 <ToolBtn icon={<FiGrid />} label="Toolbox" active={toolboxOpen} onClick={() => setToolboxOpen(!toolboxOpen)} />
                 <ToolBtn icon={<FiMaximize2 />} label="Auto Arrange" onClick={autoArrange} />
             </motion.div>
