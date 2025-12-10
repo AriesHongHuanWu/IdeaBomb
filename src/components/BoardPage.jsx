@@ -7,7 +7,7 @@ import ChatInterface from './ChatInterface'
 import ShareModal from './ShareModal'
 import { db, auth } from '../firebase'
 import { collection, onSnapshot, setDoc, doc, updateDoc, deleteDoc, arrayUnion, writeBatch } from 'firebase/firestore'
-import { FiHome, FiUserPlus, FiDownload, FiEye, FiEyeOff } from 'react-icons/fi'
+import { FiHome, FiUserPlus, FiDownload, FiEye, FiEyeOff, FiMenu } from 'react-icons/fi'
 import { signOut } from 'firebase/auth'
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { useMediaQuery } from '../hooks/useMediaQuery'
@@ -117,41 +117,15 @@ export default function BoardPage({ user }) {
         return unsub
     }, [boardId, hasAccess])
 
-    // --- Cursors (with Stale Removal) ---
-    const [rawCursors, setRawCursors] = useState({})
+    // --- Cursors ---
     useEffect(() => {
         if (!boardId || !hasAccess) return
         const unsub = onSnapshot(collection(db, 'boards', boardId, 'cursors'), (snapshot) => {
             const c = {}; snapshot.docs.forEach(d => { if (d.id !== user.uid) c[d.id] = d.data() })
-            setRawCursors(c)
+            setCursors(c)
         })
         return unsub
     }, [boardId, hasAccess, user])
-
-    // Prune cursors locally every 5s
-    useEffect(() => {
-        const interval = setInterval(() => {
-            const now = Date.now()
-            const valid = {}
-            let changed = false
-            Object.entries(rawCursors).forEach(([uid, data]) => {
-                const lastActive = data.lastActive ? new Date(data.lastActive).getTime() : 0
-                if (now - lastActive < 60000) { // 60s timeout
-                    valid[uid] = data
-                } else {
-                    changed = true
-                }
-            })
-            // If we found stale cursors, we update the visible cursors
-            // Note: strict equality check or just setCursors(valid) if keys differ
-            const currentKeys = Object.keys(cursors).sort().join(',')
-            const newKeys = Object.keys(valid).sort().join(',')
-            if (currentKeys !== newKeys || changed) {
-                setCursors(valid)
-            }
-        }, 5000)
-        return () => clearInterval(interval)
-    }, [rawCursors])
 
     // Stable User Color
     const userColor = useRef('#' + Math.floor(Math.random() * 16777215).toString(16))
@@ -646,11 +620,33 @@ export default function BoardPage({ user }) {
                     )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ display: 'flex', paddingRight: 10, borderRight: '1px solid #ddd' }}>{collaborators.map(c => (<img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: cursors[c.uid] ? '2px solid #52c41a' : '2px solid white', marginLeft: -10 }} />))}</div>
-                    <button onClick={() => setIsIncognito(!isIncognito)} title={isIncognito ? "Show my cursor" : "Hide my cursor"} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: isIncognito ? '#999' : '#333' }}>{isIncognito ? <FiEyeOff /> : <FiEye />}</button>
-                    <button onClick={exportBoard} style={{ background: 'rgba(255,255,255,0.2)', color: '#333', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiDownload /> Export</button>
-                    <button onClick={() => setIsShareOpen(true)} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><FiUserPlus /> Invite</button>
-                    <button onClick={async () => { await signOut(auth); navigate('/login') }} style={{ background: '#ff4d4f', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer' }}>Logout</button>
+                    {/* Presence Filter: 1 min timeout */}
+                    <div style={{ display: 'flex', paddingRight: 10, borderRight: '1px solid #ddd' }}>
+                        {collaborators.filter(c => !c.lastActive || (Date.now() - new Date(c.lastActive).getTime() < 60000)).map(c => (
+                            <img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: cursors[c.uid] ? '2px solid #52c41a' : '2px solid white', marginLeft: -10 }} />
+                        ))}
+                    </div>
+
+                    {isMobile ? (
+                        <div style={{ position: 'relative' }}>
+                            <button onClick={() => setTabMenu({ x: window.innerWidth - 140, y: 70, type: 'top-menu' })} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}><FiMenu /></button>
+                            {tabMenu?.type === 'top-menu' && (
+                                <div style={{ position: 'fixed', top: 60, right: 20, background: 'white', borderRadius: 12, boxShadow: '0 5px 20px rgba(0,0,0,0.15)', padding: 10, zIndex: 999, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <button onClick={() => { setIsShareOpen(true); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: 'var(--primary)', color: 'white', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiUserPlus /> Invite</button>
+                                    <button onClick={() => { exportBoard(); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: '#f5f5f5', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiDownload /> Export</button>
+                                    <button onClick={() => { setIsIncognito(!isIncognito); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: 'transparent', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>{isIncognito ? <><FiEyeOff /> Show Me</> : <><FiEye /> Hide Me</>}</button>
+                                    <button onClick={async () => { await signOut(auth); navigate('/login') }} style={{ padding: '8px 12px', border: 'none', background: '#fff1f0', color: 'red', borderRadius: 8, width: '100%' }}>Logout</button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <>
+                            <button onClick={() => setIsIncognito(!isIncognito)} title={isIncognito ? "Show my cursor" : "Hide my cursor"} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: isIncognito ? '#999' : '#333' }}>{isIncognito ? <FiEyeOff /> : <FiEye />}</button>
+                            <button onClick={exportBoard} style={{ background: 'rgba(255,255,255,0.2)', color: '#333', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiDownload /> Export</button>
+                            <button onClick={() => setIsShareOpen(true)} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><FiUserPlus /> Invite</button>
+                            <button onClick={async () => { await signOut(auth); navigate('/login') }} style={{ background: '#ff4d4f', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer' }}>Logout</button>
+                        </>
+                    )}
                 </div>
             </motion.div>
 
