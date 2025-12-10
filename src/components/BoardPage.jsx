@@ -14,6 +14,22 @@ import { useMediaQuery } from '../hooks/useMediaQuery'
 
 export default function BoardPage({ user }) {
     const { boardId } = useParams()
+    const navigate = useNavigate()
+    const [nodes, setNodes] = useState([])
+    const [edges, setEdges] = useState([])
+    const [boardTitle, setBoardTitle] = useState('Loading...')
+    const [collaborators, setCollaborators] = useState([])
+    const [isShareOpen, setIsShareOpen] = useState(false)
+    const [hasAccess, setHasAccess] = useState(true)
+    const [activePage, setActivePage] = useState('Page 1')
+    const [pages, setPages] = useState(['Page 1'])
+    const [lastAIAction, setLastAIAction] = useState(null)
+    const [clipboard, setClipboard] = useState(null)
+    const [cursors, setCursors] = useState({})
+    const [isIncognito, setIsIncognito] = useState(false)
+    const [confirmModal, setConfirmModal] = useState(null) // { title, message, onConfirm }
+    const throttleRef = useRef(Date.now())
+    const isMobile = useMediaQuery('(max-width: 768px)')
     const [pageConfigs, setPageConfigs] = useState({})
 
     // --- Data Sync ---
