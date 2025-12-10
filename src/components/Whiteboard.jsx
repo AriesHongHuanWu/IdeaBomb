@@ -1351,7 +1351,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
                 border: isSuggested ? '2px solid #7928ca' : (isSelected ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.4)'),
                 boxShadow: isSelected || isDragging ? '0 15px 40px rgba(0,0,0,0.15)' : '0 10px 30px rgba(0,0,0,0.05)',
                 backdropFilter: isDragging ? 'none' : 'blur(24px)', transition: 'box-shadow 0.2s, background 0.2s',
-                overflow: 'hidden'
+
             }}>
                 {React.Children.map(node.type === 'Todo' ? [<TodoNode key="todo" node={node} onUpdate={onUpdateData} />] :
                     node.type === 'Calendar' ? [<CalendarNode key="cal" node={node} onUpdate={onUpdateData} />] :
@@ -1473,8 +1473,10 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
 
     const handlePointerMove = (e) => {
         if (onCursorMove) {
-            const { left, top } = containerRef.current.getBoundingClientRect()
-            onCursorMove({ x: (e.clientX - left - offset.x) / scale, y: (e.clientY - top - offset.y) / scale, uid: 'me', timestamp: Date.now() })
+            const { left, top } = containerRef.current ? containerRef.current.getBoundingClientRect() : { left: 0, top: 0 }
+            const cx = (e.clientX - left - offset.x) / scale
+            const cy = (e.clientY - top - offset.y) / scale
+            onCursorMove({ x: isNaN(cx) ? 0 : cx, y: isNaN(cy) ? 0 : cy, uid: 'me', timestamp: Date.now() })
         }
 
         if (selectionBox) {
