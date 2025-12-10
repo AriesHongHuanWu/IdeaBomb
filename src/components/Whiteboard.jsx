@@ -1120,8 +1120,10 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
                 background: isTransparent ? 'rgba(255,255,255,0.2)' : activeColor,
                 backdropFilter: isTransparent ? 'blur(10px)' : 'none',
                 borderRadius: 12,
-                boxShadow: isTransparent ? 'none' : '0 4px 15px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.05)',
-                border: isTransparent ? (isSelected ? '1px solid #ccc' : '1px solid rgba(255,255,255,0.4)') : (isSelected ? '2px solid #333' : '1px solid rgba(0,0,0,0.05)'),
+                boxShadow: isSelected
+                    ? '0 0 0 2px #333, 0 8px 30px rgba(0,0,0,0.12)'
+                    : (isTransparent ? 'none' : '0 4px 15px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.05)'),
+                border: isTransparent ? '1px solid rgba(255,255,255,0.4)' : '1px solid rgba(0,0,0,0.05)',
                 transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
                 overflow: 'visible' // Allow toolbar to show? Actually fixed pos toolbar doesn't care.
             }}
@@ -1861,17 +1863,18 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
 
     return (
 
-        <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={(e) => { handlePointerMove(e); handleGlobalMouseMove(e) }} onPointerUp={handlePointerUp} onContextMenu={handleBgContextMenu} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} style={{ width: '100%', height: '100%', overflow: 'hidden', background: '#e0e0e0', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
+        <div ref={containerRef} onPointerDown={handlePointerDown} onPointerMove={(e) => { handlePointerMove(e); handleGlobalMouseMove(e) }} onPointerUp={handlePointerUp} onContextMenu={handleBgContextMenu} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} style={{ width: '100%', height: '100%', overflow: 'hidden', background: 'transparent', position: 'relative', touchAction: 'none', cursor: connectMode ? 'crosshair' : (isDraggingCanvas ? 'grabbing' : 'default') }}>
             <div style={{
                 position: 'absolute', left: 0, top: 0,
                 width: canvasSize.w, height: canvasSize.h,
-                background: '#fff', // Pure white canvas
+                background: 'rgba(255, 255, 255, 0.4)', // Premium Translucency
+                backdropFilter: 'blur(40px)', // The "Frost" Key
                 borderRadius: 32,
-                boxShadow: '0 0 0 1px rgba(0,0,0,0.05), 0 20px 60px rgba(0,0,0,0.1)', // Subtle elegant shadow
+                boxShadow: '0 0 0 1px rgba(255,255,255,0.2), 0 30px 80px rgba(0,0,0,0.1)', // Deeper shadow
                 transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0',
-                pointerEvents: 'none' // Key fix: Allows clicks to pass through to container for panning
+                pointerEvents: 'none'
             }}>
-                <div className="grid-bg" style={{ width: '100%', height: '100%', backgroundImage: 'radial-gradient(#e5e7eb 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.8 }} />
+                <div className="grid-bg" style={{ width: '100%', height: '100%', backgroundImage: 'radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.8 }} />
             </div>
 
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
