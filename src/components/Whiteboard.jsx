@@ -14,13 +14,13 @@ const getScale = (w, h = 0) => {
     const sh = (h || 240) / 240
     const s = Math.max(Math.min(sw, sh), 1)
     return {
-        rad: Math.min(12 * s, 48),
-        p: Math.min(16 * s, 64),
-        gap: Math.min(8 * s, 32),
-        fsHead: `clamp(1rem, ${1 * s}rem, 3rem)`,
-        fsBody: `clamp(0.9rem, ${0.9 * s}rem, 4rem)`,
-        icon: Math.min(Math.max(18 * s, 18), 64),
-        mb: Math.min(10 * s, 40)
+        rad: Math.min(12 * s, 32),
+        p: Math.min(12 * s, 40), // Reduced max padding
+        gap: Math.min(8 * s, 24),
+        fsHead: `clamp(1rem, ${1 * s}rem, 2.5rem)`, // Reduced max font
+        fsBody: `clamp(0.9rem, ${0.9 * s}rem, 3rem)`,
+        icon: Math.min(Math.max(18 * s, 18), 48),
+        mb: Math.min(8 * s, 24) // Reduced max margin bottom to avoid huge gaps
     }
 }
 
@@ -238,8 +238,9 @@ const KanbanNode = ({ node, onUpdate }) => {
 const ClockNode = ({ node, onUpdate }) => {
     const [time, setTime] = useState(new Date())
     useEffect(() => { const t = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(t) }, [])
+    const { fsHead, rad } = getScale(node.w, node.h)
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#333', color: '#0f0', fontFamily: 'monospace', fontSize: '2rem', borderRadius: 12, border: '4px solid #555' }}>
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#333', color: '#0f0', fontFamily: 'monospace', fontSize: fsHead, borderRadius: rad, border: '4px solid #555' }}>
             {time.toLocaleTimeString()}
         </div>
     )
@@ -255,9 +256,9 @@ const QuoteNode = ({ node, onUpdate }) => {
 }
 
 const CodeNode = ({ node, onUpdate }) => {
-    const { rad, p, gap, fsBody, icon, mb } = getScale(node.w)
+    const { rad, p, gap, fsBody, icon, mb } = getScale(node.w, node.h)
     return (
-        <div style={{ width: '100%', height: '100%', background: '#282c34', borderRadius: rad, padding: p, color: '#abb2bf', fontFamily: 'monospace', fontSize: fsBody, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ width: '100%', height: '100%', background: '#282c34', borderRadius: rad, padding: p, color: '#abb2bf', fontFamily: 'monospace', fontSize: '1rem', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', gap: gap, marginBottom: mb, flexShrink: 0 }}>
                 <div style={{ width: icon * 0.6, height: icon * 0.6, borderRadius: '50%', background: '#ff5f56' }} />
                 <div style={{ width: icon * 0.6, height: icon * 0.6, borderRadius: '50%', background: '#ffbd2e' }} />
@@ -289,6 +290,7 @@ const EmojiNode = ({ node, onUpdate }) => {
 const PomodoroNode = ({ node, onUpdate }) => {
     const [timeLeft, setTimeLeft] = useState(node.timeLeft || 1500) // 25m
     const [isActive, setIsActive] = useState(node.isActive || false)
+    const { fsHead, rad, gap, icon } = getScale(node.w, node.h)
 
     useEffect(() => {
         let interval = null
@@ -328,14 +330,14 @@ const PomodoroNode = ({ node, onUpdate }) => {
 
     return (
         <div style={{ width: '100%', height: '100%', background: '#fff', borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '8px solid #ff6b6b', boxShadow: '0 10px 30px rgba(255, 107, 107, 0.3)', position: 'relative' }}>
-            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#ff6b6b', fontFamily: 'monospace' }}>{fmt(timeLeft)}</div>
-            <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#ff8787', letterSpacing: 1 }}>POMODORO</div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-                <button onClick={toggle} onPointerDown={e => e.stopPropagation()} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', background: isActive ? '#f1f3f5' : '#ff6b6b', color: isActive ? '#ff6b6b' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-                    {isActive ? <FiPause size={16} /> : <FiPlay size={16} style={{ marginLeft: 2 }} />}
+            <div style={{ fontSize: `calc(${fsHead} * 1.5)`, fontWeight: '800', color: '#ff6b6b', fontFamily: 'monospace' }}>{fmt(timeLeft)}</div>
+            <div style={{ fontSize: `calc(${fsHead} * 0.4)`, fontWeight: 'bold', color: '#ff8787', letterSpacing: 1 }}>POMODORO</div>
+            <div style={{ display: 'flex', gap: gap, marginTop: gap }}>
+                <button onClick={toggle} onPointerDown={e => e.stopPropagation()} style={{ width: icon * 2, height: icon * 2, borderRadius: '50%', border: 'none', background: isActive ? '#f1f3f5' : '#ff6b6b', color: isActive ? '#ff6b6b' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: icon, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                    {isActive ? <FiPause size={icon} /> : <FiPlay size={icon} style={{ marginLeft: 2 }} />}
                 </button>
-                <button onClick={reset} onPointerDown={e => e.stopPropagation()} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', background: '#f1f3f5', color: '#adb5bd', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                    <FiRotateCcw size={16} />
+                <button onClick={reset} onPointerDown={e => e.stopPropagation()} style={{ width: icon * 2, height: icon * 2, borderRadius: '50%', border: 'none', background: '#f1f3f5', color: '#adb5bd', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: icon }}>
+                    <FiRotateCcw size={icon} />
                 </button>
             </div>
         </div>
