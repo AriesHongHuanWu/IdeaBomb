@@ -1936,13 +1936,33 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                         />
                     )
                 })}{cursors && Object.values(cursors).filter(c => Date.now() - (c.timestamp || Date.now()) < 60000 || !c.timestamp).map(c => (
-                    <div key={c.uid} style={{ position: 'absolute', left: c.x, top: c.y, pointerEvents: 'none', zIndex: 9999, transition: 'all 0.1s linear' }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill={c.color || '#f00'} stroke="white" strokeWidth="2" style={{ transform: 'rotate(-15deg)', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}><path d="M4 4l11 4-5 2 4 8-3 2-4-8-3 4z" /></svg>
-                        <div style={{ background: c.color || '#f00', color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', marginTop: 4, whiteSpace: 'nowrap', transform: 'translateX(10px)' }}>{c.displayName || 'User'}</div>
+                    <div key={c.uid} style={{ position: 'absolute', left: c.x, top: c.y, pointerEvents: 'none', zIndex: 9999, transition: 'transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill={c.color || '#2563eb'} style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' }}>
+                            <path d="M3 3l7.5 18.5 3.5-8 8-3.5L3 3z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+                        </svg>
+                        <div style={{
+                            background: c.color || '#2563eb', color: 'white', padding: '4px 8px',
+                            borderRadius: '6px 20px 20px 20px', fontSize: '0.75rem', fontWeight: 700,
+                            marginTop: 4, whiteSpace: 'nowrap', transform: 'translateX(12px) translateY(-5px)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                        }}>
+                            {c.displayName || 'Guest'}
+                        </div>
                     </div>
                 ))}
                 {selectionBox && (
-                    <div style={{ position: 'absolute', left: Math.min(selectionBox.startX, selectionBox.currentX), top: Math.min(selectionBox.startY, selectionBox.currentY), width: Math.abs(selectionBox.currentX - selectionBox.startX), height: Math.abs(selectionBox.currentY - selectionBox.startY), background: 'rgba(0, 123, 255, 0.2)', border: '1px solid #007bff', pointerEvents: 'none' }} />
+                    <div style={{
+                        position: 'absolute',
+                        left: Math.min(selectionBox.startX, selectionBox.currentX),
+                        top: Math.min(selectionBox.startY, selectionBox.currentY),
+                        width: Math.abs(selectionBox.currentX - selectionBox.startX),
+                        height: Math.abs(selectionBox.currentY - selectionBox.startY),
+                        background: 'rgba(37, 99, 235, 0.08)',
+                        border: '1px solid rgba(37, 99, 235, 0.6)',
+                        borderRadius: 4,
+                        pointerEvents: 'none',
+                        zIndex: 2000
+                    }} />
                 )}
             </motion.div>
 

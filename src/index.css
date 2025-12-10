@@ -1,116 +1,131 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Kalam:wght@300;400;700&display=swap');
 
 :root {
-  /* Google Fonts - Inter is standard professional */
-  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-  /* Premium Liquid Glass Palette */
-  --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  /* Higher opacity for crispness */
-  --glass-border: 1px solid rgba(255, 255, 255, 0.8);
-  --glass-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 2px 4px -1px rgba(0, 0, 0, 0.03),
-    0 12px 32px rgba(31, 38, 135, 0.08);
-  /* More depth */
-  --backdrop-blur: blur(24px);
-  --glass-radius: 24px;
-
-  /* Enterprise Colors */
+  /* Ultra Premium Palette */
   --primary: #2563eb;
-  --primary-glow: rgba(37, 99, 235, 0.3);
-  --success: #10b981;
-  --danger: #ef4444;
-  --warning: #f59e0b;
+  --primary-gradient: linear-gradient(135deg, #2563eb, #4f46e5);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+  --glass-shadow:
+    0 10px 40px -10px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+  /* Inner ring light */
 
-  --text-main: #1e293b;
-  --text-secondary: #64748b;
+  --backdrop-blur: blur(20px) saturate(180%);
+  /* The "Apple" Factor */
+
+  --text-main: #0f172a;
+  --text-secondary: #475569;
 }
 
 body {
   margin: 0;
   padding: 0;
   font-family: var(--font-family);
-  background: #f8fafc;
   color: var(--text-main);
   min-height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+
+  /* Ambient Background - Subtle movement */
+  background-color: #f3f4f6;
+  background-image:
+    radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.08), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.08), transparent 25%);
+  background-attachment: fixed;
+  animation: bg-pulse 10s ease-in-out infinite alternate;
+}
+
+@keyframes bg-pulse {
+  0% {
+    background-position: 0% 0%;
+  }
+
+  100% {
+    background-position: 10% 10%;
+  }
 }
 
 html {
   overflow-y: auto;
 }
 
-/* Premium Glassmorphism */
+/* --- Ultra Glass --- */
 .glass-panel {
   background: var(--glass-bg);
-  box-shadow: var(--glass-shadow);
   backdrop-filter: var(--backdrop-blur);
   -webkit-backdrop-filter: var(--backdrop-blur);
+  box-shadow: var(--glass-shadow);
   border: var(--glass-border);
-  border-radius: var(--glass-radius);
-  /* Subtle inner shine for that "Apple" look */
-  background: linear-gradient(145deg,
-      rgba(255, 255, 255, 0.95) 0%,
-      rgba(255, 255, 255, 0.6) 100%);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border-radius: 24px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
 
 .glass-panel:hover {
   box-shadow:
-    0 20px 40px rgba(31, 38, 135, 0.12),
-    0 1px 3px rgba(0, 0, 0, 0.05);
+    0 25px 60px -12px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
   transform: translateY(-2px);
 }
 
+/* --- Premium Button --- */
 .btn-primary {
-  background: var(--primary);
+  background: var(--primary-gradient);
   color: white;
   border: none;
   padding: 10px 24px;
   border-radius: 99px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
-  letter-spacing: 0.01em;
+  letter-spacing: -0.01em;
+  box-shadow:
+    0 4px 6px -1px rgba(37, 99, 235, 0.2),
+    0 2px 4px -1px rgba(37, 99, 235, 0.1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shine effect on hover */
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: 0.5s;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 15px rgba(37, 99, 235, 0.3);
-  background: #1d4ed8;
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+}
+
+.btn-primary:hover::after {
+  left: 100%;
 }
 
 .btn-primary:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
-/* Animation Utilities */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* --- Typography --- */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: -0.02em;
+  /* Tight tracking for headers = Pro */
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-/* Minimal Scrollbar */
+/* --- Scrollbar --- */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -121,10 +136,12 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.5);
+  background: rgba(156, 163, 175, 0.5);
   border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.8);
+  background-color: rgba(107, 114, 128, 0.8);
 }
