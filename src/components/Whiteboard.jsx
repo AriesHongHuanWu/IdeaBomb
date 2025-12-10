@@ -783,7 +783,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     }, [selectedIds, onSelectionChange])
     const containerRef = useRef()
     const [isDraggingCanvas, setIsDraggingCanvas] = useState(false)
-    const [toolboxTab, setToolboxTab] = useState('All')
+    const [toolboxTab, setToolboxTab] = useState('General')
     const [connectMode, setConnectMode] = useState(false)
     const [connectStartId, setConnectStartId] = useState(null)
     const [selectionBox, setSelectionBox] = useState(null)
@@ -1152,49 +1152,57 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                             zIndex: 100, minWidth: 320, maxWidth: 400
                         }}
                     >
-                        <div style={{ marginBottom: 12, display: 'flex', gap: 10, borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: 8 }}>
-                            {['All', 'Media', 'Widgets', 'Fun'].map(tab => (
+                        <div style={{ marginBottom: 12, display: 'flex', gap: 8, borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: 8, overflowX: 'auto' }}>
+                            {['General', 'Interaction', 'Media', 'Visuals'].map(tab => (
                                 <button key={tab}
                                     onClick={() => setToolboxTab(tab)}
                                     style={{
                                         background: toolboxTab === tab ? '#333' : 'transparent',
                                         color: toolboxTab === tab ? 'white' : '#777',
-                                        padding: '4px 12px', borderRadius: 20, border: 'none',
-                                        fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: '0.2s'
+                                        padding: '6px 14px', borderRadius: 20, border: 'none',
+                                        fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: '0.2s',
+                                        whiteSpace: 'nowrap'
                                     }}
                                 >
                                     {tab}
                                 </button>
                             ))}
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, maxHeight: 300, overflowY: 'auto', padding: 4 }}>
                             {[
-                                { id: 'link', label: 'Bookmark', category: 'All Widgets', icon: <FiGlobe size={24} color="#3498db" />, action: () => { onAddNode('Link'); setToolboxOpen(false) } },
-                                { id: 'timer', label: 'Timer', category: 'Widgets', icon: <FiClock size={24} color="#f39c12" />, action: () => { onAddNode('Timer', '', { duration: 300 }); setToolboxOpen(false) } },
-                                { id: 'label', label: 'Label', category: 'Widgets', icon: <FiType size={24} color="#333" />, action: () => { onAddNode('Label', 'Heading'); setToolboxOpen(false) } },
-                                { id: 'section', label: 'Section', category: 'Widgets', icon: <FiLayout size={24} color="#9b59b6" />, action: () => { onAddNode('Section', '', { w: 400, h: 300 }); setToolboxOpen(false) } },
-                                { id: 'poll', label: 'Poll', category: 'Widgets', icon: <FiBarChart2 size={24} color="#007bff" />, action: () => { onAddNode('Poll'); setToolboxOpen(false) } },
-                                { id: 'counter', label: 'Counter', category: 'Widgets', icon: <FiPlus size={24} color="#52c41a" />, action: () => { onAddNode('Counter', '', { count: 0 }); setToolboxOpen(false) } },
-                                { id: 'sticker', label: 'Sticker', category: 'Fun', icon: <FiSmile size={24} color="#f1c40f" />, action: () => { onAddNode('Sticker', '😎'); setToolboxOpen(false) } },
-                                { id: 'progress', label: 'Progress', category: 'Widgets', icon: <FiActivity size={24} color="#00d2d3" />, action: () => { onAddNode('Progress', '', { progress: 50 }); setToolboxOpen(false) } },
-                                { id: 'rating', label: 'Rating', category: 'Widgets', icon: <FiStar size={24} color="#feca57" />, action: () => { onAddNode('Rating', '', { rating: 3 }); setToolboxOpen(false) } },
-                                { id: 'kanban', label: 'Kanban', category: 'Widgets', icon: <FiColumns size={24} color="#5f27cd" />, action: () => { onAddNode('Kanban', '', { w: 300, h: 400 }); setToolboxOpen(false) } },
-                                { id: 'clock', label: 'Clock', category: 'Widgets', icon: <FiClock size={24} color="#ff9f43" />, action: () => { onAddNode('Clock'); setToolboxOpen(false) } },
-                                { id: 'quote', label: 'Quote', category: 'Fun', icon: <FiMessageSquare size={24} color="#ff6b6b" />, action: () => { onAddNode('Quote'); setToolboxOpen(false) } },
-                                { id: 'code', label: 'Code', category: 'Widgets', icon: <FiTerminal size={24} color="#222f3e" />, action: () => { onAddNode('Code', '', { w: 400, h: 300 }); setToolboxOpen(false) } },
-                                { id: 'emoji', label: 'Emoji', category: 'Fun', icon: <FiSmile size={24} color="#ff9ff3" />, action: () => { onAddNode('Emoji', '', { w: 250, h: 100 }); setToolboxOpen(false) } },
-                                { id: 'pomodoro', label: 'Pomodoro', category: 'Widgets', icon: <FiCheckCircle size={24} color="#ee5253" />, action: () => { onAddNode('Pomodoro'); setToolboxOpen(false) } },
-                                { id: 'shape', label: 'Shape', category: 'Widgets', icon: <FiCircle size={24} color="#54a0ff" />, action: () => { onAddNode('Shape'); setToolboxOpen(false) } },
-                                { id: 'avatar', label: 'Avatar', category: 'Widgets', icon: <FiUser size={24} color="#c8d6e5" />, action: () => { onAddNode('Avatar'); setToolboxOpen(false) } },
+                                // General
+                                { id: 'link', label: 'Bookmark', category: 'General', icon: <FiGlobe size={24} color="#3498db" />, action: () => { onAddNode('Link'); setToolboxOpen(false) } },
+                                { id: 'label', label: 'Label', category: 'General', icon: <FiType size={24} color="#333" />, action: () => { onAddNode('Label', 'Heading'); setToolboxOpen(false) } },
+                                { id: 'section', label: 'Section', category: 'General', icon: <FiLayout size={24} color="#9b59b6" />, action: () => { onAddNode('Section', '', { w: 400, h: 300 }); setToolboxOpen(false) } },
+                                { id: 'timer', label: 'Timer', category: 'General', icon: <FiClock size={24} color="#f39c12" />, action: () => { onAddNode('Timer', '', { duration: 300 }); setToolboxOpen(false) } },
+                                { id: 'clock', label: 'Clock', category: 'General', icon: <FiClock size={24} color="#ff9f43" />, action: () => { onAddNode('Clock'); setToolboxOpen(false) } },
+                                { id: 'pomodoro', label: 'Pomodoro', category: 'General', icon: <FiCheckCircle size={24} color="#ee5253" />, action: () => { onAddNode('Pomodoro'); setToolboxOpen(false) } },
+
+                                // Interaction
+                                { id: 'poll', label: 'Poll', category: 'Interaction', icon: <FiBarChart2 size={24} color="#007bff" />, action: () => { onAddNode('Poll'); setToolboxOpen(false) } },
+                                { id: 'counter', label: 'Counter', category: 'Interaction', icon: <FiPlus size={24} color="#52c41a" />, action: () => { onAddNode('Counter', '', { count: 0 }); setToolboxOpen(false) } },
+                                { id: 'rating', label: 'Rating', category: 'Interaction', icon: <FiStar size={24} color="#feca57" />, action: () => { onAddNode('Rating', '', { rating: 3 }); setToolboxOpen(false) } },
+                                { id: 'progress', label: 'Progress', category: 'Interaction', icon: <FiActivity size={24} color="#00d2d3" />, action: () => { onAddNode('Progress', '', { progress: 50 }); setToolboxOpen(false) } },
+                                { id: 'kanban', label: 'Kanban', category: 'Interaction', icon: <FiColumns size={24} color="#5f27cd" />, action: () => { onAddNode('Kanban', '', { w: 300, h: 400 }); setToolboxOpen(false) } },
+
+                                // Media
+                                { id: 'youtube', label: 'YouTube', category: 'Media', icon: <FiYoutube size={24} color="#FF0000" />, action: () => { onAddNode('YouTube'); setToolboxOpen(false) } },
                                 { id: 'spotify', label: 'Spotify', category: 'Media', icon: <FiMusic size={24} color="#1DB954" />, action: () => promptEmbed('Spotify', 'https://open.spotify.com/embed/track/...') },
                                 { id: 'bandlab', label: 'BandLab', category: 'Media', icon: <FiMic size={24} color="#F50" />, action: () => promptEmbed('BandLab', 'https://www.bandlab.com/embed/...') },
-                                { id: 'youtube', label: 'YouTube', category: 'Media', icon: <FiYoutube size={24} color="#FF0000" />, action: () => { onAddNode('YouTube'); setToolboxOpen(false) } },
-                                { id: 'dice', label: 'Dice', category: 'Fun', icon: <FiGrid size={24} color="#e74c3c" />, action: () => { onAddNode('Dice'); setToolboxOpen(false) } },
+                                { id: 'code', label: 'Code', category: 'Media', icon: <FiTerminal size={24} color="#222f3e" />, action: () => { onAddNode('Code', '', { w: 400, h: 300 }); setToolboxOpen(false) } },
                                 { id: 'generic', label: 'Embed', category: 'Media', icon: <FiCode size={24} color="#333" />, action: () => promptEmbed('Embed', 'Paste URL or <iframe> code') },
-                            ].filter(item => toolboxTab === 'All' || (toolboxTab === 'Media' && (item.category === 'Media' || item.id === 'youtube' || item.id === 'spotify' || item.id === 'bandlab' || item.id === 'generic')) || (toolboxTab === 'Widgets' && (item.category === 'Widgets' || item.id === 'link' || item.id === 'timer' || item.id === 'label' || item.id === 'section' || item.id === 'poll')) || (toolboxTab === 'Fun' && (item.id === 'dice'))).map(item => (
-                                <div key={item.id} onClick={item.action} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', padding: 8, borderRadius: 12, transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                    <div style={{ width: 44, height: 44, background: 'white', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>{item.icon}</div>
-                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#555' }}>{item.label}</span>
+
+                                // Visuals
+                                { id: 'sticker', label: 'Sticker', category: 'Visuals', icon: <FiSmile size={24} color="#f1c40f" />, action: () => { onAddNode('Sticker', '😎'); setToolboxOpen(false) } },
+                                { id: 'emoji', label: 'Emoji', category: 'Visuals', icon: <FiSmile size={24} color="#ff9ff3" />, action: () => { onAddNode('Emoji', '', { w: 250, h: 100 }); setToolboxOpen(false) } },
+                                { id: 'shape', label: 'Shape', category: 'Visuals', icon: <FiCircle size={24} color="#54a0ff" />, action: () => { onAddNode('Shape'); setToolboxOpen(false) } },
+                                { id: 'avatar', label: 'Avatar', category: 'Visuals', icon: <FiUser size={24} color="#c8d6e5" />, action: () => { onAddNode('Avatar'); setToolboxOpen(false) } },
+                                { id: 'quote', label: 'Quote', category: 'Visuals', icon: <FiMessageSquare size={24} color="#ff6b6b" />, action: () => { onAddNode('Quote'); setToolboxOpen(false) } },
+                                { id: 'dice', label: 'Dice', category: 'Visuals', icon: <FiGrid size={24} color="#e74c3c" />, action: () => { onAddNode('Dice'); setToolboxOpen(false) } },
+                            ].filter(item => item.category === toolboxTab).map(item => (
+                                <div key={item.id} onClick={item.action} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '12px 8px', borderRadius: 16, transition: '0.2s', background: 'rgba(0,0,0,0.02)' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.06)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'}>
+                                    <div style={{ width: 48, height: 48, background: 'white', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>{item.icon}</div>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#555' }}>{item.label}</span>
                                 </div>
                             ))}
                         </div>
