@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { BsStars } from 'react-icons/bs'
-import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw, FiLayout, FiBarChart2, FiSmile, FiStar, FiCircle, FiUser, FiColumns, FiActivity, FiTerminal, FiMessageSquare, FiCheckCircle, FiTarget, FiBell, FiSend } from 'react-icons/fi'
+import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw, FiLayout, FiBarChart2, FiSmile, FiStar, FiCircle, FiUser, FiColumns, FiActivity, FiTerminal, FiMessageSquare, FiCheckCircle, FiTarget, FiBell, FiSend, FiUnlink } from 'react-icons/fi'
 
 import { useMediaQuery } from '../hooks/useMediaQuery'
 
@@ -1018,6 +1018,8 @@ const LinkNode = ({ node, onUpdate }) => {
 
 const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
     const [hover, setHover] = useState(false)
+    const [toolbar, setToolbar] = useState(null) // { x, y, visible }
+    const editorRef = useRef(null)
     const isHandwriting = node.font !== 'sans'
     const isTransparent = node.color === 'transparent'
 
@@ -1031,6 +1033,47 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
     }
     const activeColor = colors[Object.keys(colors).find(k => colors[k] === node.color) || 'yellow'] || node.color || colors.yellow
 
+    // Sync content if changed externally, but DON'T override if focused (avoids cursor jumps)
+    useEffect(() => {
+        if (editorRef.current && document.activeElement !== editorRef.current) {
+            if (editorRef.current.innerHTML !== (node.content || '')) {
+                editorRef.current.innerHTML = node.content || ''
+            }
+        }
+    }, [node.content])
+
+    const handleSelect = () => {
+        const sel = window.getSelection()
+        if (!sel.isCollapsed && editorRef.current && editorRef.current.contains(sel.anchorNode)) {
+            const range = sel.getRangeAt(0)
+            const rect = range.getBoundingClientRect()
+            setToolbar({
+                left: rect.left + (rect.width / 2) - 40, // Center toolbar
+                top: rect.top - 45,
+                visible: true
+            })
+        } else {
+            setToolbar(null)
+        }
+    }
+
+    const execLink = (e) => {
+        e.preventDefault()
+        const url = prompt("Enter URL:", "https://")
+        if (url) {
+            document.execCommand('createLink', false, url)
+            onUpdate(node.id, { content: editorRef.current.innerHTML }) // Save immediately
+        }
+        setToolbar(null)
+    }
+
+    const execUnlink = (e) => {
+        e.preventDefault()
+        document.execCommand('unlink')
+        onUpdate(node.id, { content: editorRef.current.innerHTML })
+        setToolbar(null)
+    }
+
     return (
         <div
             style={{
@@ -1042,7 +1085,7 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
                 boxShadow: isTransparent ? 'none' : '0 4px 15px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.05)',
                 border: isTransparent ? (isSelected ? '1px solid #ccc' : '1px solid rgba(255,255,255,0.4)') : (isSelected ? '2px solid #333' : '1px solid rgba(0,0,0,0.05)'),
                 transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                overflow: 'hidden'
+                overflow: 'visible' // Allow toolbar to show? Actually fixed pos toolbar doesn't care.
             }}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
@@ -1106,25 +1149,44 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
             </div>
 
             {/* Body - Flex 1 to fill space */}
-            <div style={{ flex: 1, width: '100%', position: 'relative' }}>
-                <textarea
-                    maxLength={2000}
-                    defaultValue={typeof node.content === 'string' ? node.content : JSON.stringify(node.content || '')}
-                    onBlur={e => onUpdate(node.id, { content: e.target.value })}
+            <div style={{ flex: 1, width: '100%', position: 'relative', overflowY: 'auto', scrollbarWidth: 'none' }}>
+                <div
+                    ref={editorRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={e => onUpdate(node.id, { content: e.currentTarget.innerHTML })}
+                    onMouseUp={handleSelect}
+                    onKeyUp={handleSelect}
                     onPointerDown={e => e.stopPropagation()}
                     style={{
-                        width: '100%', height: '100%',
+                        width: '100%', minHeight: '100%',
                         border: 'none', background: 'transparent',
-                        resize: 'none', outline: 'none',
-                        fontSize: '1rem', // Fixed size as requested
+                        outline: 'none',
+                        fontSize: '1rem',
                         lineHeight: 1.6,
                         color: '#2d3436',
                         padding: '16px',
-                        fontFamily: isHandwriting ? '"Kalam", cursive' : '"Inter", sans-serif'
+                        fontFamily: isHandwriting ? '"Kalam", cursive' : '"Inter", sans-serif',
+                        whiteSpace: 'pre-wrap', // Preserve newlines
+                        cursor: 'text'
                     }}
-                    placeholder="Type your note..."
                 />
             </div>
+
+            {/* Floating Link Toolbar */}
+            {toolbar && toolbar.visible && (
+                <div style={{
+                    position: 'fixed', top: toolbar.top, left: toolbar.left,
+                    background: '#222', padding: '6px 10px', borderRadius: 8,
+                    display: 'flex', gap: 8, alignItems: 'center',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)', zIndex: 9999,
+                    animation: 'fadeIn 0.2s ease'
+                }} onPointerDown={e => e.preventDefault() /* Prevent losing focus */}>
+                    <button onClick={execLink} title="Add Link" style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}><FiLink size={14} /></button>
+                    <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.2)' }} />
+                    <button onClick={execUnlink} title="Remove Link" style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', display: 'flex' }}><FiUnlink size={14} /></button>
+                </div>
+            )}
         </div>
     )
 }

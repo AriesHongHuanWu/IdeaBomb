@@ -287,16 +287,27 @@ export default function BoardPage({ user }) {
                 if (a.color) extra.color = a.color
 
                 // --- CONTENT PARSING & CLEANUP ---
+                // 0. Auto-detect Link Type if content is URL
+                if (typeof content === 'string' && content.match(/^https?:\/\/[^\s]+$/) && type === 'Note') {
+                    type = 'Link'
+                }
+
                 // 1. Link Node: Extract URL from Markdown [Title](URL) or raw text
                 if (type === 'Link') {
                     const mdLink = content.match(/\[(.*?)\]\((.*?)\)/)
                     if (mdLink) {
                         content = mdLink[2] // The URL
-                        // optional: could set a title field if we had one, but for now just get the URL right
+                        if (!extra.label) extra.label = mdLink[1] // Use title as label
                     }
                     const urlMatch = content.match(/(https?:\/\/[^\s]+)/g)
                     if (urlMatch) content = urlMatch[0] // Extract first URL if mixed text
                     extra.url = content
+                } else {
+                    // Regular Text: Cleanup Markdown artifacts like **bold** which look messy
+                    if (typeof content === 'string') {
+                        content = content.replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+                            .replace(/^#+\s/, '') // Remove heading markers if inline
+                    }
                 }
 
                 // 2. Todo Node: Parse markdown bullets into items
@@ -411,6 +422,12 @@ export default function BoardPage({ user }) {
                     y = 150 + (row * 400)
                     globalGridCount++
                 }
+
+                // CLAMPING (Prevent Out of Bounds)
+                const currentCanvasW = (pageConfigs && pageConfigs[activePage]?.w) || 3000
+                const currentCanvasH = (pageConfigs && pageConfigs[activePage]?.h) || 2000
+                x = Math.max(0, Math.min(x, currentCanvasW - w))
+                y = Math.max(0, Math.min(y, currentCanvasH - h))
 
                 // Store in Cache for future children
                 nodeCache[newId] = { id: newId, x, y, w, h }
