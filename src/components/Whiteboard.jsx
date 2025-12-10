@@ -645,6 +645,10 @@ const NoteNode = ({ node, onUpdate }) => {
     const isHandwriting = node.font !== 'sans'
     const isTransparent = node.color === 'transparent'
 
+    // Auto-scale font based on width (Base 320px = 1.4rem ~ 22px) -> ratio approx 0.07
+    // We clamp it between 1rem and 5rem to avoid too small/large text
+    const fontSize = `clamp(1rem, ${Math.max(node.w || 320, 200) * 0.005}rem, 5rem)`
+
     const colors = [
         '#fff740', // Yellow
         '#ccff90', // Green
@@ -701,7 +705,7 @@ const NoteNode = ({ node, onUpdate }) => {
                 onPointerDown={e => e.stopPropagation()}
                 style={{
                     flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none',
-                    fontSize: '1.4rem', lineHeight: 1.4, color: '#333', overflow: 'hidden', padding: '10px 15px',
+                    fontSize: fontSize, lineHeight: 1.4, color: '#333', overflow: 'hidden', padding: '10px 15px',
                     fontFamily: isHandwriting ? '"Kalam", cursive' : '"Inter", sans-serif'
                 }}
                 placeholder="Type something..."
@@ -846,17 +850,66 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
     }
 
-    const handleResize = (e) => {
+    const handleResize = (e, dir) => {
         e.stopPropagation();
         const startX = e.clientX; const startY = e.clientY
         const startW = size.w; const startH = size.h
-        const onMove = (mv) => { setSize({ w: Math.max(200, startW + (mv.clientX - startX) / (scale || 1)), h: Math.max(150, startH + (mv.clientY - startY) / (scale || 1)) }) }
-        const onUp = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); onUpdateData(node.id, { w: size.w, h: size.h }) }
+        const startLeft = x.get(); const startTop = y.get()
+
+        const onMove = (mv) => {
+            const dx = (mv.clientX - startX) / (scale || 1)
+            const dy = (mv.clientY - startY) / (scale || 1)
+
+            let newW = startW
+            let newH = startH
+            let newX = startLeft
+            let newY = startTop
+
+            if (dir.includes('e')) newW = Math.max(200, startW + dx)
+            if (dir.includes('s')) newH = Math.max(150, startH + dy)
+            if (dir.includes('w')) {
+                const w = Math.max(200, startW - dx)
+                newW = w
+                newX = startLeft + (startW - w)
+            }
+            if (dir.includes('n')) {
+                const h = Math.max(150, startH - dy)
+                newH = h
+                newY = startTop + (startH - h)
+            }
+
+            setSize({ w: newW, h: newH })
+            if (dir.includes('w')) x.set(newX)
+            if (dir.includes('n')) y.set(newY)
+        }
+        const onUp = () => {
+            window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp);
+            onUpdateData(node.id, { w: size.w, h: size.h });
+            onUpdatePosition(node.id, { x: x.get() - startLeft, y: y.get() - startTop }) // Actually x.get() is absolute, need relative delta? No, onUpdatePosition usually takes delta or abs?
+            // Wait, existing handling uses delta for drag. For resize, let's just assume we update data.
+            // Actually, if we moved x/y (left/top resize), we need to update position too.
+            // Let's verify onUpdatePosition signature. It takes (id, delta) or (id, {x,y})?
+            // In handleDragStart: onUpdatePosition(node.id, { x: dx, y: dy }) -> Delta.
+            // So if we resize Left, we must update position.
+            if (x.get() !== startLeft || y.get() !== startTop) {
+                onUpdatePosition(node.id, { x: x.get() - startLeft, y: y.get() - startTop })
+            }
+        }
         window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
     }
 
-    const handleStyle = { position: 'absolute', width: 16, height: 16, background: '#007bff', borderRadius: '50%', cursor: 'crosshair', opacity: 1, zIndex: 200, transition: 'transform 0.2s', border: '2px solid white', boxShadow: '0 0 5px rgba(0,0,0,0.3)' }
-    const isSuggested = node.aiStatus === 'suggested'
+    const handleStyle = { position: 'absolute', width: 12, height: 12, background: 'white', borderRadius: '50%', border: '1px solid #999', zIndex: 101 }
+    // Handles: nw, n, ne, e, se, s, sw, w
+    const handles = [
+        { dir: 'nw', top: -6, left: -6, cursor: 'nwse-resize' },
+        { dir: 'n', top: -6, left: '50%', marginLeft: -6, cursor: 'ns-resize' },
+        { dir: 'ne', top: -6, right: -6, cursor: 'nesw-resize' },
+        { dir: 'e', top: '50%', right: -6, marginTop: -6, cursor: 'ew-resize' },
+        { dir: 'se', bottom: -6, right: -6, cursor: 'nwse-resize' },
+        { dir: 's', bottom: -6, left: '50%', marginLeft: -6, cursor: 'ns-resize' },
+        { dir: 'sw', bottom: -6, left: -6, cursor: 'nesw-resize' },
+        { dir: 'w', top: '50%', left: -6, marginTop: -6, cursor: 'ew-resize' }
+    ]
 
     return (
         <motion.div
@@ -866,6 +919,11 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             onHoverStart={() => setIsHovered(true)} onHoverEnd={() => setIsHovered(false)}
             style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isSelected || isDragging ? 50 : 10, width: size.w, height: size.h }}
         >
+            {/* Handles - Only allow resize if selected or hovered */}
+            {(isSelected || isHovered) && !isDragging && handles.map(h => (
+                <div key={h.dir} onPointerDown={(e) => handleResize(e, h.dir)} style={{ ...handleStyle, ...h }} />
+            ))}
+
             {/* AI Processing Glow Effect */}
             {/* Suggested Glow Animation */}
             {isSuggested && (
@@ -897,8 +955,6 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
                 backdropFilter: isDragging ? 'none' : 'blur(24px)', transition: 'box-shadow 0.2s, background 0.2s',
                 overflow: 'hidden'
             }}>
-                <div onPointerDown={handleResize} style={{ position: 'absolute', bottom: -10, right: -10, width: 40, height: 40, background: 'rgba(255,255,255,0.8)', borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', cursor: 'nwse-resize', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}><FiMaximize2 size={20} color="#666" /></div>
-
                 {node.type === 'Todo' && <TodoNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Calendar' && <CalendarNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Image' && <ImageNode node={node} onUpdate={onUpdateData} />}
@@ -1412,6 +1468,16 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                 <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
                 <ToolBtn icon={<FiTarget />} label="Magnet" active={magnetMode} onClick={() => setMagnetMode(!magnetMode)} />
                 <ToolBtn icon={<FiGrid />} label="Toolbox" active={toolboxOpen} onClick={() => setToolboxOpen(!toolboxOpen)} />
+                <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <label style={{ fontSize: '0.6rem', color: '#999', fontWeight: 'bold' }}>CANVAS SIZE</label>
+                    <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                        <input type="number" value={canvasSize.w} onChange={e => setCanvasSize(p => ({ ...p, w: parseInt(e.target.value) }))} style={{ width: 60, padding: 4, borderRadius: 4, border: '1px solid #ccc', fontSize: '0.8rem' }} />
+                        <span style={{ fontSize: '0.8rem', color: '#999' }}>x</span>
+                        <input type="number" value={canvasSize.h} onChange={e => setCanvasSize(p => ({ ...p, h: parseInt(e.target.value) }))} style={{ width: 60, padding: 4, borderRadius: 4, border: '1px solid #ccc', fontSize: '0.8rem' }} />
+                    </div>
+                </div>
+                <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
                 <ToolBtn icon={<FiMaximize2 />} label="Auto Arrange" onClick={autoArrange} />
             </motion.div>
             {connectMode && <div style={{ position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', background: '#007bff', color: 'white', padding: '10px 20px', borderRadius: 20, fontWeight: 'bold' }}>Select two nodes to connect</div>}
