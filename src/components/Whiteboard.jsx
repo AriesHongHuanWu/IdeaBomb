@@ -444,7 +444,7 @@ const LabelNode = ({ node, onUpdate }) => {
             {/* Controls (visible on hover) */}
             {hover && (
                 <div style={{
-                    position: 'absolute', top: -30, left: '50%', transform: 'translateX(-50%)',
+                    position: 'absolute', bottom: -40, left: '50%', transform: 'translateX(-50%)',
                     background: 'white', padding: 4, borderRadius: 8,
                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', gap: 6, zIndex: 50
                 }} onPointerDown={e => e.stopPropagation()}>
