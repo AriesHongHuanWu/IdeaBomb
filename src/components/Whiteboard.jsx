@@ -716,11 +716,31 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     const handleEmbedSubmit = (e) => {
         e.preventDefault()
         if (embedModal && embedModal.url) {
-            let finalSrc = embedModal.url
+            let finalSrc = embedModal.url.trim()
+
+            // 1. Handle Iframe Code
             if (finalSrc.includes('<iframe')) {
                 const srcMatch = finalSrc.match(/src=["']([^"']+)["']/)
                 if (srcMatch) finalSrc = srcMatch[1]
             }
+            // 2. Handle Auto-Convert (Spotify & YouTube)
+            else {
+                // Spotify: open.spotify.com/track/ID -> open.spotify.com/embed/track/ID
+                if (finalSrc.includes('open.spotify.com') && !finalSrc.includes('/embed/')) {
+                    finalSrc = finalSrc.replace('open.spotify.com', 'open.spotify.com/embed')
+                }
+                // YouTube: watch?v=ID -> embed/ID
+                else if (finalSrc.includes('youtube.com/watch')) {
+                    const videoId = new URL(finalSrc).searchParams.get('v')
+                    if (videoId) finalSrc = `https://www.youtube.com/embed/${videoId}`
+                }
+                // YouTube: youtu.be/ID -> embed/ID
+                else if (finalSrc.includes('youtu.be/')) {
+                    const videoId = finalSrc.split('youtu.be/')[1].split('?')[0]
+                    if (videoId) finalSrc = `https://www.youtube.com/embed/${videoId}`
+                }
+            }
+
             onAddNode('Embed', '', { src: finalSrc, title: embedModal.provider })
             setEmbedModal(null)
         }
@@ -909,10 +929,10 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                                     {embedModal.provider !== 'Embed' && (
                                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
                                             <button type="button" onClick={() => {
-                                                const query = 'site:' + (embedModal.provider === 'Spotify' ? 'open.spotify.com' : 'bandlab.com') + ' ' + (embedModal.url || 'music');
-                                                window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank')
+                                                const urls = { 'Spotify': 'https://open.spotify.com', 'BandLab': 'https://www.bandlab.com', 'YouTube': 'https://www.youtube.com' }
+                                                window.open(urls[embedModal.provider] || 'https://google.com', '_blank')
                                             }} style={{ background: 'transparent', border: 'none', color: '#007bff', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 5 }}>
-                                                <FiGlobe /> Search {embedModal.provider}
+                                                <FiGlobe /> Open {embedModal.provider}
                                             </button>
                                         </div>
                                     )}
