@@ -674,88 +674,111 @@ const NoteNode = ({ node, onUpdate }) => {
     const [hover, setHover] = useState(false)
     const isHandwriting = node.font !== 'sans'
     const isTransparent = node.color === 'transparent'
-    const { rad, p, gap, fsHead, fsBody, icon } = getScale(node.w, node.h)
 
-    const colors = [
-        '#fff740', // Yellow
-        '#ccff90', // Green
-        '#fdcfe8', // Pink
-        '#cbf0f8', // Blue
-        '#ffffff', // White
-    ]
+    // Modern Palette
+    const colors = {
+        yellow: '#fff9b1',
+        green: '#d5f692',
+        pink: '#ffcce1',
+        blue: '#cbf0f8',
+        white: '#ffffff',
+    }
+    const activeColor = colors[Object.keys(colors).find(k => colors[k] === node.color) || 'yellow'] || node.color || colors.yellow
 
     return (
         <div
             style={{
-                height: '100%', display: 'flex', flexDirection: 'column',
-                background: 'rgba(255, 255, 255, 0.7)', // Glass body
-                backdropFilter: 'blur(10px)',
-                borderRadius: rad,
-                boxShadow: isTransparent ? 'none' : '2px 4px 12px rgba(0,0,0,0.1)',
-                transition: 'background 0.2s',
-                overflow: 'hidden',
-                border: '1px solid rgba(255,255,255,0.5)'
+                width: '100%', height: '100%',
+                display: 'flex', flexDirection: 'column',
+                background: isTransparent ? 'rgba(255,255,255,0.2)' : activeColor,
+                backdropFilter: isTransparent ? 'blur(10px)' : 'none',
+                borderRadius: 12,
+                boxShadow: isTransparent ? 'none' : '0 4px 15px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.05)',
+                border: isTransparent ? '1px solid rgba(255,255,255,0.4)' : '1px solid rgba(0,0,0,0.05)',
+                transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                overflow: 'hidden'
             }}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
         >
+            {/* Header - Fixed Height Area for Gripping/Controls */}
             <div style={{
+                flex: '0 0 36px',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: `${p / 2}px ${p}px`,
-                background: node.color || '#fff740', // Color applied to header only
-                color: 'rgba(0,0,0,0.7)', fontWeight: 'bold', fontSize: fsHead,
-                borderBottom: '1px solid rgba(0,0,0,0.05)'
+                padding: '0 12px',
+                borderBottom: '1px solid rgba(0,0,0,0.04)',
+                cursor: 'grab' // Indication it can be moved
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: gap }}>
-                    <FiType size={icon} /> Note
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 700, opacity: 0.6, color: '#333' }}>
+                    <FiType size={14} /> <span>NOTE</span>
                 </div>
-                {/* Controls */}
-                <div style={{ display: 'flex', gap: 4, opacity: hover ? 1 : 0, transition: '0.2s', pointerEvents: hover ? 'auto' : 'none', transform: `scale(${Math.max((node.w || 0) / 320, 1)})`, transformOrigin: 'right center' }} onPointerDown={e => e.stopPropagation()}>
-                    <button onClick={() => onUpdate(node.id, { font: isHandwriting ? 'sans' : 'hand' })} style={{ background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 4, cursor: 'pointer', padding: '2px 6px', fontSize: '0.7rem' }}>
+
+                {/* Controls - Visible on Hover */}
+                <div style={{
+                    display: 'flex', gap: 6,
+                    opacity: hover ? 1 : 0,
+                    transform: hover ? 'translateY(0)' : 'translateY(2px)',
+                    transition: 'all 0.2s',
+                    pointerEvents: hover ? 'auto' : 'none'
+                }} onPointerDown={e => e.stopPropagation()}>
+                    <button
+                        onClick={() => onUpdate(node.id, { font: isHandwriting ? 'sans' : 'hand' })}
+                        title="Toggle Handwriting"
+                        style={{ background: 'rgba(255,255,255,0.5)', border: 'none', borderRadius: 4, cursor: 'pointer', padding: '2px 6px', fontSize: '0.8rem', display: 'flex', alignItems: 'center' }}
+                    >
                         {isHandwriting ? 'Aa' : '✍️'}
                     </button>
-                    {colors.map(c => (
+                    {Object.entries(colors).map(([name, c]) => (
                         <div
-                            key={c}
+                            key={name}
                             onClick={() => onUpdate(node.id, { color: c })}
                             style={{
-                                width: 16, height: 16, borderRadius: '50%',
+                                width: 14, height: 14, borderRadius: '50%',
                                 background: c,
                                 border: '1px solid rgba(0,0,0,0.1)',
                                 cursor: 'pointer',
                                 transform: node.color === c ? 'scale(1.2)' : 'scale(1)',
-                                boxShadow: node.color === c ? '0 0 0 2px #333' : 'none'
+                                boxShadow: node.color === c ? '0 0 0 2px #333' : 'none',
+                                transition: '0.2s'
                             }}
+                            title={name}
                         />
                     ))}
                     <div
                         onClick={() => onUpdate(node.id, { color: 'transparent' })}
                         style={{
-                            width: 16, height: 16, borderRadius: '50%',
-                            background: 'conic-gradient(#eee 0% 25%, white 25% 50%, #eee 50% 75%, white 75%) 0 0 / 8px 8px',
+                            width: 14, height: 14, borderRadius: '50%',
+                            background: 'conic-gradient(#eee 0% 25%, white 25% 50%, #eee 50% 75%, white 75%) 0 0 / 6px 6px',
                             border: '1px solid rgba(0,0,0,0.1)',
                             cursor: 'pointer',
                             transform: node.color === 'transparent' ? 'scale(1.2)' : 'scale(1)',
                             boxShadow: node.color === 'transparent' ? '0 0 0 2px #333' : 'none'
                         }}
-                        title="Transparent Header"
+                        title="Transparent"
                     />
                 </div>
             </div>
-            <textarea
-                maxLength={1000}
-                defaultValue={typeof node.content === 'string' ? node.content : JSON.stringify(node.content || '')}
-                onBlur={e => onUpdate(node.id, { content: e.target.value })}
-                onPointerDown={e => e.stopPropagation()}
-                style={{
-                    flex: 1, width: '100%', border: 'none', background: 'transparent', resize: 'none', outline: 'none',
-                    fontSize: '1rem', // Fixed font size as requested
-                    lineHeight: 1.5, color: '#333', overflow: 'hidden',
-                    padding: '12px', // Fixed padding for consistency
-                    fontFamily: isHandwriting ? '"Kalam", cursive' : '"Inter", sans-serif'
-                }}
-                placeholder="Type something..."
-            />
+
+            {/* Body - Flex 1 to fill space */}
+            <div style={{ flex: 1, width: '100%', position: 'relative' }}>
+                <textarea
+                    maxLength={2000}
+                    defaultValue={typeof node.content === 'string' ? node.content : JSON.stringify(node.content || '')}
+                    onBlur={e => onUpdate(node.id, { content: e.target.value })}
+                    onPointerDown={e => e.stopPropagation()}
+                    style={{
+                        width: '100%', height: '100%',
+                        border: 'none', background: 'transparent',
+                        resize: 'none', outline: 'none',
+                        fontSize: '1rem', // Fixed size as requested
+                        lineHeight: 1.6,
+                        color: '#2d3436',
+                        padding: '16px',
+                        fontFamily: isHandwriting ? '"Kalam", cursive' : '"Inter", sans-serif'
+                    }}
+                    placeholder="Type your note..."
+                />
+            </div>
         </div>
     )
 }
