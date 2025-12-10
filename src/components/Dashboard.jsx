@@ -164,7 +164,7 @@ export default function Dashboard({ user }) {
         <div style={{ minHeight: '100vh', background: '#f8f9fa', fontFamily: '"Google Sans", "Inter", sans-serif', overflowX: 'hidden' }}>
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 40px', background: 'white', borderBottom: '1px solid #dadce0' }}>
                 <h1 onClick={() => navigate('/')} style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: 10, margin: 0, cursor: 'pointer' }}>
-                    <FiLayout /> IdeaBomb
+                    <img src="/logo.svg" alt="Logo" style={{ height: 32 }} /> IdeaBomb
                 </h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                     {user && (

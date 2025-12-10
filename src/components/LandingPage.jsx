@@ -18,7 +18,7 @@ export default function LandingPage({ user }) {
             {/* Header */}
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: isMobile ? '15px 20px' : '20px 40px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid #eee' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 'bold', fontSize: '1.4rem', color: '#5f6368' }}>
-                    <div style={{ width: 24, height: 24, background: '#5f6368', borderRadius: 6 }}></div> IdeaBomb
+                    <img src="/logo.svg" alt="Logo" style={{ height: 32 }} /> IdeaBomb
                 </div>
                 <nav style={{ display: 'flex', gap: isMobile ? 15 : 30, alignItems: 'center' }}>
                     {!isMobile && (
