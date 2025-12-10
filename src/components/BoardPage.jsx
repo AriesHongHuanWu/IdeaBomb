@@ -473,7 +473,27 @@ export default function BoardPage({ user }) {
         }
     }
 
-    const addNewPage = () => { const p = `Page ${pages.length + 1}`; setPages([...pages, p]); setActivePage(p) }
+    const addNewPage = async () => {
+        const existingNums = pages
+            .map(p => {
+                const match = p.match(/^Page (\d+)$/)
+                return match ? parseInt(match[1], 10) : 0
+            })
+            .filter(n => !isNaN(n))
+
+        const maxNum = existingNums.length > 0 ? Math.max(...existingNums) : 0
+        const newPageName = `Page ${maxNum + 1}`
+
+        setPages(prev => [...prev, newPageName])
+        setActivePage(newPageName)
+
+        // Persist pages list to board doc immediately to avoid race conditions
+        try {
+            await updateDoc(doc(db, 'boards', boardId), {
+                pages: arrayUnion(newPageName)
+            })
+        } catch (e) { console.error("Error saving page:", e) }
+    }
     const displayNodes = nodes.filter(n => (n.page || 'Page 1') === activePage)
     const nodeIds = new Set(displayNodes.map(n => n.id))
     const displayEdges = edges.filter(e => (e.page || 'Page 1') === activePage && nodeIds.has(e.from) && nodeIds.has(e.to))

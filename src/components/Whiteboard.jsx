@@ -290,7 +290,7 @@ const EmojiNode = ({ node, onUpdate }) => {
 const PomodoroNode = ({ node, onUpdate }) => {
     const [timeLeft, setTimeLeft] = useState(node.timeLeft || 1500) // 25m
     const [isActive, setIsActive] = useState(node.isActive || false)
-    const { fsHead, rad, gap, icon } = getScale(node.w, node.h)
+    const { fsHead, icon } = getScale(node.w, node.h)
 
     useEffect(() => {
         let interval = null
@@ -298,7 +298,6 @@ const PomodoroNode = ({ node, onUpdate }) => {
             interval = setInterval(() => {
                 setTimeLeft(t => {
                     const newT = t - 1
-                    // Only update DB every 5s to save writes, but update local state every 1s
                     if (newT % 5 === 0) onUpdate(node.id, { timeLeft: newT })
                     return newT
                 })
@@ -306,6 +305,8 @@ const PomodoroNode = ({ node, onUpdate }) => {
         } else if (timeLeft === 0) {
             setIsActive(false)
             onUpdate(node.id, { isActive: false, timeLeft: 0 })
+            // Play sound or notify
+            new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play().catch(() => { })
         }
         return () => clearInterval(interval)
     }, [isActive, timeLeft, onUpdate, node.id])
@@ -328,33 +329,145 @@ const PomodoroNode = ({ node, onUpdate }) => {
         return `${m}:${sec.toString().padStart(2, '0')}`
     }
 
+    // Progress ring calculation
+    const progress = 1 - (timeLeft / 1500)
+    const r = 40
+    const c = 2 * Math.PI * r
+
     return (
-        <div style={{ width: '100%', height: '100%', background: '#fff', borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '8px solid #ff6b6b', boxShadow: '0 10px 30px rgba(255, 107, 107, 0.3)', position: 'relative' }}>
-            <div style={{ fontSize: `calc(${fsHead} * 1.5)`, fontWeight: '800', color: '#ff6b6b', fontFamily: 'monospace' }}>{fmt(timeLeft)}</div>
-            <div style={{ fontSize: `calc(${fsHead} * 0.4)`, fontWeight: 'bold', color: '#ff8787', letterSpacing: 1 }}>POMODORO</div>
-            <div style={{ display: 'flex', gap: gap, marginTop: gap }}>
-                <button onClick={toggle} onPointerDown={e => e.stopPropagation()} style={{ width: icon * 2, height: icon * 2, borderRadius: '50%', border: 'none', background: isActive ? '#f1f3f5' : '#ff6b6b', color: isActive ? '#ff6b6b' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: icon, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-                    {isActive ? <FiPause size={icon} /> : <FiPlay size={icon} style={{ marginLeft: 2 }} />}
-                </button>
-                <button onClick={reset} onPointerDown={e => e.stopPropagation()} style={{ width: icon * 2, height: icon * 2, borderRadius: '50%', border: 'none', background: '#f1f3f5', color: '#adb5bd', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: icon }}>
-                    <FiRotateCcw size={icon} />
-                </button>
+        <div style={{
+            width: '100%', height: '100%',
+            background: 'white', borderRadius: 24,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+            position: 'relative', overflow: 'hidden'
+        }}>
+
+            {/* Minimal UI */}
+            <div style={{ zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: 1.5, color: '#ff6b6b' }}>FOCUS</div>
+                <div style={{ fontSize: `clamp(2rem, ${fsHead}, 4rem)`, fontWeight: '800', color: '#333', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums' }}>
+                    {fmt(timeLeft)}
+                </div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                    <button onClick={toggle} onPointerDown={e => e.stopPropagation()} style={{
+                        width: 48, height: 48, borderRadius: '50%', border: 'none',
+                        background: isActive ? '#f8f9fa' : '#ff6b6b',
+                        color: isActive ? '#ff6b6b' : 'white',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '1.2rem', boxShadow: isActive ? 'none' : '0 4px 15px rgba(255, 107, 107, 0.4)',
+                        transition: '0.2s'
+                    }}>
+                        {isActive ? <FiPause /> : <FiPlay style={{ marginLeft: 2 }} />}
+                    </button>
+                    <button onClick={reset} onPointerDown={e => e.stopPropagation()} style={{
+                        width: 48, height: 48, borderRadius: '50%', border: 'none',
+                        background: '#f8f9fa', color: '#adb5bd',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '1.2rem', transition: '0.2s'
+                    }}>
+                        <FiRotateCcw />
+                    </button>
+                </div>
             </div>
         </div>
     )
 }
 
-const LabelNode = ({ node, onUpdate }) => {
+const NotifyNode = ({ node, onUpdate }) => {
+    const notify = () => {
+        if (!("Notification" in window)) {
+            alert("This browser does not support desktop notification");
+        } else if (Notification.permission === "granted") {
+            new Notification(node.text || "Hello from Whiteboard!");
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission().then(function (permission) {
+                if (permission === "granted") {
+                    new Notification(node.text || "Hello from Whiteboard!");
+                }
+            });
+        }
+    }
+
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center' }}>
+        <div style={{
+            width: '100%', height: '100%',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: 16, display: 'flex', flexDirection: 'column',
+            padding: 16, color: 'white', boxShadow: '0 4px 15px rgba(118, 75, 162, 0.3)'
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontWeight: 700 }}>
+                <FiBell /> <span>Notifier</span>
+            </div>
+            <textarea
+                value={node.text || ''}
+                onChange={e => onUpdate(node.id, { text: e.target.value })}
+                placeholder="Notification message..."
+                onPointerDown={e => e.stopPropagation()}
+                style={{
+                    flex: 1, background: 'rgba(255,255,255,0.2)',
+                    border: 'none', borderRadius: 8, padding: 8,
+                    color: 'white', fontSize: '0.9rem', outline: 'none',
+                    resize: 'none', marginBottom: 10
+                }}
+            />
+            <button onClick={notify} onPointerDown={e => e.stopPropagation()} style={{
+                background: 'white', color: '#764ba2', border: 'none',
+                padding: '8px', borderRadius: 8, fontWeight: 'bold',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5
+            }}>
+                <FiSend size={14} /> Send Now
+            </button>
+        </div>
+    )
+}
+
+const LabelNode = ({ node, onUpdate }) => {
+    const [hover, setHover] = useState(false)
+    const isTransparent = node.color === 'transparent'
+    const fontSize = node.fontSize || 32 // Default 2.5rem approx
+
+    return (
+        <div
+            style={{
+                width: '100%', height: '100%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: isTransparent ? 'transparent' : (node.color || 'white'),
+                borderRadius: 8,
+                border: isTransparent ? (hover ? '1px dashed #ccc' : 'none') : '1px solid #eee',
+                padding: 10,
+                transition: '0.2s'
+            }}
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+        >
+            {/* Controls (visible on hover) */}
+            {hover && (
+                <div style={{
+                    position: 'absolute', top: -30, left: '50%', transform: 'translateX(-50%)',
+                    background: 'white', padding: 4, borderRadius: 8,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', gap: 6, zIndex: 50
+                }} onPointerDown={e => e.stopPropagation()}>
+                    <button onClick={() => onUpdate(node.id, { fontSize: Math.max(12, fontSize - 4) })} title="Smaller" style={{ border: '1px solid #eee', background: 'white', borderRadius: 4, cursor: 'pointer', width: 24 }}>A-</button>
+                    <button onClick={() => onUpdate(node.id, { fontSize: Math.min(120, fontSize + 4) })} title="Larger" style={{ border: '1px solid #eee', background: 'white', borderRadius: 4, cursor: 'pointer', width: 24 }}>A+</button>
+                    <div style={{ width: 1, height: 20, background: '#eee' }}></div>
+                    <button onClick={() => onUpdate(node.id, { color: isTransparent ? 'white' : 'transparent' })} title="Toggle Background" style={{ border: '1px solid #eee', background: isTransparent ? '#eee' : 'white', borderRadius: 4, cursor: 'pointer', padding: '0 8px', fontSize: '0.7rem' }}>
+                        {isTransparent ? 'Solid' : 'Clear'}
+                    </button>
+                </div>
+            )}
+
             <textarea
                 value={node.content}
                 onChange={e => onUpdate(node.id, { content: e.target.value })}
-                placeholder="Title..."
+                placeholder="Heading"
                 style={{
                     width: '100%', background: 'transparent',
-                    border: 'none', fontSize: '2.5rem', fontWeight: '800',
-                    color: node.color || '#333', resize: 'none', outline: 'none',
+                    border: 'none',
+                    fontSize: fontSize,
+                    fontWeight: '800',
+                    color: '#333', resize: 'none', outline: 'none',
+                    textAlign: 'center',
                     fontFamily: 'Outfit, sans-serif', lineHeight: 1.2, height: 'auto', overflow: 'hidden'
                 }}
                 onPointerDown={e => e.stopPropagation()}
@@ -635,97 +748,162 @@ const TodoNode = ({ node, onUpdate }) => {
     )
 }
 const CalendarNode = ({ node, onUpdate }) => {
-    const events = node.events || {};
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [text, setText] = useState('');
-    const addEvent = () => { if (date && text) { onUpdate(node.id, { events: { ...events, [date]: text } }); setText('') } };
-    const sortedEvents = Object.entries(events).sort((a, b) => new Date(a[0]) - new Date(b[0]))
-    const { rad, p, gap, fsHead, icon, mb } = getScale(node.w)
+    // Defines "Timeline" behavior
+    const events = node.events || {}
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+    const [time, setTime] = useState('12:00') // Default noon
+    const [text, setText] = useState('')
+
+    // Sort events by date/time key
+    const sortedEvents = Object.entries(events).sort((a, b) => {
+        return new Date(a[0]) - new Date(b[0])
+    })
+
+    // Add event handler
+    const addEvent = (e) => {
+        e.preventDefault()
+        if (!text) return
+        // specific time key
+        const key = `${date}T${time}`
+        onUpdate(node.id, { events: { ...events, [key]: text } })
+        setText('')
+    }
+
+    const deleteEvent = (key) => {
+        const NewEvents = { ...events }
+        delete NewEvents[key]
+        onUpdate(node.id, { events: NewEvents })
+    }
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{
+            width: '100%', height: '100%',
+            background: 'white', borderRadius: 16,
+            display: 'flex', flexDirection: 'column',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+            overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)'
+        }}>
+            {/* Header */}
             <div style={{
-                display: 'flex', alignItems: 'center', gap: gap, marginBottom: mb,
-                background: 'linear-gradient(135deg, #FF9966, #FF5E62)', padding: `${p / 2}px ${p}px`,
-                borderRadius: rad, color: 'white', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(255, 94, 98, 0.3)'
+                padding: '12px 16px', background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                color: 'white', display: 'flex', alignItems: 'center', gap: 8,
+                fontWeight: 700, fontSize: '1rem',
+                boxShadow: '0 4px 12px rgba(118, 75, 162, 0.3)', zIndex: 1
             }}>
-                <FiCalendar size={icon} /> <span style={{ fontSize: fsHead }}>Timeline</span>
+                <FiClock /> <span>Timeline</span>
             </div>
-            {node.content && Object.keys(events).length === 0 && <ContentDisplay content={node.content} />}
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0, padding: '0 5px' }}>
-                {sortedEvents.length === 0 && <div style={{ textAlign: 'center', color: '#aaa', marginTop: 20, fontStyle: 'italic' }}>No events scheduled</div>}
 
-                {sortedEvents.map(([d, t], i) => {
-                    const isTimeOnly = d.match(/^\d{1,2}:\d{2}$/);
-                    const dateObj = new Date(d);
-                    const isDate = !isTimeOnly && !isNaN(dateObj.getTime());
+            {/* Scrollable Timeline Body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 12px', position: 'relative' }}>
+                {sortedEvents.length === 0 && (
+                    <div style={{ textAlign: 'center', color: '#ccc', fontStyle: 'italic', marginTop: 20 }}>
+                        <FiCalendar size={32} style={{ marginBottom: 8, opacity: 0.5 }} /><br />
+                        Add an event to start<br />your timeline
+                    </div>
+                )}
 
-                    return (
-                        <div key={d} style={{ display: 'flex', position: 'relative' }}>
-                            {/* Line */}
-                            {i !== sortedEvents.length - 1 && (
-                                <div style={{ position: 'absolute', left: 29, top: 40, bottom: -10, width: 2, background: '#e0e0e0', borderLeft: '2px dashed #ccc' }} />
-                            )}
+                <div style={{ position: 'relative', marginLeft: 8 }}>
+                    {/* Vertical Line */}
+                    {sortedEvents.length > 0 && (
+                        <div style={{
+                            position: 'absolute', left: 6, top: 10, bottom: 10,
+                            width: 2, background: '#e0e0e0', borderRadius: 2
+                        }} />
+                    )}
 
-                            {/* Time / Date Column */}
-                            <div style={{ width: 60, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', paddingRight: 10, paddingTop: 5 }}>
-                                {isTimeOnly ? (
-                                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#333' }}>{d}</span>
-                                ) : (
-                                    <>
-                                        <span style={{ fontSize: '0.7rem', color: '#999', fontWeight: 600 }}>{isDate ? dateObj.toLocaleString('default', { month: 'short' }) : ''}</span>
-                                        <span style={{ fontSize: '1.2rem', color: '#333', fontWeight: 800, lineHeight: 1 }}>{isDate ? dateObj.getDate() : '?'}</span>
-                                    </>
-                                )}
-                            </div>
+                    {sortedEvents.map(([key, content], i) => {
+                        const d = new Date(key)
+                        const isValid = !isNaN(d.getTime())
+                        // Format: "Oct 24"
+                        const dateStr = isValid ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : key
+                        // Format: "14:30"
+                        const timeStr = isValid ? d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : ''
 
-                            {/* Dot */}
-                            <div style={{ paddingTop: 8, position: 'relative', zIndex: 2 }}>
-                                <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'white', border: '3px solid #FF5E62', boxShadow: '0 0 0 2px white' }} />
-                            </div>
-
-                            {/* Content Card */}
-                            <div style={{ flex: 1, paddingLeft: 15, paddingBottom: 20 }}>
+                        return (
+                            <div key={key} style={{ display: 'flex', marginBottom: 20, position: 'relative' }}>
+                                {/* Timeline Dot */}
                                 <div style={{
-                                    background: 'white', padding: '10px 14px', borderRadius: 12,
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.05)',
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10,
-                                    transition: 'transform 0.2s', cursor: 'default'
-                                }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
-                                    <div style={{ fontSize: '0.95rem', color: '#444', lineHeight: 1.5 }}>
-                                        {(typeof t === 'object' && t !== null) ? (t.text || t.title || t.content || JSON.stringify(t)) : t}
+                                    width: 14, height: 14, borderRadius: '50%',
+                                    background: 'white', border: '3px solid #764ba2',
+                                    boxShadow: '0 0 0 2px white', zIndex: 2,
+                                    flexShrink: 0
+                                }} />
+
+                                {/* Content */}
+                                <div style={{ marginLeft: 16, flex: 1 }}>
+                                    {/* Date Label */}
+                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#764ba2', textTransform: 'uppercase', letterSpacing: 0.5 }}>{dateStr}</span>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#aaa' }}>{timeStr}</span>
                                     </div>
-                                    <button
-                                        onClick={() => { const n = { ...events }; delete n[d]; onUpdate(node.id, { events: n }) }}
-                                        style={{ background: 'transparent', border: 'none', color: '#ddd', cursor: 'pointer', padding: 4, marginTop: -4 }}
-                                        onMouseEnter={e => e.target.style.color = '#ff6b6b'} onMouseLeave={e => e.target.style.color = '#ddd'}
+
+                                    {/* Card */}
+                                    <div className="timeline-card" style={{
+                                        background: '#f8f9fa', padding: '10px 14px', borderRadius: '0 12px 12px 12px',
+                                        border: '1px solid rgba(0,0,0,0.05)', position: 'relative',
+                                        fontSize: '0.9rem', color: '#444', lineHeight: 1.5,
+                                        transition: '0.2s', cursor: 'default'
+                                    }}
+                                        onMouseEnter={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.05)'; e.currentTarget.querySelector('.del-btn').style.opacity = 1 }}
+                                        onMouseLeave={e => { e.currentTarget.style.background = '#f8f9fa'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.querySelector('.del-btn').style.opacity = 0 }}
                                     >
-                                        <FiX size={14} />
-                                    </button>
+                                        {content}
+                                        <button
+                                            className="del-btn"
+                                            onClick={() => deleteEvent(key)}
+                                            style={{
+                                                position: 'absolute', top: 8, right: 8,
+                                                background: 'white', border: '1px solid #eee', borderRadius: '50%',
+                                                width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                cursor: 'pointer', color: '#ff6b6b', opacity: 0, transition: '0.2s'
+                                            }}
+                                        ><FiX size={12} /></button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )
-                })}
+                        )
+                    })}
+                </div>
             </div>
 
             {/* Input Area */}
-            <div style={{ marginTop: 10, display: 'flex', gap: 8, paddingTop: 10, borderTop: '1px solid #eee' }} onPointerDown={e => e.stopPropagation()}>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                    style={{ padding: '8px', borderRadius: 10, border: '1px solid #ddd', width: 40, height: 40, cursor: 'pointer', outline: 'none' }}
-                    title="Select Date"
-                />
-                <div style={{ flex: 1, display: 'flex', gap: 5, background: '#f5f5f5', borderRadius: 12, padding: 4 }}>
-                    <input placeholder="Add event..." value={text} onChange={e => setText(e.target.value)}
-                        style={{ flex: 1, padding: '0 10px', background: 'transparent', border: 'none', fontSize: '0.9rem', outline: 'none' }}
-                        onKeyDown={e => e.key === 'Enter' && addEvent()}
+            <form onSubmit={addEvent} style={{ padding: 12, borderTop: '1px solid #eee', background: 'white', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                        type="date"
+                        value={date}
+                        onChange={e => setDate(e.target.value)}
+                        style={{ flex: 2, padding: '6px 10px', borderRadius: 8, border: '1px solid #eee', fontSize: '0.8rem', background: '#f9f9f9', outline: 'none' }}
+                        required
                     />
-                    <button onClick={addEvent} style={{ width: 32, height: 32, borderRadius: 10, background: '#FF5E62', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <input
+                        type="time"
+                        value={time}
+                        onChange={e => setTime(e.target.value)}
+                        style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: '1px solid #eee', fontSize: '0.8rem', background: '#f9f9f9', outline: 'none' }}
+                        required
+                    />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', background: '#f5f5f5', borderRadius: 8, padding: '0 4px 0 12px' }}>
+                    <input
+                        value={text}
+                        onChange={e => setText(e.target.value)}
+                        placeholder="Add event..."
+                        style={{ flex: 1, padding: '10px 0', background: 'transparent', border: 'none', outline: 'none', fontSize: '0.9rem' }}
+                        onPointerDown={e => e.stopPropagation()}
+                    />
+                    <button type="submit" style={{ background: '#764ba2', color: 'white', border: 'none', borderRadius: 6, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <FiPlus />
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
+    )
+        < FiPlus />
+                    </button >
+                </div >
+            </div >
+        </div >
     )
 }
 const ImageNode = ({ node, onUpdate }) => {
@@ -1182,6 +1360,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             }}>
                 {node.type === 'Todo' && <TodoNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Calendar' && <CalendarNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Notify' && <NotifyNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Image' && <ImageNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'YouTube' && <YouTubeNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Link' && <LinkNode node={node} onUpdate={onUpdateData} />}
@@ -1680,6 +1859,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                                 { id: 'rating', label: 'Rating', category: 'Interaction', icon: <FiStar size={24} color="#feca57" />, action: () => { onAddNode('Rating', '', { rating: 3 }); setToolboxOpen(false) } },
                                 { id: 'progress', label: 'Progress', category: 'Interaction', icon: <FiActivity size={24} color="#00d2d3" />, action: () => { onAddNode('Progress', '', { progress: 50 }); setToolboxOpen(false) } },
                                 { id: 'kanban', label: 'Kanban', category: 'Interaction', icon: <FiColumns size={24} color="#5f27cd" />, action: () => { onAddNode('Kanban', '', { w: 300, h: 400 }); setToolboxOpen(false) } },
+                                { id: 'notify', label: 'Notify', category: 'Interaction', icon: <FiBell size={24} color="#667eea" />, action: () => { onAddNode('Notify'); setToolboxOpen(false) } },
 
                                 // Media
                                 { id: 'youtube', label: 'YouTube', category: 'Media', icon: <FiYoutube size={24} color="#FF0000" />, action: () => { onAddNode('YouTube'); setToolboxOpen(false) } },
