@@ -4,29 +4,21 @@ import { motion } from 'framer-motion';
 const variants = {
     initial: {
         opacity: 0,
-        scale: 0.98,
-        y: 15,
-        filter: 'blur(8px)'
+        y: 20,
     },
     animate: {
         opacity: 1,
-        scale: 1,
         y: 0,
-        filter: 'blur(0px)'
     },
     exit: {
         opacity: 0,
-        scale: 1.02,
-        y: -15,
-        filter: 'blur(8px)'
+        y: -20,
     }
 };
 
 const transition = {
-    type: "spring",
-    stiffness: 400,
-    damping: 30,
-    mass: 1
+    duration: 0.4,
+    ease: [0.43, 0.13, 0.23, 0.96] // Standard ease-out
 };
 
 const PageTransition = ({ children }) => {

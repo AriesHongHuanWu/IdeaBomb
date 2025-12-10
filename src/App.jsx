@@ -23,7 +23,10 @@ function App() {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => {
             setUser(u)
-            setLoading(false)
+            // Ensure loader shows for at least 1.5s
+            setTimeout(() => {
+                setLoading(false)
+            }, 1500)
         })
         return unsubscribe
     }, [])
