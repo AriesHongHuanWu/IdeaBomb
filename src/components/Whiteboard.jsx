@@ -504,26 +504,135 @@ const YouTubeNode = ({ node, onUpdate }) => {
     return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: gap, marginBottom: mb, color: '#FF0000', fontWeight: 'bold', fontSize: fsHead }}><FiYoutube size={icon} /> YouTube Video</div> {videoId ? (<div style={{ flex: 1, borderRadius: rad, overflow: 'hidden', background: 'black', position: 'relative' }}> <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${videoId}`} frameBorder="0" allowFullScreen style={{ pointerEvents: 'auto' }} onPointerDown={e => e.stopPropagation()} /> <button onClick={() => onUpdate(node.id, { videoId: null })} style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiX /></button> </div>) : (<div onPointerDown={e => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10 }}> {validContent ? (<div style={{ textAlign: 'center' }}> <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '0.8rem', maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Suggested: <strong>{validContent.replace('Search:', '')}</strong></p> <Button onClick={() => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(validContent.replace('Search:', ''))}`, '_blank')}>Search YouTube</Button> <Button variant="danger" onClick={() => onUpdate(node.id, { content: '' })} style={{ marginTop: 5, fontSize: '0.7rem', padding: '4px 8px' }}>Clear</Button> </div>) : (<><Input placeholder="Paste YouTube URL..." value={url} onChange={e => setUrl(e.target.value)} /><Button onClick={handleEmbed}>Embed</Button></>)} </div>)} </div>)
 }
 const TodoNode = ({ node, onUpdate }) => {
-    const items = node.items || []; const [newItem, setNewItem] = useState(''); const toggle = (i) => { const n = [...items]; n[i].done = !n[i].done; onUpdate(node.id, { items: n }) }
-    const { rad, p, gap, fsHead, icon, mb, fsBody } = getScale(node.w)
+    const items = node.items || []
+    const [newItem, setNewItem] = useState('')
 
-    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: rad }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: mb }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: gap, color: 'var(--primary)', fontWeight: 'bold', fontSize: fsHead }}>
-                <FiCheckSquare size={icon} />
-                <span>To-Do List</span>
-            </div>
-            {node.label && (
-                <div style={{
-                    background: node.color ? 'rgba(0,0,0,0.1)' : '#e6f7ff',
-                    color: '#0050b3', padding: '2px 8px', borderRadius: 12,
-                    fontSize: '0.75rem', fontWeight: 600, border: '1px solid rgba(0,0,0,0.05)'
-                }}>
-                    {node.label}
+    // Derived state
+    const total = items.length
+    const doneCount = items.filter(i => i.done).length
+    const progress = total === 0 ? 0 : (doneCount / total) * 100
+
+    // Handlers
+    const toggle = (i) => {
+        const n = [...items]; n[i].done = !n[i].done;
+        onUpdate(node.id, { items: n })
+    }
+    const deleteItem = (i) => {
+        onUpdate(node.id, { items: items.filter((_, idx) => idx !== i) })
+    }
+    const addItem = (e) => {
+        e.preventDefault()
+        if (!newItem.trim()) return
+        onUpdate(node.id, { items: [...items, { text: newItem, done: false }] })
+        setNewItem('')
+    }
+    const updateItemText = (i, text) => {
+        const n = [...items]; n[i].text = text;
+        onUpdate(node.id, { items: n })
+    }
+
+    return (
+        <div style={{
+            width: '100%', height: '100%',
+            background: 'white', borderRadius: 16,
+            display: 'flex', flexDirection: 'column',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)'
+        }}>
+            {/* Header with Title and Progress */}
+            <div style={{ padding: '12px 16px', background: '#f8f9fa', borderBottom: '1px solid #eee' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, color: '#333' }}>
+                        <div style={{ padding: 6, background: '#e6f7ff', borderRadius: 8, color: '#1890ff', display: 'flex' }}>
+                            <FiCheckSquare />
+                        </div>
+                        <span>Tasks</span>
+                    </div>
                 </div>
-            )}
+                {/* Progress Bar */}
+                <div style={{ height: 6, width: '100%', background: '#eee', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${progress}%`, background: progress === 100 ? '#52c41a' : '#1890ff', transition: 'width 0.3s ease' }} />
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#999', marginTop: 4, textAlign: 'right' }}>
+                    {doneCount}/{total} completed
+                </div>
+            </div>
+
+            {/* List Body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+                {items.length === 0 && (
+                    <div style={{ padding: 20, textAlign: 'center', color: '#ccc', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                        No tasks yet.<br />Add one below!
+                    </div>
+                )}
+                {items.map((it, i) => (
+                    <div key={i} className="todo-item" style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '8px 16px', borderBottom: '1px solid rgba(0,0,0,0.03)',
+                        transition: 'background 0.2s'
+                    }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#f9f9f9'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                        <div
+                            onClick={() => toggle(i)}
+                            style={{
+                                width: 20, height: 20, borderRadius: 6,
+                                border: it.done ? '2px solid #52c41a' : '2px solid #ddd',
+                                background: it.done ? '#52c41a' : 'transparent',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: 'pointer', flexShrink: 0, transition: '0.2s'
+                            }}
+                        >
+                            {it.done && <FiCheck size={14} color="white" />}
+                        </div>
+                        <input
+                            value={it.text}
+                            onChange={(e) => updateItemText(i, e.target.value)}
+                            onPointerDown={e => e.stopPropagation()}
+                            style={{
+                                flex: 1, border: 'none', background: 'transparent',
+                                outline: 'none', fontSize: '0.95rem',
+                                color: it.done ? '#aaa' : '#333',
+                                textDecoration: it.done ? 'line-through' : 'none',
+                                transition: 'color 0.2s'
+                            }}
+                        />
+                        <button
+                            onClick={() => deleteItem(i)}
+                            className="delete-btn"
+                            style={{
+                                border: 'none', background: 'transparent',
+                                color: '#ff4d4f', cursor: 'pointer', padding: 4,
+                                display: 'flex', opacity: 0.5, transition: '0.2s'
+                            }}
+                            onMouseEnter={e => e.target.style.opacity = 1}
+                            onMouseLeave={e => e.target.style.opacity = 0.5}
+                        >
+                            <FiX />
+                        </button>
+                    </div>
+                ))}
+            </div>
+
+            {/* Add Item Footer */}
+            <form onSubmit={addItem} style={{ padding: 12, borderTop: '1px solid #eee', background: 'white' }}>
+                <div style={{ display: 'flex', alignItems: 'center', background: '#f5f5f5', borderRadius: 8, padding: '0 12px' }}>
+                    <FiPlus color="#999" />
+                    <input
+                        value={newItem}
+                        onChange={e => setNewItem(e.target.value)}
+                        placeholder="Add a task..."
+                        onPointerDown={e => e.stopPropagation()}
+                        style={{
+                            flex: 1, padding: '10px 8px', border: 'none',
+                            background: 'transparent', outline: 'none', fontSize: '0.9rem'
+                        }}
+                    />
+                </div>
+            </form>
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}> {items.length === 0 && <div style={{ textAlign: 'center', color: '#ccc', marginTop: 20, fontStyle: 'italic' }}>No tasks yet</div>} {items.map((it, i) => (<motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.6)', padding: '8px 12px', borderRadius: 8 }}> <input type="checkbox" checked={it.done} onChange={() => toggle(i)} onPointerDown={e => e.stopPropagation()} style={{ accentColor: 'var(--primary)', width: 16, height: 16, cursor: 'pointer' }} /> <span style={{ flex: 1, textDecoration: it.done ? 'line-through' : 'none', color: it.done ? '#aaa' : '#333' }}>{it.text}</span> <FiX onClick={() => onUpdate(node.id, { items: items.filter((_, idx) => idx !== i) })} style={{ cursor: 'pointer', color: '#ff6b6b' }} /> </motion.div>))} </div> <form onSubmit={e => { e.preventDefault(); if (newItem) onUpdate(node.id, { items: [...items, { text: newItem, done: false }] }); setNewItem('') }} style={{ display: 'flex', gap: 5, marginTop: 10 }}> <Input value={newItem} onChange={e => setNewItem(e.target.value)} placeholder="Add new task..." onPointerDown={e => e.stopPropagation()} /> <Button type="submit" style={{ width: 40, padding: 0 }}><FiPlus /></Button> </form> </div>)
+    )
 }
 const CalendarNode = ({ node, onUpdate }) => {
     const events = node.events || {};
