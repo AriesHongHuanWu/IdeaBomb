@@ -444,7 +444,7 @@ export default function BoardPage({ user }) {
                 nodeCache[newId] = { id: newId, x, y, w, h }
 
                 batch.set(doc(db, 'boards', boardId, 'nodes', newId), {
-                    id: newId, type, content, page: activePage, x, y, items: [], events: {}, src: '', videoId: '', ...extra,
+                    id: newId, type: getYTId(content) ? 'YouTube' : type, content, page: activePage, x, y, items: [], events: {}, src: type === 'Embed' ? content : '', videoId: getYTId(content) || '', ...extra,
                     createdAt: new Date().toISOString(), createdBy: user.uid,
                     aiStatus: 'suggested'
                 })
