@@ -117,15 +117,41 @@ export default function BoardPage({ user }) {
         return unsub
     }, [boardId, hasAccess])
 
-    // --- Cursors ---
+    // --- Cursors (with Stale Removal) ---
+    const [rawCursors, setRawCursors] = useState({})
     useEffect(() => {
         if (!boardId || !hasAccess) return
         const unsub = onSnapshot(collection(db, 'boards', boardId, 'cursors'), (snapshot) => {
             const c = {}; snapshot.docs.forEach(d => { if (d.id !== user.uid) c[d.id] = d.data() })
-            setCursors(c)
+            setRawCursors(c)
         })
         return unsub
     }, [boardId, hasAccess, user])
+
+    // Prune cursors locally every 5s
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const now = Date.now()
+            const valid = {}
+            let changed = false
+            Object.entries(rawCursors).forEach(([uid, data]) => {
+                const lastActive = data.lastActive ? new Date(data.lastActive).getTime() : 0
+                if (now - lastActive < 60000) { // 60s timeout
+                    valid[uid] = data
+                } else {
+                    changed = true
+                }
+            })
+            // If we found stale cursors, we update the visible cursors
+            // Note: strict equality check or just setCursors(valid) if keys differ
+            const currentKeys = Object.keys(cursors).sort().join(',')
+            const newKeys = Object.keys(valid).sort().join(',')
+            if (currentKeys !== newKeys || changed) {
+                setCursors(valid)
+            }
+        }, 5000)
+        return () => clearInterval(interval)
+    }, [rawCursors])
 
     // Stable User Color
     const userColor = useRef('#' + Math.floor(Math.random() * 16777215).toString(16))
