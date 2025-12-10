@@ -911,6 +911,8 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         { dir: 'w', top: '50%', left: -6, marginTop: -6, cursor: 'ew-resize' }
     ]
 
+    const isSuggested = node.aiStatus === 'suggested'
+
     return (
         <motion.div
             onPointerDown={handleDragStart}
@@ -1004,6 +1006,9 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
 
 export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge, cursors, onCursorMove, onAIRequest, onSelectionChange }) {
     const [scale, setScale] = useState(1); const [offset, setOffset] = useState({ x: 0, y: 0 })
+    const [canvasSize, setCanvasSize] = useState({ w: 3000, h: 2000 })
+    const [showCanvasSetup, setShowCanvasSetup] = useState(false)
+
     const [selectedIds, setSelectedIds] = useState([])
 
     useEffect(() => {
@@ -1470,17 +1475,32 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                 <ToolBtn icon={<FiTarget />} label="Magnet" active={magnetMode} onClick={() => setMagnetMode(!magnetMode)} />
                 <ToolBtn icon={<FiGrid />} label="Toolbox" active={toolboxOpen} onClick={() => setToolboxOpen(!toolboxOpen)} />
                 <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <label style={{ fontSize: '0.6rem', color: '#999', fontWeight: 'bold' }}>CANVAS SIZE</label>
-                    <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-                        <input type="number" value={canvasSize.w} onChange={e => setCanvasSize(p => ({ ...p, w: parseInt(e.target.value) }))} style={{ width: 60, padding: 4, borderRadius: 4, border: '1px solid #ccc', fontSize: '0.8rem' }} />
-                        <span style={{ fontSize: '0.8rem', color: '#999' }}>x</span>
-                        <input type="number" value={canvasSize.h} onChange={e => setCanvasSize(p => ({ ...p, h: parseInt(e.target.value) }))} style={{ width: 60, padding: 4, borderRadius: 4, border: '1px solid #ccc', fontSize: '0.8rem' }} />
-                    </div>
-                </div>
+                <ToolBtn icon={<FiMaximize2 />} label="Canvas Size" onClick={() => setShowCanvasSetup(true)} />
                 <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
-                <ToolBtn icon={<FiMaximize2 />} label="Auto Arrange" onClick={autoArrange} />
+                <ToolBtn icon={<FiLayout />} label="Auto Arrange" onClick={autoArrange} />
             </motion.div>
+
+            {/* Canvas Size Modal */}
+            <AnimatePresence>
+                {showCanvasSetup && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowCanvasSetup(false)}>
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: 'white', padding: 24, borderRadius: 20, width: 320 }} onClick={e => e.stopPropagation()}>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: 15, display: 'flex', alignItems: 'center', gap: 10 }}><FiMaximize2 /> Canvas Size</div>
+                            <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: 4 }}>Width (px)</div>
+                                    <input type="number" value={canvasSize.w} onChange={e => setCanvasSize(p => ({ ...p, w: parseInt(e.target.value) || 3000 }))} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd', outline: 'none', fontSize: '1rem' }} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: 4 }}>Height (px)</div>
+                                    <input type="number" value={canvasSize.h} onChange={e => setCanvasSize(p => ({ ...p, h: parseInt(e.target.value) || 2000 }))} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd', outline: 'none', fontSize: '1rem' }} />
+                                </div>
+                            </div>
+                            <button onClick={() => setShowCanvasSetup(false)} style={{ width: '100%', background: '#007bff', color: 'white', border: 'none', padding: 12, borderRadius: 12, fontWeight: 'bold', cursor: 'pointer' }}>Done</button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             {connectMode && <div style={{ position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', background: '#007bff', color: 'white', padding: '10px 20px', borderRadius: 20, fontWeight: 'bold' }}>Select two nodes to connect</div>}
 
             {/* --- Embed Modal --- */}
