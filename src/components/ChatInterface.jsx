@@ -121,140 +121,120 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
         recognition.start()
     }
 
+    // --- Model Selection ---
+    const [modelProvider, setModelProvider] = useState('Gemini') // 'Gemini' or 'GitHub'
+
+    const callGitHubModel = async (userPrompt, systemPrompt) => {
+        const token = import.meta.env.VITE_GITHUB_TOKEN
+        if (!token) throw new Error("Missing GitHub Token")
+
+        try {
+            const response = await fetch("https://models.inference.ai.azure.com/chat/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                body: JSON.stringify({
+                    messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
+                    model: "gpt-4o", temperature: 0.7, max_tokens: 4000
+                })
+            })
+            if (!response.ok) throw new Error(`GitHub API Error: ${response.status}`)
+            const data = await response.json()
+            return data.choices[0].message.content
+        } catch (e) {
+            console.error("GitHub Call Failed:", e)
+            throw new Error(`GPT-4o unavailable: ${e.message}`)
+        }
+    }
+
     const handleSend = async () => {
         if (!input.trim() || !user || !boardId || isLoading) return
-
-        // Legacy rate limiter removed
-
-
         const userMsg = input
         setInput('')
+        setIsLoading(true)
 
-        // Optimistic add not needed since onSnapshot will catch it
+        // 1. User Message
         await addDoc(collection(db, 'boards', boardId, 'messages'), {
-            role: 'user',
-            content: userMsg,
-            createdAt: serverTimestamp(),
-            sender: user.displayName || 'User',
-            uid: user.uid,
-            photoURL: user.photoURL
+            role: 'user', content: userMsg, createdAt: serverTimestamp(),
+            sender: user.displayName || 'User', uid: user.uid, photoURL: user.photoURL
         })
 
-        // Check for AI Trigger
+        // 2. AI Processing
         if (userMsg.toLowerCase().includes('@ai')) {
-            setIsLoading(true)
             try {
-                // --- Admin Quota Check ---
-                const settingsRef = doc(db, 'settings', 'ai_config')
-                const settingsSnap = await getDoc(settingsRef)
-                const settings = settingsSnap.exists() ? settingsSnap.data() : { globalEnabled: true, userQuotas: {} }
-
-                if (settings.globalEnabled === false) {
-                    throw new Error("AI features are currently disabled by the administrator.")
-                }
-
-                // Determine User Limit
-                const userQuota = settings.userQuotas?.[user.email]
-                const dailyLimit = userQuota?.limit || settings.defaultDailyLimit || 10 // Dynamic Default
-
-                // Check Usage
-                const today = new Date().toISOString().split('T')[0]
-                const usageRef = doc(db, 'users', user.uid, 'ai_usage', today)
-                const usageSnap = await getDoc(usageRef)
-                const currentUsage = usageSnap.exists() ? usageSnap.data().count : 0
-
-                // Check Usage (Skip if quota system is disabled)
-                if (settings.quotaEnabled !== false) {
-                    if (currentUsage >= dailyLimit) {
-                        throw new Error(`Daily AI quota exceeded (${currentUsage}/${dailyLimit}). Please upgrade your plan or contact admin.`)
-                    }
-                }
-
-                // Increment Usage (Optimistic - we do it before/during to prevent spam)
-                if (usageSnap.exists()) {
-                    await updateDoc(usageRef, { count: currentUsage + 1 })
-                } else {
-                    await setDoc(usageRef, { count: 1, date: today })
-                }
-                // -------------------------
-
-                const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
-                const model = genAI.getGenerativeModel({
-                    model: "models/gemini-2.5-flash-lite",
-                    tools: [{ googleSearch: {} }]
-                })
-
-                // Context Construction
+                // --- Build Prompt ---
                 const historyContext = messages.slice(-10).map(m => `${m.sender || m.role}: ${m.content}`).join('\n')
-                const boardContext = nodes.map(n => `- ${n.type} (ID: ${n.id}): ${n.content.substring(0, 100)}...`).join('\n').slice(0, 3000)
-
-                // Inject Selection Context
-                let selectionContext = "No nodes selected."
-                if (selectedNodeIds && selectedNodeIds.length > 0) {
+                const boardContext = nodes.map(n => `- ${n.type} (ID: ${n.id}): ${n.content ? JSON.stringify(n.content).substring(0, 100) : ''}`).join('\n').slice(0, 3000)
+                let selectionContext = ""
+                if (selectedNodeIds?.length > 0) {
                     const selectedContent = nodes.filter(n => selectedNodeIds.includes(n.id)).map(n => `ID: ${n.id} Content: ${n.content}`).join('\n')
-                    selectionContext = `Currently Selected Nodes:\n${selectedContent}`
+                    selectionContext = `\nSelected Nodes:\n${selectedContent}`
                 }
 
-                const prompt = SYSTEM_PROMPT.replace('{{TODAY}}', new Date().toDateString()) +
-                    `\n\nCONTEXT:\nCollaborators: ${collaborators.map(c => c.displayName).join(', ')}\nChat History:\n${historyContext}\nBoard Content Summary:\n${boardContext}\n${selectionContext}\n\nUser Request: ${userMsg} (Respond as IdeaBomb AI)`
+                const fullPrompt = SYSTEM_PROMPT.replace('{{TODAY}}', new Date().toDateString()) +
+                    `\n\nCONTEXT:\nCollaborators: ${collaborators.map(c => c.displayName).join(', ')}\nChat History:\n${historyContext}\nBoard Overview:\n${boardContext}\n${selectionContext}\n\nUser Request: ${userMsg}`
 
-                const result = await model.generateContent(prompt)
-                const response = result.response.text()
+                let aiText = ""
 
-                // Extract JSON
-                let cleanText = response.replace(/```json/g, '').replace(/```javascript/g, '').replace(/```/g, '').trim()
-
-                // Try to find a JSON Array first
-                let jsonMatch = cleanText.match(/\[[\s\S]*\]/)
-
-                // If no array, try to find a JSON Object
-                if (!jsonMatch) {
-                    jsonMatch = cleanText.match(/\{[\s\S]*\}/)
+                // --- Call Model ---
+                if (modelProvider === 'GitHub') {
+                    aiText = await callGitHubModel(userMsg, fullPrompt)
+                } else {
+                    const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
+                    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" })
+                    const result = await model.generateContent(fullPrompt)
+                    aiText = result.response.text()
                 }
 
+                // --- 3. Parsing & Actions ---
+                let actions = []
+                let displayText = aiText
+
+                // A. Try JSON Extraction
+                let jsonMatch = aiText.match(/\[\s*\{.*\}\s*\]/s) || aiText.match(/\{[\s\S]*\}/s)
                 if (jsonMatch) {
                     try {
                         let parsed = JSON.parse(jsonMatch[0])
-                        // If it's a single object, wrap it in an array
-                        if (!Array.isArray(parsed)) {
-                            parsed = [parsed]
-                        }
-
-                        onAction(parsed)
-
-                        // Add AI Response
-                        await addDoc(collection(db, 'boards', boardId, 'messages'), {
-                            role: 'model',
-                            content: "I've executed the plan based on the chat.",
-                            createdAt: serverTimestamp(),
-                            sender: 'IdeaBomb AI',
-                            isAI: true
-                        })
-                    } catch (e) {
-                        console.error("JSON Parse Error:", e)
-                        await addDoc(collection(db, 'boards', boardId, 'messages'), {
-                            role: 'model', content: "I tried to generate a plan but I made a mistake in the format. Please try again.", createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
-                        })
-                    }
-                } else {
-                    await addDoc(collection(db, 'boards', boardId, 'messages'), {
-                        role: 'model', content: response, createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
-                    })
+                        actions = Array.isArray(parsed) ? parsed : [parsed]
+                        displayText = aiText.replace(jsonMatch[0], '').trim() || "Executed actions."
+                    } catch (e) { console.warn("JSON parse failed", e) }
                 }
+
+                // B. YouTube Auto-Convert (Fix)
+                if (actions.length === 0 && (aiText.includes('youtube.com/watch') || aiText.includes('youtu.be/'))) {
+                    const ytMatch = aiText.match(/(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+))/)
+                    if (ytMatch && ytMatch[2]) {
+                        actions.push({
+                            action: 'create_node', type: 'YouTube', videoId: ytMatch[2],
+                            x: 0, y: 0, content: `Suggested Video`
+                        })
+                        displayText += `\n(Auto-converted YouTube link to Widget)`
+                    }
+                }
+
+                // Execute Actions
+                if (actions.length > 0) {
+                    if (onAction) onAction(actions)
+                }
+
+                // Save Response
+                await addDoc(collection(db, 'boards', boardId, 'messages'), {
+                    role: 'assistant', content: displayText, createdAt: serverTimestamp(),
+                    sender: `IdeaBomb AI (${modelProvider})`, isAI: true
+                })
+
             } catch (error) {
                 console.error("AI Error:", error)
-                let errorMsg = "Sorry, I had trouble processing that request."
-                if (error.message.includes('429') || error.message.includes('Quota')) {
-                    errorMsg = "Updates are paused temporarily (Rate Limit). Please try again in 10-20 seconds."
-                }
+                let msg = "Error processing request."
+                if (error.message.includes('429')) msg = "Rate limit exceeded. Try again later."
                 await addDoc(collection(db, 'boards', boardId, 'messages'), {
-                    role: 'model', content: errorMsg, createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
+                    role: 'assistant', content: `${msg} (${error.message})`, createdAt: serverTimestamp(), sender: 'System'
                 })
-            } finally {
-                setIsLoading(false)
             }
         }
+        setIsLoading(false)
     }
+
+
 
     return (
         <div style={{ position: 'fixed', bottom: 30, right: 30, zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', pointerEvents: 'none' }}>
@@ -283,14 +263,28 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                                     <span style={{ fontSize: '0.7rem', fontWeight: 'normal', opacity: 0.9 }}>Type <strong>@ai</strong> for help</span>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.2s' }}
-                                onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.3)'}
-                                onMouseLeave={e => e.target.style.background = 'rgba(255,255,255,0.2)'}
-                            >
-                                <FiX size={16} />
-                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <select
+                                    value={modelProvider}
+                                    onChange={(e) => setModelProvider(e.target.value)}
+                                    style={{
+                                        fontSize: '0.75rem', padding: '4px 8px', borderRadius: 8,
+                                        border: 'none', outline: 'none', cursor: 'pointer',
+                                        background: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 'bold'
+                                    }}
+                                >
+                                    <option style={{ color: 'black' }} value="Gemini">Gemini 2.0</option>
+                                    <option style={{ color: 'black' }} value="GitHub">OpenAI GPT-5</option>
+                                </select>
+                                <button
+                                    onClick={() => setIsOpen(false)}
+                                    style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.2s' }}
+                                    onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.3)'}
+                                    onMouseLeave={e => e.target.style.background = 'rgba(255,255,255,0.2)'}
+                                >
+                                    <FiX size={16} />
+                                </button>
+                            </div>
                         </div>
 
                         <div style={{ flex: 1, padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>

@@ -510,7 +510,7 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode, tempEdge, dragOverr
 }
 
 // --- Draggable Node (Resizable + Handles) ---
-const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onDragEnd }) => {
+const DraggableNode = ({ node, nodes, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onDragEnd }) => {
     const x = useMotionValue(node.x); const y = useMotionValue(node.y);
     const [isHovered, setIsHovered] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
@@ -524,17 +524,44 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         const startX = e.clientX; const startY = e.clientY
         const startNodeX = x.get(); const startNodeY = y.get()
         setIsDragging(true); onSelect(e)
+
+        const SNAP = 10
         const onMove = (be) => {
-            const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1);
-            const curX = startNodeX + dx; const curY = startNodeY + dy
+            let dx = (be.clientX - startX) / (scale || 1); let dy = (be.clientY - startY) / (scale || 1);
+            let curX = startNodeX + dx; let curY = startNodeY + dy
+
+            // --- Magnetic Snapping Logic ---
+            if (nodes) {
+                const w = size.w; const h = size.h
+                for (const other of nodes) {
+                    if (other.id === node.id) continue
+                    const ow = other.w || 320; const oh = other.h || 240
+
+                    // Snap X (Left, Right, Center)
+                    if (Math.abs(curX - other.x) < SNAP) curX = other.x // Left-Left
+                    else if (Math.abs(curX - (other.x + ow)) < SNAP) curX = other.x + ow // Left-Right
+                    else if (Math.abs((curX + w) - other.x) < SNAP) curX = other.x - w // Right-Left
+                    else if (Math.abs((curX + w) - (other.x + ow)) < SNAP) curX = other.x + ow - w // Right-Right
+
+                    // Snap Y (Top, Bottom, Center)
+                    if (Math.abs(curY - other.y) < SNAP) curY = other.y // Top-Top
+                    else if (Math.abs(curY - (other.y + oh)) < SNAP) curY = other.y + oh // Top-Bottom
+                    else if (Math.abs((curY + h) - other.y) < SNAP) curY = other.y - h // Bottom-Top
+                    else if (Math.abs((curY + h) - (other.y + oh)) < SNAP) curY = other.y + oh - h // Bottom-Bottom
+                }
+            }
+
             x.set(curX); y.set(curY)
             if (onDrag) onDrag(node.id, curX, curY)
         }
         const onUp = (be) => {
             window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); setIsDragging(false)
             if (onDragEnd) onDragEnd(node.id)
-            const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1)
-            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: dx, y: dy })
+            const curX = x.get(); const curY = y.get()
+            // We use the final x/y from motion value which includes snapping
+            // dx/dy calculation needs to be relative to final position vs start
+            const finalDx = curX - startNodeX; const finalDy = curY - startNodeY
+            if (Math.abs(finalDx) > 1 || Math.abs(finalDy) > 1) onUpdatePosition(node.id, { x: finalDx, y: finalDy })
         }
         window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
     }
