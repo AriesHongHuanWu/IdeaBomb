@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { BsStars } from 'react-icons/bs'
-import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw, FiLayout, FiBarChart2, FiSmile, FiStar, FiCircle, FiUser, FiColumns, FiActivity, FiTerminal, FiMessageSquare, FiCheckCircle } from 'react-icons/fi'
+import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw, FiLayout, FiBarChart2, FiSmile, FiStar, FiCircle, FiUser, FiColumns, FiActivity, FiTerminal, FiMessageSquare, FiCheckCircle, FiMagnet } from 'react-icons/fi'
 
 import { useMediaQuery } from '../hooks/useMediaQuery'
 
@@ -143,12 +143,32 @@ const StickerNode = ({ node, onUpdate }) => {
 
 // --- New Widgets (10 Items) ---
 const ProgressNode = ({ node, onUpdate }) => {
+    const r = 60
+    const c = 2 * Math.PI * r
+    const p = node.progress || 0
+    const off = c - (p / 100) * c
     return (
-        <div style={{ width: '100%', height: '100%', padding: 20, background: 'white', borderRadius: 20, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <h4 style={{ margin: '0 0 10px 0', color: '#555' }}>Progress: {node.progress || 0}%</h4>
-            <div style={{ padding: '0 10px' }}>
-                <input type="range" min="0" max="100" value={node.progress || 0} onChange={e => onUpdate(node.id, { progress: parseInt(e.target.value) })} style={{ width: '100%' }} onPointerDown={e => e.stopPropagation()} />
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'white', borderRadius: 24, padding: 10 }}>
+            <div style={{ position: 'relative', width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="140" height="140" style={{ transform: 'rotate(-90deg)' }}>
+                    <circle cx="70" cy="70" r={r} stroke="#f0f0f0" strokeWidth="12" fill="none" />
+                    <circle cx="70" cy="70" r={r} stroke="url(#progress-gradient)" strokeWidth="12" fill="none"
+                        strokeDasharray={c} strokeDashoffset={off} style={{ transition: 'stroke-dashoffset 0.5s ease' }} strokeLinecap="round" />
+                    <defs>
+                        <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#4facfe" />
+                            <stop offset="100%" stopColor="#00f2fe" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div style={{ position: 'absolute', fontSize: '2rem', fontWeight: 'bold', color: '#333' }}>{p}%</div>
             </div>
+            <input
+                type="range" min="0" max="100" value={p}
+                onChange={e => onUpdate(node.id, { progress: parseInt(e.target.value) })}
+                style={{ width: '80%', marginTop: 15, accentColor: '#00f2fe', cursor: 'grab' }}
+                onPointerDown={e => e.stopPropagation()}
+            />
         </div>
     )
 }
@@ -247,11 +267,57 @@ const EmojiNode = ({ node, onUpdate }) => {
 }
 
 const PomodoroNode = ({ node, onUpdate }) => {
-    // Reusing Timer logic but simplified for 25m
+    const [timeLeft, setTimeLeft] = useState(node.timeLeft || 1500) // 25m
+    const [isActive, setIsActive] = useState(node.isActive || false)
+
+    useEffect(() => {
+        let interval = null
+        if (isActive && timeLeft > 0) {
+            interval = setInterval(() => {
+                setTimeLeft(t => {
+                    const newT = t - 1
+                    // Only update DB every 5s to save writes, but update local state every 1s
+                    if (newT % 5 === 0) onUpdate(node.id, { timeLeft: newT })
+                    return newT
+                })
+            }, 1000)
+        } else if (timeLeft === 0) {
+            setIsActive(false)
+            onUpdate(node.id, { isActive: false, timeLeft: 0 })
+        }
+        return () => clearInterval(interval)
+    }, [isActive, timeLeft, onUpdate, node.id])
+
+    const toggle = () => {
+        const next = !isActive
+        setIsActive(next)
+        onUpdate(node.id, { isActive: next, timeLeft })
+    }
+
+    const reset = () => {
+        setIsActive(false)
+        setTimeLeft(1500)
+        onUpdate(node.id, { isActive: false, timeLeft: 1500 })
+    }
+
+    const fmt = (s) => {
+        const m = Math.floor(s / 60)
+        const sec = s % 60
+        return `${m}:${sec.toString().padStart(2, '0')}`
+    }
+
     return (
-        <div style={{ width: '100%', height: '100%', background: '#e74c3c', color: 'white', borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>25:00</div>
-            <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>FOCUS</div>
+        <div style={{ width: '100%', height: '100%', background: '#fff', borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '8px solid #ff6b6b', boxShadow: '0 10px 30px rgba(255, 107, 107, 0.3)', position: 'relative' }}>
+            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#ff6b6b', fontFamily: 'monospace' }}>{fmt(timeLeft)}</div>
+            <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#ff8787', letterSpacing: 1 }}>POMODORO</div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                <button onClick={toggle} onPointerDown={e => e.stopPropagation()} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', background: isActive ? '#f1f3f5' : '#ff6b6b', color: isActive ? '#ff6b6b' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                    {isActive ? <FiPause size={16} /> : <FiPlay size={16} style={{ marginLeft: 2 }} />}
+                </button>
+                <button onClick={reset} onPointerDown={e => e.stopPropagation()} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', background: '#f1f3f5', color: '#adb5bd', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+                    <FiRotateCcw size={16} />
+                </button>
+            </div>
         </div>
     )
 }
@@ -314,31 +380,52 @@ const DiceNode = ({ node, onUpdate }) => {
 
 const PollNode = ({ node, onUpdate }) => {
     const options = node.options || [{ id: 1, text: 'Yes', votes: 0 }, { id: 2, text: 'No', votes: 0 }]
+    const totalVotes = options.reduce((acc, curr) => acc + curr.votes, 0) || 1
 
     const vote = (optId) => {
+        const hasVoted = localStorage.getItem(`poll_${node.id}`)
+        if (hasVoted) {
+            alert("You have already voted!")
+            return
+        }
+        localStorage.setItem(`poll_${node.id}`, 'true')
         const newOpts = options.map(o => o.id === optId ? { ...o, votes: o.votes + 1 } : o)
         onUpdate(node.id, { options: newOpts })
     }
 
     const addOption = () => {
-        const newOpts = [...options, { id: Date.now(), text: `Option ${options.length + 1}`, votes: 0 }]
-        onUpdate(node.id, { options: newOpts })
+        const text = prompt("Enter option text:")
+        if (text) {
+            const newOpts = [...options, { id: Date.now(), text, votes: 0 }]
+            onUpdate(node.id, { options: newOpts })
+        }
     }
 
     return (
-        <div style={{ padding: 15, background: 'white', borderRadius: 20, height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: 15, color: '#333', display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.1rem' }}><FiBarChart2 color="#007bff" /> Poll</div>
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {options.map(opt => (
-                    <div key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }} onPointerDown={e => e.stopPropagation()}>
-                        <button onClick={() => vote(opt.id)} style={{ flex: 1, padding: '10px 14px', borderRadius: 12, border: '1px solid #eee', background: '#f9f9f9', textAlign: 'left', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'} onMouseLeave={e => e.currentTarget.style.background = '#f9f9f9'}>
-                            <span style={{ fontWeight: 500 }}>{opt.text}</span>
-                            <span style={{ fontWeight: 'bold', color: 'white', background: '#007bff', padding: '2px 8px', borderRadius: 10, fontSize: '0.8rem' }}>{opt.votes}</span>
-                        </button>
-                    </div>
-                ))}
-                <button onClick={addOption} style={{ marginTop: 5, padding: 8, border: '1px dashed #ccc', background: 'transparent', borderRadius: 12, color: '#888', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }} onPointerDown={e => e.stopPropagation()}>+ Add Option</button>
+        <div style={{ padding: 20, background: 'white', borderRadius: 20, height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: 15, color: '#333', display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.2rem' }}><FiBarChart2 color="#007bff" /> Poll</div>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {options.map(opt => {
+                    const percent = Math.round((opt.votes / totalVotes) * 100)
+                    const isWinner = opt.votes === Math.max(...options.map(o => o.votes)) && opt.votes > 0
+                    return (
+                        <div key={opt.id} onClick={() => vote(opt.id)} onPointerDown={e => e.stopPropagation()} style={{ cursor: 'pointer', position: 'relative' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontWeight: 500, fontSize: '0.9rem', color: '#444' }}>
+                                <span>{opt.text} {isWinner && '👑'}</span>
+                                <span>{opt.votes}</span>
+                            </div>
+                            <div style={{ height: 8, width: '100%', background: '#f1f3f5', borderRadius: 4, overflow: 'hidden' }}>
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${percent > 0 ? (opt.votes / Math.max(1, totalVotes)) * 100 : 0}%` }}
+                                    style={{ height: '100%', background: isWinner ? '#ffd700' : '#4facfe', borderRadius: 4 }}
+                                />
+                            </div>
+                        </div>
+                    )
+                })}
             </div>
+            <button onClick={addOption} style={{ marginTop: 15, width: '100%', padding: '10px', border: '1px dashed #ccc', background: '#fafafa', borderRadius: 12, color: '#666', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, transition: '0.2s' }} onPointerDown={e => e.stopPropagation()}>+ Add Option</button>
         </div>
     )
 }
@@ -647,7 +734,7 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode, tempEdge, dragOverr
 }
 
 // --- Draggable Node (Resizable + Handles) ---
-const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onDragEnd }) => {
+const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onDragEnd, magnetMode }) => {
     const x = useMotionValue(node.x); const y = useMotionValue(node.y);
     const [isHovered, setIsHovered] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
@@ -656,14 +743,25 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
     useEffect(() => { setSize({ w: node.w || 320, h: node.h || 240 }) }, [node.w, node.h]) // Sync external updates
 
     const handleDragStart = (e) => {
+        if (onConnectStart || e.button !== 0 || e.target.closest('button') || e.target.closest('input') || e.target.closest('.no-drag') || e.target.closest('.drag-handle') === false && e.target.closest('.glass-panel') === null && !e.target.classList.contains('glass-panel')) return
+        // Note: The original drag logic was loose. We keep existing checks but ensured class logic.
+        // Actually, the original line was:
         if (onConnectStart || e.button !== 0 || e.target.closest('button') || e.target.closest('input') || e.target.closest('.no-drag') || e.target.classList.contains('handle')) return
+
         e.stopPropagation();
         const startX = e.clientX; const startY = e.clientY
         const startNodeX = x.get(); const startNodeY = y.get()
         setIsDragging(true); onSelect(e)
         const onMove = (be) => {
             const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1);
-            const curX = startNodeX + dx; const curY = startNodeY + dy
+            let curX = startNodeX + dx; let curY = startNodeY + dy
+
+            // Magnet Snap
+            if (magnetMode) {
+                curX = Math.round(curX / 50) * 50
+                curY = Math.round(curY / 50) * 50
+            }
+
             x.set(curX); y.set(curY)
             if (onDrag) onDrag(node.id, curX, curY)
         }
@@ -787,6 +885,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     const [isDraggingCanvas, setIsDraggingCanvas] = useState(false)
     const [toolboxTab, setToolboxTab] = useState('General')
     const [connectMode, setConnectMode] = useState(false)
+    const [magnetMode, setMagnetMode] = useState(false)
     const [connectStartId, setConnectStartId] = useState(null)
     const [selectionBox, setSelectionBox] = useState(null)
     const [dragOverrides, setDragOverrides] = useState({}) // { [id]: {x, y} }
@@ -1047,7 +1146,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
                 <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} tempEdge={tempEdge} dragOverrides={dragOverrides} />
                 {nodes.map(node => (
-                    <DraggableNode key={node.id} node={node} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id}
+                    <DraggableNode key={node.id} magnetMode={magnetMode} node={node} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id}
                         onDrag={(e, data) => {
                             if (magnetMode) {
                                 const SNAP_DIST = 10
@@ -1218,7 +1317,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                 <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => onAddNode('Calendar')} />
                 <ToolBtn icon={<FiImage />} label="Image" onClick={() => onAddNode('Image')} />
                 <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
-                <ToolBtn icon={<FiLink />} label="Connect" active={connectMode} onClick={() => { setConnectMode(!connectMode); setConnectStartId(null) }} />
+                <ToolBtn icon={<FiMagnet />} label="Magnet" active={magnetMode} onClick={() => setMagnetMode(!magnetMode)} />
                 <ToolBtn icon={<FiGrid />} label="Toolbox" active={toolboxOpen} onClick={() => setToolboxOpen(!toolboxOpen)} />
                 <ToolBtn icon={<FiMaximize2 />} label="Auto Arrange" onClick={autoArrange} />
             </motion.div>
