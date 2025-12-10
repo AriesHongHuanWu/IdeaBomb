@@ -1041,7 +1041,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             )}
 
             <div className="glass-panel" style={{
-                width: '100%', minHeight: '100%', padding: 25, borderRadius: 16, display: 'flex', flexDirection: 'column',
+                width: '100%', height: '100%', padding: 0, borderRadius: 16, display: 'flex', flexDirection: 'column',
                 background: node.color || 'rgba(255,255,255,0.65)',
                 border: isSuggested ? '2px solid #7928ca' : (isSelected ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.4)'),
                 boxShadow: isSelected || isDragging ? '0 15px 40px rgba(0,0,0,0.15)' : '0 10px 30px rgba(0,0,0,0.05)',
@@ -1164,6 +1164,11 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     const [tempEdge, setTempEdge] = useState(null)
 
     const handlePointerMove = (e) => {
+        if (onCursorMove) {
+            const { left, top } = containerRef.current.getBoundingClientRect()
+            onCursorMove({ x: (e.clientX - left - offset.x) / scale, y: (e.clientY - top - offset.y) / scale, uid: 'me', timestamp: Date.now() })
+        }
+
         if (selectionBox) {
             const { left, top } = containerRef.current.getBoundingClientRect()
             const x = (e.clientX - left - offset.x) / scale; const y = (e.clientY - top - offset.y) / scale
@@ -1456,7 +1461,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                             onUpdatePosition={handleNodeUpdatePos} onUpdateData={onUpdateNodeData} onDelete={onDeleteNode} onContextMenu={(e) => handleNodeContextMenu(e, node.id)}
                         />
                     )
-                })}{cursors && Object.values(cursors).map(c => (
+                })}{cursors && Object.values(cursors).filter(c => Date.now() - (c.timestamp || Date.now()) < 60000 || !c.timestamp).map(c => (
                     <div key={c.uid} style={{ position: 'absolute', left: c.x, top: c.y, pointerEvents: 'none', zIndex: 9999, transition: 'all 0.1s linear' }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill={c.color || '#f00'} stroke="white" strokeWidth="2" style={{ transform: 'rotate(-15deg)', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}><path d="M4 4l11 4-5 2 4 8-3 2-4-8-3 4z" /></svg>
                         <div style={{ background: c.color || '#f00', color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', marginTop: 4, whiteSpace: 'nowrap', transform: 'translateX(10px)' }}>{c.displayName || 'User'}</div>
