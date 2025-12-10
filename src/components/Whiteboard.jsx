@@ -7,7 +7,12 @@ import { useMediaQuery } from '../hooks/useMediaQuery'
 
 // Helper for scalable UI elements based on node width
 const getScale = (w, h = 0) => {
-    const s = Math.max((Math.max(w || 320, h || 240)) / 320, 1) // Scale based on max dimension
+    // Use scaling based on the SMALLER relative dimension to ensure content fits.
+    // If width scales 3x but height is 1x, we should keep font small so it fits.
+    // If both scale 3x, then we can grow the font.
+    const sw = (w || 320) / 320
+    const sh = (h || 240) / 240
+    const s = Math.max(Math.min(sw, sh), 1)
     return {
         rad: Math.min(12 * s, 48),
         p: Math.min(16 * s, 64),
