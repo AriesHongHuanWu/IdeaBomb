@@ -1041,9 +1041,9 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
 }
 
 
-export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge, cursors, onCursorMove, onAIRequest, onSelectionChange }) {
+export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge, cursors, onCursorMove, onAIRequest, onSelectionChange, canvasSize = { w: 3000, h: 2000 }, onUpdateCanvasSize }) {
     const [scale, setScale] = useState(1); const [offset, setOffset] = useState({ x: 0, y: 0 })
-    const [canvasSize, setCanvasSize] = useState({ w: 3000, h: 2000 })
+    // Removed local canvasSize state
     const [showCanvasSetup, setShowCanvasSetup] = useState(false)
 
     const [selectedIds, setSelectedIds] = useState([])
@@ -1532,14 +1532,19 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                             <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: 4 }}>Width (px)</div>
-                                    <input type="number" value={canvasSize.w} onChange={e => setCanvasSize(p => ({ ...p, w: parseInt(e.target.value) || 3000 }))} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd', outline: 'none', fontSize: '1rem' }} />
+                                    <input type="number" defaultValue={(canvasSize?.w || 3000)} id="canvas-w-input" style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd', outline: 'none', fontSize: '1rem' }} />
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: 4 }}>Height (px)</div>
-                                    <input type="number" value={canvasSize.h} onChange={e => setCanvasSize(p => ({ ...p, h: parseInt(e.target.value) || 2000 }))} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd', outline: 'none', fontSize: '1rem' }} />
+                                    <input type="number" defaultValue={(canvasSize?.h || 2000)} id="canvas-h-input" style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd', outline: 'none', fontSize: '1rem' }} />
                                 </div>
                             </div>
-                            <button onClick={() => setShowCanvasSetup(false)} style={{ width: '100%', background: '#007bff', color: 'white', border: 'none', padding: 12, borderRadius: 12, fontWeight: 'bold', cursor: 'pointer' }}>Done</button>
+                            <button onClick={() => {
+                                const w = parseInt(document.getElementById('canvas-w-input').value) || 3000
+                                const h = parseInt(document.getElementById('canvas-h-input').value) || 2000
+                                if (onUpdateCanvasSize) onUpdateCanvasSize(w, h)
+                                setShowCanvasSetup(false)
+                            }} style={{ width: '100%', background: '#007bff', color: 'white', border: 'none', padding: 12, borderRadius: 12, fontWeight: 'bold', cursor: 'pointer' }}>Done</button>
                         </motion.div>
                     </motion.div>
                 )}

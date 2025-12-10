@@ -14,77 +14,7 @@ import { useMediaQuery } from '../hooks/useMediaQuery'
 
 export default function BoardPage({ user }) {
     const { boardId } = useParams()
-    const navigate = useNavigate()
-    const [nodes, setNodes] = useState([])
-    const [edges, setEdges] = useState([])
-    const [boardTitle, setBoardTitle] = useState('Loading...')
-    const [collaborators, setCollaborators] = useState([])
-    const [isShareOpen, setIsShareOpen] = useState(false)
-    const [hasAccess, setHasAccess] = useState(true)
-    const [activePage, setActivePage] = useState('Page 1')
-    const [pages, setPages] = useState(['Page 1'])
-    const [lastAIAction, setLastAIAction] = useState(null)
-    const [clipboard, setClipboard] = useState(null)
-    const [cursors, setCursors] = useState({})
-    const [isIncognito, setIsIncognito] = useState(false)
-    const [confirmModal, setConfirmModal] = useState(null) // { title, message, onConfirm }
-    const throttleRef = useRef(Date.now())
-    const isMobile = useMediaQuery('(max-width: 768px)')
-
-    // --- Thumbnail Generator ---
-    const updateThumbnail = async () => {
-        if (!nodes.length || !hasAccess) return
-
-        // Simple SVG serializer
-        const pageNodes = nodes.filter(n => (n.page || 'Page 1') === 'Page 1') // Only thumbnail page 1
-        if (pageNodes.length === 0) return
-
-        // Calculate bounding box
-        const nodesX = pageNodes.map(n => n.x)
-        const nodesY = pageNodes.map(n => n.y)
-        const nodesR = pageNodes.map(n => n.x + (n.w || 320))
-        const nodesB = pageNodes.map(n => n.y + (n.h || 240))
-
-        const minX = Math.min(...nodesX) - 50 // Add padding
-        const minY = Math.min(...nodesY) - 50
-        const maxX = Math.max(...nodesR) + 50
-        const maxY = Math.max(...nodesB) + 50
-
-        const w = Math.max(maxX - minX, 100)
-        const h = Math.max(maxY - minY, 100)
-
-        // Create simplified SVG string
-        let svgContent = ''
-        pageNodes.forEach(n => {
-            const nx = n.x - minX; const ny = n.y - minY
-            let color = '#f0f0f0'; let stroke = '#ccc'
-            if (n.type === 'Note') { color = '#ffd'; stroke = '#eeb' }
-            else if (n.type === 'Todo') { color = '#e6f7ff'; stroke = '#91d5ff' }
-            else if (n.type === 'Image') { color = '#eee'; stroke = '#ddd' }
-
-            svgContent += `<rect x="${nx}" y="${ny}" width="${n.w || 320}" height="${n.h || 240}" fill="${color}" stroke="${stroke}" rx="8" />`
-            if (n.content && typeof n.content === 'string') {
-                const lines = n.content.replace(/</g, '&lt;').split('\n').slice(0, 5) // Take first 5 lines
-                lines.forEach((line, i) => {
-                    const yOffset = 24 + (i * 16)
-                    const truncated = line.substring(0, 40) // Trucate char count
-                    svgContent += `<text x="${nx + 16}" y="${ny + yOffset}" font-family="Arial, sans-serif" font-size="14" fill="#555">${truncated}</text>`
-                })
-            }
-        })
-
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 ${w} ${h}" style="background:white">${svgContent}</svg>`
-        const dataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`
-
-        await updateDoc(doc(db, 'boards', boardId), { thumbnail: dataUrl })
-    }
-
-    // Auto-save thumbnail every 30s if changes happened (simple debounced version)
-    useEffect(() => {
-        const i = setInterval(updateThumbnail, 30000)
-        return () => clearInterval(i)
-    }, [nodes])
-
+    const [pageConfigs, setPageConfigs] = useState({})
 
     // --- Data Sync ---
     useEffect(() => {
@@ -95,10 +25,25 @@ export default function BoardPage({ user }) {
                 setBoardTitle(data.title); const isOwner = data.createdBy === user.uid;
                 const isAllowed = data.allowedEmails?.some(e => e.toLowerCase() === (user.email || '').toLowerCase()) || isOwner;
                 if (data.allowedEmails && !isAllowed) { setHasAccess(false) } else { setHasAccess(true) }
+                if (data.pageConfigs) setPageConfigs(data.pageConfigs)
             } else { setBoardTitle('Board Not Found') }
         }, (error) => { if (error.code === 'permission-denied') setHasAccess(false) })
         return unsub
     }, [boardId, user])
+
+    const updateCanvasSize = async (w, h) => {
+        if (!boardId || !hasAccess) return
+        try {
+            // Using dot notation for specific map field update
+            // Note: If page name has dots, this might be tricky, but default names are "Page X"
+            await updateDoc(doc(db, 'boards', boardId), {
+                [`pageConfigs.${activePage}`]: { w, h }
+            })
+        } catch (e) {
+            console.error("Error updating canvas size:", e)
+        }
+    }
+
 
     useEffect(() => {
         if (!boardId || !hasAccess) return
@@ -721,11 +666,11 @@ export default function BoardPage({ user }) {
 
             <div style={{ width: '100%', height: '100%' }}>
                 <Whiteboard
-                    cursors={Object.fromEntries(Object.entries(cursors).filter(([_, c]) => (c.page || 'Page 1') === activePage && (!c.lastActive || (Date.now() - new Date(c.lastActive).getTime() < 60000))))}
-                    onCursorMove={handleCursorMove}
-                    nodes={displayNodes}
-                    edges={displayEdges}
+                    nodes={nodes.filter(n => (n.page || 'Page 1') === activePage)}
+                    edges={edges.filter(e => (e.page || 'Page 1') === activePage)}
                     pages={pages}
+                    canvasSize={pageConfigs[activePage] || { w: 3000, h: 2000 }}
+                    onUpdateCanvasSize={updateCanvasSize}
                     onAddNode={addNode}
                     onUpdateNodePosition={updateNodePosition}
                     onUpdateNodeData={updateNodeData}
@@ -735,9 +680,12 @@ export default function BoardPage({ user }) {
                     onCopy={copyNodes}
                     onPaste={pasteNodes}
                     onMoveToPage={batchMoveToPage}
-                    onAIRequest={handleAIRequest}
                     onAddEdge={addEdge}
-                    onDeleteEdge={(id) => { const batch = writeBatch(db); batch.delete(doc(db, 'boards', boardId, 'edges', id)); batch.commit() }}
+                    onDeleteEdge={async (id) => { await deleteDoc(doc(db, 'boards', boardId, 'edges', id)) }}
+                    cursors={Object.values(cursors).filter(c => c.page === activePage)}
+                    onCursorMove={handleCursorMove}
+                    onAIRequest={handleAIRequest}
+                    onSelectionChange={() => { }}
                 />
             </div>
             <ChatInterface boardId={boardId} user={user} onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />
