@@ -422,7 +422,7 @@ const NotifyNode = ({ node, onUpdate }) => {
     )
 }
 
-const LabelNode = ({ node, onUpdate, isSelected }) => {
+const LabelNode = ({ node, onUpdate, isSelected, isDragging }) => {
     const [hover, setHover] = useState(false)
     const isTransparent = node.color === 'transparent'
     const fontSize = node.fontSize || 32 // Default 2.5rem approx
@@ -442,7 +442,7 @@ const LabelNode = ({ node, onUpdate, isSelected }) => {
             onMouseLeave={() => setHover(false)}
         >
             {/* Controls (visible on selection) */}
-            {isSelected && (
+            {isSelected && !isDragging && (
                 <div style={{
                     position: 'absolute', bottom: -40, left: '50%', transform: 'translateX(-50%)',
                     background: 'white', padding: 4, borderRadius: 8,
@@ -952,7 +952,7 @@ const LinkNode = ({ node, onUpdate }) => {
     )
 }
 
-const NoteNode = ({ node, onUpdate }) => {
+const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
     const [hover, setHover] = useState(false)
     const isHandwriting = node.font !== 'sans'
     const isTransparent = node.color === 'transparent'
@@ -976,7 +976,7 @@ const NoteNode = ({ node, onUpdate }) => {
                 backdropFilter: isTransparent ? 'blur(10px)' : 'none',
                 borderRadius: 12,
                 boxShadow: isTransparent ? 'none' : '0 4px 15px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.05)',
-                border: isTransparent ? '1px solid rgba(255,255,255,0.4)' : '1px solid rgba(0,0,0,0.05)',
+                border: isTransparent ? (isSelected ? '1px solid #ccc' : '1px solid rgba(255,255,255,0.4)') : (isSelected ? '2px solid #333' : '1px solid rgba(0,0,0,0.05)'),
                 transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
                 overflow: 'hidden'
             }}
@@ -995,13 +995,13 @@ const NoteNode = ({ node, onUpdate }) => {
                     <FiType size={14} /> <span>NOTE</span>
                 </div>
 
-                {/* Controls - Visible on Hover */}
+                {/* Controls - Visible on Selection */}
                 <div style={{
                     display: 'flex', gap: 6,
-                    opacity: hover ? 1 : 0,
-                    transform: hover ? 'translateY(0)' : 'translateY(2px)',
+                    opacity: isSelected && !isDragging ? 1 : 0,
+                    transform: isSelected && !isDragging ? 'translateY(0)' : 'translateY(2px)',
                     transition: 'all 0.2s',
-                    pointerEvents: hover ? 'auto' : 'none'
+                    pointerEvents: isSelected && !isDragging ? 'auto' : 'none'
                 }} onPointerDown={e => e.stopPropagation()}>
                     <button
                         onClick={() => onUpdate(node.id, { font: isHandwriting ? 'sans' : 'hand' })}
@@ -1353,31 +1353,33 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
                 backdropFilter: isDragging ? 'none' : 'blur(24px)', transition: 'box-shadow 0.2s, background 0.2s',
                 overflow: 'hidden'
             }}>
-                {node.type === 'Todo' && <TodoNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Calendar' && <CalendarNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Notify' && <NotifyNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Image' && <ImageNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'YouTube' && <YouTubeNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Link' && <LinkNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Embed' && <EmbedNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Timer' && <TimerNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Label' && <LabelNode node={node} onUpdate={onUpdateData} isSelected={isSelected} />}
-                {node.type === 'Section' && <SectionNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Dice' && <DiceNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Poll' && <PollNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Counter' && <CounterNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Sticker' && <StickerNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Progress' && <ProgressNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Rating' && <RatingNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Shape' && <ShapeNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Avatar' && <AvatarNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Kanban' && <KanbanNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Clock' && <ClockNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Quote' && <QuoteNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Code' && <CodeNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Emoji' && <EmojiNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Pomodoro' && <PomodoroNode node={node} onUpdate={onUpdateData} />}
-                {(!['Todo', 'Calendar', 'Image', 'YouTube', 'Link', 'Embed', 'Timer', 'Label', 'Section', 'Dice', 'Poll', 'Counter', 'Sticker', 'Progress', 'Rating', 'Shape', 'Avatar', 'Kanban', 'Clock', 'Quote', 'Code', 'Emoji', 'Pomodoro'].includes(node.type)) && <NoteNode node={node} onUpdate={onUpdateData} />}
+                {React.Children.map(node.type === 'Todo' ? [<TodoNode key="todo" node={node} onUpdate={onUpdateData} />] :
+                    node.type === 'Calendar' ? [<CalendarNode key="cal" node={node} onUpdate={onUpdateData} />] :
+                        node.type === 'Notify' ? [<NotifyNode key="notify" node={node} onUpdate={onUpdateData} />] :
+                            node.type === 'Image' ? [<ImageNode key="img" node={node} onUpdate={onUpdateData} />] :
+                                node.type === 'YouTube' ? [<YouTubeNode key="yt" node={node} onUpdate={onUpdateData} />] :
+                                    node.type === 'Link' ? [<LinkNode key="link" node={node} onUpdate={onUpdateData} />] :
+                                        node.type === 'Embed' ? [<EmbedNode key="embed" node={node} onUpdate={onUpdateData} />] :
+                                            node.type === 'Timer' ? [<TimerNode key="timer" node={node} onUpdate={onUpdateData} />] :
+                                                node.type === 'Label' ? [<LabelNode key="label" node={node} onUpdate={onUpdateData} />] :
+                                                    node.type === 'Section' ? [<SectionNode key="sect" node={node} onUpdate={onUpdateData} />] :
+                                                        node.type === 'Dice' ? [<DiceNode key="dice" node={node} onUpdate={onUpdateData} />] :
+                                                            node.type === 'Poll' ? [<PollNode key="poll" node={node} onUpdate={onUpdateData} />] :
+                                                                node.type === 'Counter' ? [<CounterNode key="counter" node={node} onUpdate={onUpdateData} />] :
+                                                                    node.type === 'Sticker' ? [<StickerNode key="sticker" node={node} onUpdate={onUpdateData} />] :
+                                                                        node.type === 'Progress' ? [<ProgressNode key="prog" node={node} onUpdate={onUpdateData} />] :
+                                                                            node.type === 'Rating' ? [<RatingNode key="rate" node={node} onUpdate={onUpdateData} />] :
+                                                                                node.type === 'Shape' ? [<ShapeNode key="shape" node={node} onUpdate={onUpdateData} />] :
+                                                                                    node.type === 'Avatar' ? [<AvatarNode key="avatar" node={node} onUpdate={onUpdateData} />] :
+                                                                                        node.type === 'Kanban' ? [<KanbanNode key="kanban" node={node} onUpdate={onUpdateData} />] :
+                                                                                            node.type === 'Clock' ? [<ClockNode key="clock" node={node} onUpdate={onUpdateData} />] :
+                                                                                                node.type === 'Quote' ? [<QuoteNode key="quote" node={node} onUpdate={onUpdateData} />] :
+                                                                                                    node.type === 'Code' ? [<CodeNode key="code" node={node} onUpdate={onUpdateData} />] :
+                                                                                                        node.type === 'Emoji' ? [<EmojiNode key="emoji" node={node} onUpdate={onUpdateData} />] :
+                                                                                                            node.type === 'Pomodoro' ? [<PomodoroNode key="pomo" node={node} onUpdate={onUpdateData} />] :
+                                                                                                                [<NoteNode key="note" node={node} onUpdate={onUpdateData} />],
+                    (child) => React.cloneElement(child, { isSelected, isDragging })
+                )}
             </div>
 
             {/* AI Suggestion Controls */}
