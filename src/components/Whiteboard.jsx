@@ -422,7 +422,7 @@ const NotifyNode = ({ node, onUpdate }) => {
     )
 }
 
-const LabelNode = ({ node, onUpdate }) => {
+const LabelNode = ({ node, onUpdate, isSelected }) => {
     const [hover, setHover] = useState(false)
     const isTransparent = node.color === 'transparent'
     const fontSize = node.fontSize || 32 // Default 2.5rem approx
@@ -434,15 +434,15 @@ const LabelNode = ({ node, onUpdate }) => {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: isTransparent ? 'transparent' : (node.color || 'white'),
                 borderRadius: 8,
-                border: isTransparent ? (hover ? '1px dashed #ccc' : 'none') : '1px solid #eee',
+                border: isTransparent ? ((hover || isSelected) ? '1px dashed #ccc' : 'none') : (isSelected ? '2px solid var(--primary)' : '1px solid #eee'),
                 padding: 10,
                 transition: '0.2s'
             }}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
         >
-            {/* Controls (visible on hover) */}
-            {hover && (
+            {/* Controls (visible on selection) */}
+            {isSelected && (
                 <div style={{
                     position: 'absolute', bottom: -40, left: '50%', transform: 'translateX(-50%)',
                     background: 'white', padding: 4, borderRadius: 8,
@@ -1361,7 +1361,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
                 {node.type === 'Link' && <LinkNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Embed' && <EmbedNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Timer' && <TimerNode node={node} onUpdate={onUpdateData} />}
-                {node.type === 'Label' && <LabelNode node={node} onUpdate={onUpdateData} />}
+                {node.type === 'Label' && <LabelNode node={node} onUpdate={onUpdateData} isSelected={isSelected} />}
                 {node.type === 'Section' && <SectionNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Dice' && <DiceNode node={node} onUpdate={onUpdateData} />}
                 {node.type === 'Poll' && <PollNode node={node} onUpdate={onUpdateData} />}
