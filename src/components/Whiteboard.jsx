@@ -6,8 +6,8 @@ import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGr
 import { useMediaQuery } from '../hooks/useMediaQuery'
 
 // Helper for scalable UI elements based on node width
-const getScale = (w) => {
-    const s = Math.max((w || 320) / 320, 1) // Minimum scale 1
+const getScale = (w, h = 0) => {
+    const s = Math.max((Math.max(w || 320, h || 240)) / 320, 1) // Scale based on max dimension
     return {
         rad: Math.min(12 * s, 48),
         p: Math.min(16 * s, 64),
@@ -667,7 +667,7 @@ const NoteNode = ({ node, onUpdate }) => {
     const [hover, setHover] = useState(false)
     const isHandwriting = node.font !== 'sans'
     const isTransparent = node.color === 'transparent'
-    const { rad, p, gap, fsHead, fsBody, icon } = getScale(node.w)
+    const { rad, p, gap, fsHead, fsBody, icon } = getScale(node.w, node.h)
 
     const colors = [
         '#fff740', // Yellow
@@ -675,23 +675,30 @@ const NoteNode = ({ node, onUpdate }) => {
         '#fdcfe8', // Pink
         '#cbf0f8', // Blue
         '#ffffff', // White
-        'transparent' // None
     ]
 
     return (
         <div
             style={{
                 height: '100%', display: 'flex', flexDirection: 'column',
-                background: node.color || '#fff740',
-                padding: 0,
-                borderRadius: isTransparent ? 0 : 0,
-                boxShadow: isTransparent ? 'none' : '2px 2px 10px rgba(0,0,0,0.15)',
-                transition: 'background 0.2s'
+                background: 'rgba(255, 255, 255, 0.7)', // Glass body
+                backdropFilter: 'blur(10px)',
+                borderRadius: rad,
+                boxShadow: isTransparent ? 'none' : '2px 4px 12px rgba(0,0,0,0.1)',
+                transition: 'background 0.2s',
+                overflow: 'hidden',
+                border: '1px solid rgba(255,255,255,0.5)'
             }}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
         >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${p / 2}px ${p}px`, color: 'rgba(0,0,0,0.6)', fontWeight: 'bold', fontSize: fsHead, borderBottom: isTransparent ? 'none' : '1px solid rgba(0,0,0,0.05)' }}>
+            <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: `${p / 2}px ${p}px`,
+                background: node.color || '#fff740', // Color applied to header only
+                color: 'rgba(0,0,0,0.7)', fontWeight: 'bold', fontSize: fsHead,
+                borderBottom: '1px solid rgba(0,0,0,0.05)'
+            }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: gap }}>
                     <FiType size={icon} /> Note
                 </div>
@@ -706,16 +713,26 @@ const NoteNode = ({ node, onUpdate }) => {
                             onClick={() => onUpdate(node.id, { color: c })}
                             style={{
                                 width: 16, height: 16, borderRadius: '50%',
-                                background: c === 'transparent' ?
-                                    'conic-gradient(#eee 0% 25%, white 25% 50%, #eee 50% 75%, white 75%) 0 0 / 8px 8px' : c,
+                                background: c,
                                 border: '1px solid rgba(0,0,0,0.1)',
                                 cursor: 'pointer',
                                 transform: node.color === c ? 'scale(1.2)' : 'scale(1)',
                                 boxShadow: node.color === c ? '0 0 0 2px #333' : 'none'
                             }}
-                            title={c === 'transparent' ? 'No Background' : ''}
                         />
                     ))}
+                    <div
+                        onClick={() => onUpdate(node.id, { color: 'transparent' })}
+                        style={{
+                            width: 16, height: 16, borderRadius: '50%',
+                            background: 'conic-gradient(#eee 0% 25%, white 25% 50%, #eee 50% 75%, white 75%) 0 0 / 8px 8px',
+                            border: '1px solid rgba(0,0,0,0.1)',
+                            cursor: 'pointer',
+                            transform: node.color === 'transparent' ? 'scale(1.2)' : 'scale(1)',
+                            boxShadow: node.color === 'transparent' ? '0 0 0 2px #333' : 'none'
+                        }}
+                        title="Transparent Header"
+                    />
                 </div>
             </div>
             <textarea
