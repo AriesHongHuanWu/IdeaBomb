@@ -15,26 +15,39 @@ const ToolBtn = ({ icon, label, onClick, active }) => (<motion.button whileHover
 // --- Node Types ---
 const EmbedNode = ({ node, onUpdate }) => {
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ height: 24, background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', padding: '0 10px', fontSize: '0.8rem', color: '#666', borderBottom: '1px solid rgba(0,0,0,0.05)', cursor: 'move' }} className="drag-handle">
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', background: 'transparent' }}>
+            {/* Floating Drag Handle / Header */}
+            <div
+                className="drag-handle"
+                style={{
+                    position: 'absolute', top: 10, left: 10, right: 10, height: 32,
+                    background: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(8px)',
+                    borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    fontSize: '0.8rem', fontWeight: 600, color: '#333',
+                    cursor: 'grab', zIndex: 10, boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                    border: '1px solid rgba(255,255,255,0.5)', transition: '0.2s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.6)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.4)'}
+            >
+                {node.title === 'Spotify' && <FiMusic />}
+                {node.title === 'BandLab' && <FiMic />}
+                {node.title === 'YouTube' && <FiYoutube />}
                 {node.title || 'Embed'}
             </div>
-            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+
+            {/* Iframe Content */}
+            <div style={{ flex: 1, borderRadius: 24, overflow: 'hidden', background: '#000', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
                 <iframe
                     src={node.src}
                     title={node.title}
-                    style={{ width: '100%', height: '100%', border: 'none' }}
+                    style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                     sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
                 />
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }} /> {/* Click shield for drag */}
             </div>
-            {/* Interactive Overlay for Playback controls if needed, but pointer-events: none usually blocks interaction. 
-                For Embeds, we usually WANT interaction. 
-                We might need a "Lock/Interact" toggle. 
-                For now, let's allow interaction by default but handling drag via header.
-            */}
+            {/* Resize Handle is provided by parent DraggableNode usually via ResizableBox, but we ensure content fills it */}
         </div>
     )
 }
