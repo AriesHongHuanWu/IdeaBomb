@@ -510,58 +510,67 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode, tempEdge, dragOverr
 }
 
 // --- Draggable Node (Resizable + Handles) ---
-const DraggableNode = ({ node, nodes, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onDragEnd }) => {
+const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onDragEnd, overridePosition }) => {
     const x = useMotionValue(node.x); const y = useMotionValue(node.y);
     const [isHovered, setIsHovered] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
     const [size, setSize] = useState({ w: node.w || 320, h: node.h || 240 })
-    useEffect(() => { if (!isDragging) { x.set(node.x); y.set(node.y) } }, [node.x, node.y, isDragging])
-    useEffect(() => { setSize({ w: node.w || 320, h: node.h || 240 }) }, [node.w, node.h]) // Sync external updates
+
+    useEffect(() => {
+        if (!isDragging) {
+            x.set(node.x); y.set(node.y)
+        }
+    }, [node.x, node.y, isDragging])
+
+    // Magnet Snap Override
+    useEffect(() => {
+        if (overridePosition && isDragging) {
+            x.set(overridePosition.x)
+            y.set(overridePosition.y)
+        }
+    }, [overridePosition, isDragging])
+
+    useEffect(() => { setSize({ w: node.w || 320, h: node.h || 240 }) }, [node.w, node.h])
 
     const handleDragStart = (e) => {
-        if (onConnectStart || e.button !== 0 || e.target.closest('button') || e.target.closest('input') || e.target.closest('.no-drag') || e.target.classList.contains('handle')) return
+        if (onConnectStart || e.button !== 0 || e.target.closest('button') || e.target.closest('input') || e.target.closest('.no-drag') || e.target.closest('.handle')) return
         e.stopPropagation();
         const startX = e.clientX; const startY = e.clientY
         const startNodeX = x.get(); const startNodeY = y.get()
         setIsDragging(true); onSelect(e)
 
-        const SNAP = 10
         const onMove = (be) => {
-            let dx = (be.clientX - startX) / (scale || 1); let dy = (be.clientY - startY) / (scale || 1);
-            let curX = startNodeX + dx; let curY = startNodeY + dy
+            const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1);
+            const curX = startNodeX + dx; const curY = startNodeY + dy
 
-            // --- Magnetic Snapping Logic ---
-            if (nodes) {
-                const w = size.w; const h = size.h
-                for (const other of nodes) {
-                    if (other.id === node.id) continue
-                    const ow = other.w || 320; const oh = other.h || 240
+            // If checking for snap, we update parent first.
+            // But to avoid lag, valid strategy is: 
+            // 1. Calculate unsnapped pos here.
+            // 2. Parent calculates snap.
+            // 3. Parent passes 'overridePosition'.
+            // 4. We render 'overridePosition' in the effect above.
 
-                    // Snap X (Left, Right, Center)
-                    if (Math.abs(curX - other.x) < SNAP) curX = other.x // Left-Left
-                    else if (Math.abs(curX - (other.x + ow)) < SNAP) curX = other.x + ow // Left-Right
-                    else if (Math.abs((curX + w) - other.x) < SNAP) curX = other.x - w // Right-Left
-                    else if (Math.abs((curX + w) - (other.x + ow)) < SNAP) curX = other.x + ow - w // Right-Right
+            // However, we must NOT set x/y here if we want parent to control it?
+            // "Controlled" dragging is tricky with Framer Motion + React state.
+            // Better: update parent with raw values. Parent decides final values (via override).
+            // We set local x/y ONLY if no override? No, override handles it via useEffect.
 
-                    // Snap Y (Top, Bottom, Center)
-                    if (Math.abs(curY - other.y) < SNAP) curY = other.y // Top-Top
-                    else if (Math.abs(curY - (other.y + oh)) < SNAP) curY = other.y + oh // Top-Bottom
-                    else if (Math.abs((curY + h) - other.y) < SNAP) curY = other.y - h // Bottom-Top
-                    else if (Math.abs((curY + h) - (other.y + oh)) < SNAP) curY = other.y + oh - h // Bottom-Bottom
-                }
+            // Actually, for smoothness, we set it here tentatively. 
+            // If snap happens, the effect will partial-overwrite it rapidly.
+            // But if we use the effect, we might fight.
+
+            // Let's blindly set it here. The effect will correct it if needed.
+            if (!overridePosition) {
+                x.set(curX); y.set(curY)
             }
-
-            x.set(curX); y.set(curY)
-            if (onDrag) onDrag(node.id, curX, curY)
+            // Report to parent
+            if (onDrag) onDrag(node.id, be, { x: curX, y: curY })
         }
         const onUp = (be) => {
             window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); setIsDragging(false)
             if (onDragEnd) onDragEnd(node.id)
-            const curX = x.get(); const curY = y.get()
-            // We use the final x/y from motion value which includes snapping
-            // dx/dy calculation needs to be relative to final position vs start
-            const finalDx = curX - startNodeX; const finalDy = curY - startNodeY
-            if (Math.abs(finalDx) > 1 || Math.abs(finalDy) > 1) onUpdatePosition(node.id, { x: finalDx, y: finalDy })
+            const dx = (be.clientX - startX) / (scale || 1); const dy = (be.clientY - startY) / (scale || 1)
+            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) onUpdatePosition(node.id, { x: dx, y: dy })
         }
         window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
     }
@@ -668,16 +677,76 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     const [connectStartId, setConnectStartId] = useState(null)
     const [selectionBox, setSelectionBox] = useState(null)
     const [dragOverrides, setDragOverrides] = useState({}) // { [id]: {x, y} }
+    const [snapLines, setSnapLines] = useState({ x: null, y: null })
 
     // Pinch Zoom State
     const [pinchDist, setPinchDist] = useState(null)
     const [startScale, setStartScale] = useState(1)
 
-    const handleDragNode = (id, x, y) => {
-        setDragOverrides(prev => ({ ...prev, [id]: { x, y } }))
+    const handleDragNode = (id, e, data) => {
+        // Uncontrolled dragging gives us 'data' (deltaX/Y) usually, but here we custom passed `onDrag`.
+        // Wait, Draggable onDrag signature is (e, data). data has x, y (current position).
+        // Since DraggableNode is handling the drag, it calls onDrag with (id, e, data).
+
+        // Magnet Logic
+        const newX = data.x
+        const newY = data.y
+        const threshold = 15 // Snap distance
+        let snappedX = null
+        let snappedY = null
+        let finalX = newX
+        let finalY = newY
+
+        const draggingNode = nodes.find(n => n.id === id)
+        const dw = draggingNode?.w || 320
+        const dh = draggingNode?.h || 240
+        const dCenterX = newX + dw / 2
+        const dCenterY = newY + dh / 2
+
+        // Check against other nodes
+        nodes.forEach(n => {
+            if (n.id === id) return
+            const nw = n.w || 320
+            const nh = n.h || 240
+            const nCenterX = n.x + nw / 2
+            const nCenterY = n.y + nh / 2
+
+            // X Snap
+            if (Math.abs(newX - n.x) < threshold) { finalX = n.x; snappedX = n.x }
+            else if (Math.abs(newX - (n.x + nw)) < threshold) { finalX = n.x + nw; snappedX = n.x + nw }
+            else if (Math.abs((newX + dw) - n.x) < threshold) { finalX = n.x - dw; snappedX = n.x }
+            else if (Math.abs((newX + dw) - (n.x + nw)) < threshold) { finalX = n.x + nw - dw; snappedX = n.x + nw }
+            else if (Math.abs(dCenterX - nCenterX) < threshold) { finalX = nCenterX - dw / 2; snappedX = nCenterX }
+
+            // Y Snap
+            if (Math.abs(newY - n.y) < threshold) { finalY = n.y; snappedY = n.y }
+            else if (Math.abs(newY - (n.y + nh)) < threshold) { finalY = n.y + nh; snappedY = n.y + nh }
+            else if (Math.abs((newY + dh) - n.y) < threshold) { finalY = n.y - dh; snappedY = n.y }
+            else if (Math.abs((newY + dh) - (n.y + nh)) < threshold) { finalY = n.y + nh - dh; snappedY = n.y + nh }
+            else if (Math.abs(dCenterY - nCenterY) < threshold) { finalY = nCenterY - dh / 2; snappedY = nCenterY }
+        })
+
+        setSnapLines({ x: snappedX, y: snappedY })
+        setDragOverrides(prev => ({ ...prev, [id]: { x: finalX, y: finalY } }))
     }
 
     const handleDragEndNode = (id) => {
+        // Commit the snapped position
+        setSnapLines({ x: null, y: null })
+        const override = dragOverrides[id]
+        if (override) {
+            onUpdateNodePosition(id, { x: override.x, y: override.y }, true) // Pass absolute flag boolean if needed or calculate delta
+            // Wait, onUpdateNodePosition expects (id, delta). We need to handle absolute.
+            // Let's manually calculate delta for compatibility or use updateDoc directly.
+            // Since we don't have updateDoc here (it's in parent/BoardPage usually? No, updateDoc is imported or passed).
+            // `onUpdateNodePosition` signature: (id, delta).
+            // Let's fetch original node and calc delta.
+            const n = nodes.find(n => n.id === id)
+            if (n) {
+                const delta = { x: override.x - n.x, y: override.y - n.y }
+                onUpdateNodePosition(id, delta)
+            }
+        }
         setDragOverrides(prev => {
             const next = { ...prev }
             delete next[id]
@@ -924,9 +993,19 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
             <div className="grid-bg" style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0', opacity: 0.6, pointerEvents: 'none' }} />
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
                 <ConnectionLayer nodes={nodes} edges={edges} onDeleteEdge={onDeleteEdge} mode={connectMode ? 'view' : 'delete'} tempEdge={tempEdge} dragOverrides={dragOverrides} />
+
+                {/* Snap Lines */}
+                {(snapLines.x !== null || snapLines.y !== null) && (
+                    <>
+                        {snapLines.x !== null && <div style={{ position: 'absolute', left: snapLines.x, top: 0, bottom: 0, width: 2, background: '#ff0080', zIndex: 999, pointerEvents: 'none', boxShadow: '0 0 5px #ff0080' }} />}
+                        {snapLines.y !== null && <div style={{ position: 'absolute', top: snapLines.y, left: 0, right: 0, height: 2, background: '#ff0080', zIndex: 999, pointerEvents: 'none', boxShadow: '0 0 5px #ff0080' }} />}
+                    </>
+                )}
+
                 {nodes.map(node => (
                     <DraggableNode key={node.id} node={node} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id}
                         onDrag={handleDragNode} onDragEnd={handleDragEndNode}
+                        overridePosition={dragOverrides[node.id]}
                         onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }}
                         onConnectStart={connectMode ? ((id) => { if (connectStartId) { onAddEdge(connectStartId, id); setConnectStartId(null); setConnectMode(false) } else { setConnectStartId(id) } }) : null}
                         onEdgeStart={(id, e) => {
