@@ -1940,7 +1940,14 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                             }}
                             onResizeEnd={handleDragEndNode}
                             onDragEnd={handleDragEndNode}
-                            onSelect={(e) => { if (connectMode) handleNodeConnect(node.id); else if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]); else setSelectedIds([node.id]) }}
+                            onSelect={(e) => {
+                                if (connectMode) handleNodeConnect(node.id);
+                                else {
+                                    if (e.shiftKey || e.ctrlKey) setSelectedIds(pre => [...pre, node.id]);
+                                    else setSelectedIds([node.id]);
+                                    onUpdateNodeData(node.id, { lastInteractedAt: new Date().toISOString() })
+                                }
+                            }}
                             onConnectStart={connectMode ? ((id) => { if (connectStartId) { onAddEdge(connectStartId, id); setConnectStartId(null); setConnectMode(false) } else { setConnectStartId(id) } }) : null}
                             onEdgeStart={(id, e) => {
                                 const startX = (e.clientX - offset.x) / scale; const startY = (e.clientY - offset.y) / scale
