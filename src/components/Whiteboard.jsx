@@ -1481,9 +1481,9 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
             onClick={(e) => { e.stopPropagation(); if (onConnectStart) { onConnectStart(node.id) } else { onSelect(e) } }}
             onContextMenu={(e) => { onSelect(e) }}
             onHoverStart={() => setIsHovered(true)} onHoverEnd={() => setIsHovered(false)}
-            whileHover={{ scale: 1.03, zIndex: 60 }}
+            whileHover={{ scale: 1.03 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-            style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isSelected || isDragging ? 50 : 10, width: size.w, height: size.h }}
+            style={{ x, y, position: 'absolute', pointerEvents: 'auto', zIndex: isDragging ? 100 : (isHovered ? 60 : (isSelected ? 50 : 10)), width: size.w, height: size.h }}
         >
             {/* Handles - Only allow resize if selected or hovered */}
             {(isSelected || isHovered) && !isDragging && handles.map(h => (
