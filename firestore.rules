@@ -23,58 +23,64 @@ service cloud.firestore {
 
     // --- Rules ---
 
+    // User Profiles & Nested Data (AI Usage)
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      match /ai_usage/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+    
+    // Global Settings
+    match /settings/{settingId} {
+      allow read: if request.auth != null;
+    }
+
     match /boards/{boardId} {
+      // ... (Existing Board Rules) ...
       // 1. Board Document Rules
-      // Read: Allow if you are owner or in allowedEmails
       allow read: if request.auth != null && hasAccess(resource.data);
-      
-      // Create: Allow if you set yourself as owner
       allow create: if request.auth != null && isValidBoardWrite();
-      
-      // Update: Allow if you have access (Collaborators can edit board title/thumbnail?) 
-      // Usually yes. If not, restrict to owner. Let's allow collab for now.
       allow update: if request.auth != null && hasAccess(resource.data);
-      
-      // Delete: Only Owner can delete the board
       allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
       
+      // Shared Function for Subcollections
+      function getBoardData() {
+        return get(/databases/$(database)/documents/boards/$(boardId)).data;
+      }
       
-      // 2. Nodes Subcollection (The heavy lifting)
+      // 2. Nodes
       match /nodes/{nodeId} {
-        // Fetch parent board data to check permissions
-        // Note: usage of get() counts as 1 read
-        function getBoardData() {
-          return get(/databases/$(database)/documents/boards/$(boardId)).data;
-        }
-        
         allow read: if request.auth != null && hasAccess(getBoardData());
         allow delete: if request.auth != null && hasAccess(getBoardData());
-        
         allow create, update: if request.auth != null && hasAccess(getBoardData())
-          // --- Content Security Limits ---
-          // 20,000 chars (~10 pages via A4)
           && (!("content" in request.resource.data) || validString(request.resource.data.content, 20000))
-          // 500 chars for label/title
           && (!("label" in request.resource.data) || validString(request.resource.data.label, 500))
-          // 200 items for todo lists
           && (!("items" in request.resource.data) || request.resource.data.items.size() < 200)
-          // Coordinate validation
           && (!("x" in request.resource.data) || request.resource.data.x is number)
           && (!("y" in request.resource.data) || request.resource.data.y is number);
       }
       
-      // 3. Edges Subcollection
+      // 3. Edges
       match /edges/{edgeId} {
-        function getBoardData() {
-          return get(/databases/$(database)/documents/boards/$(boardId)).data;
-        }
         allow read, write: if request.auth != null && hasAccess(getBoardData());
       }
-    }
-    
-    // User Profiles
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // 4. Cursors (Ephemeral)
+      match /cursors/{cursorId} {
+        allow read, write: if request.auth != null && hasAccess(getBoardData());
+      }
+
+      // 5. Presence
+      match /presence/{userId} {
+        allow read, write: if request.auth != null && hasAccess(getBoardData());
+      }
+
+      // 6. Chat Messages
+      match /messages/{msgId} {
+        allow read, write: if request.auth != null && hasAccess(getBoardData());
+      }
     }
   }
 }
