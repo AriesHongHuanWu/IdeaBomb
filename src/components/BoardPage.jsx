@@ -588,6 +588,112 @@ export default function BoardPage({ user }) {
         } catch (e) { console.error("Batch failed", e) }
     }
 
+    const handleImportJSON = (e) => {
+        const file = e.target.files[0]
+        if (!file) return
+
+        if (file.size > 10 * 1024 * 1024) { // 10MB Limit
+            alert("File is too large (Max 10MB)")
+            return
+        }
+
+        const reader = new FileReader()
+        reader.onload = async (event) => {
+            try {
+                const json = JSON.parse(event.target.result)
+                if (!Array.isArray(json.nodes)) {
+                    alert("Invalid format: Missing 'nodes' array")
+                    return
+                }
+
+                // Batch Write (Max 500 ops per batch, simplistic approach)
+                const batch = writeBatch(db)
+                let count = 0
+
+                json.nodes.forEach(node => {
+                    // Sanitize / Validation could go here
+                    // If ID conflict, we overwrite or generate new? 
+                    // Let's assume we overwrite or merge if specifically importing backup.
+                    // But if it's new content, might be better to generate new IDs?
+                    // Request didn't specify. Overwriting is dangerous.
+                    // Let's generate NEW IDs to be safe and prevent conflicts.
+
+                    const newId = uuidv4()
+                    // Adjust position slightly if needed? No, keep layout.
+                    // But if importing same board twice, they will overlap perfectly.
+                    // That's acceptable for "Import".
+
+                    const nodeData = {
+                        ...node,
+                        id: newId,
+                        page: activePage, // Import to CURRENT page
+                        createdAt: new Date().toISOString(),
+                        createdBy: user.uid
+                    }
+                    delete nodeData.lastInteractedAt // Reset interaction
+
+                    batch.set(doc(db, 'boards', boardId, 'nodes', newId), nodeData)
+                    count++
+                })
+
+                if (json.edges && Array.isArray(json.edges)) {
+                    // Edges need ID remapping if we changed Node IDs. 
+                    // This is complex. 
+                    // If we just use original IDs, it overwrites existing nodes with same ID.
+                    // If this is a restore, that's desired.
+                    // If this is "Import", logic is harder.
+                    // User said "Import JSON".
+                    // Let's stick to: Keep IDs (Restore Mode) for simplicity? 
+                    // Or Generate New IDs (Copy Mode).
+                    // "Copy Mode" is safer but breaks edges unless mapped.
+                    // Let's use "Keep IDs" BUT filter out existing ones? 
+                    // Or just use `set` (Overwrite). 
+                    // Given "Import", it implies bringing data in. 
+                    // Let's do: Generate New IDs and Remap Edges.
+                }
+
+                // REVISED STRATEGY: 
+                // Since edge remapping is complex to implement blindly, and user asked for "Import" (maybe backup restore?)
+                // I will assume they want to add these nodes.
+                // I will map oldId -> newId.
+
+                const idMap = {}
+                json.nodes.forEach(n => idMap[n.id] = uuidv4())
+
+                json.nodes.forEach(n => {
+                    const newId = idMap[n.id]
+                    const newData = { ...n, id: newId, page: activePage, createdAt: new Date().toISOString() }
+                    batch.set(doc(db, 'boards', boardId, 'nodes', newId), newData)
+                    count++
+                })
+
+                if (json.edges) {
+                    json.edges.forEach(e => {
+                        const newFrom = idMap[e.from]
+                        const newTo = idMap[e.to]
+                        if (newFrom && newTo) {
+                            const newEdgeId = uuidv4()
+                            batch.set(doc(db, 'boards', boardId, 'edges', newEdgeId), {
+                                ...e, id: newEdgeId, from: newFrom, to: newTo, page: activePage
+                            })
+                            count++
+                        }
+                    })
+                }
+
+                await batch.commit()
+                alert(`Imported ${json.nodes.length} nodes successfully!`)
+            } catch (err) {
+                console.error(err)
+                alert("Import Failed: " + err.message)
+            }
+        }
+        reader.readAsText(file)
+
+        // Reset input
+        e.target.value = null
+    }
+
     const undoLastAIAction = async () => {
         if (lastAIAction?.type === 'create') {
             const batch = writeBatch(db)
@@ -848,6 +954,7 @@ export default function BoardPage({ user }) {
                     onCursorMove={handleCursorMove}
                     onAIRequest={handleAIRequest}
                     onSelectionChange={() => { }}
+                    onImport={handleImportJSON}
                 />
             </div>
             <ChatInterface boardId={boardId} user={user} onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />

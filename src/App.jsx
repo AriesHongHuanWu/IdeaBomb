@@ -38,7 +38,8 @@ function App() {
     return (
         <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
-                <Route path="/" element={<PageTransition><LandingPage user={user} /></PageTransition>} />
+                <Route path="/" element={<SmartRoot user={user} />} />
+                <Route path="/home" element={<PageTransition><LandingPage user={user} /></PageTransition>} />
                 <Route path="/guide" element={<PageTransition><GuidePage /></PageTransition>} />
                 <Route path="/terms" element={<PageTransition><TermsOfService /></PageTransition>} />
                 <Route path="/privacy" element={<PageTransition><PrivacyPolicy /></PageTransition>} />
@@ -55,6 +56,11 @@ function App() {
             </Routes>
         </AnimatePresence>
     )
+}
+
+const SmartRoot = ({ user }) => {
+    if (user) return <Navigate to="/dashboard" replace />
+    return <PageTransition><LandingPage user={user} /></PageTransition>
 }
 
 export default App

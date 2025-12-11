@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../firebase'
 import { signOut } from 'firebase/auth'
 import { collection, addDoc, query, where, onSnapshot, setDoc } from 'firebase/firestore'
-import { FiPlus, FiLogOut, FiLayout, FiHome, FiFolder, FiUsers, FiGrid, FiShare2, FiClock, FiMoreVertical, FiEdit2, FiTrash2, FiMove, FiShield } from 'react-icons/fi'
+import { FiPlus, FiLogOut, FiLayout, FiHome, FiFolder, FiUsers, FiGrid, FiShare2, FiClock, FiMoreVertical, FiEdit2, FiTrash2, FiMove, FiShield, FiGlobe } from 'react-icons/fi'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { updateDoc, doc, deleteDoc } from 'firebase/firestore'
 
@@ -192,6 +192,7 @@ export default function Dashboard({ user }) {
                     flexDirection: 'column',
                     flexShrink: 0
                 }}>
+                    <NavItem icon={<FiGlobe />} label="Home Page" active={false} onClick={() => navigate('/home')} isMobile={isMobile} />
                     <NavItem icon={<FiGrid />} label="All Boards" active={activeView === 'all'} onClick={() => { setActiveView('all'); setSelectedFolder(null) }} isMobile={isMobile} />
                     <NavItem icon={<FiLayout />} label="My Boards" active={activeView === 'created'} onClick={() => { setActiveView('created'); setSelectedFolder(null) }} isMobile={isMobile} />
                     <NavItem icon={<FiShare2 />} label="Shared with me" active={activeView === 'shared'} onClick={() => { setActiveView('shared'); setSelectedFolder(null) }} isMobile={isMobile} />
