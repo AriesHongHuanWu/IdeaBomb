@@ -818,7 +818,7 @@ export default function BoardPage({ user }) {
                 initial={{ y: -100 }} animate={{ y: 0 }}
             >
                 <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 20 }}>
-                    <button onClick={() => { updateThumbnail(); navigate('/dashboard') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button>
+                    <button onClick={async () => { try { updateThumbnail() } catch (e) { console.error(e) }; navigate('/dashboard') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button>
                     {isEditingTitle ? (
                         <input
                             value={tempTitle}
@@ -846,6 +846,7 @@ export default function BoardPage({ user }) {
                             {tabMenu?.type === 'top-menu' && (
                                 <div style={{ position: 'fixed', top: 60, right: 20, background: 'white', borderRadius: 12, boxShadow: '0 5px 20px rgba(0,0,0,0.15)', padding: 10, zIndex: 999, display: 'flex', flexDirection: 'column', gap: 8 }}>
                                     <button onClick={() => { setIsShareOpen(true); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: 'var(--primary)', color: 'white', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiUserPlus /> Invite</button>
+                                    <button onClick={() => document.getElementById('json-upload-top').click()} style={{ padding: '8px 12px', border: 'none', background: '#f5f5f5', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiUpload /> Import</button>
                                     <button onClick={() => { exportBoard(); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: '#f5f5f5', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiDownload /> Export</button>
                                     <button onClick={() => { setIsIncognito(!isIncognito); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: 'transparent', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>{isIncognito ? <><FiEyeOff /> Show Me</> : <><FiEye /> Hide Me</>}</button>
                                     <button onClick={async () => { await signOut(auth); navigate('/login') }} style={{ padding: '8px 12px', border: 'none', background: '#fff1f0', color: 'red', borderRadius: 8, width: '100%' }}>Logout</button>
@@ -855,7 +856,9 @@ export default function BoardPage({ user }) {
                     ) : (
                         <>
                             <button onClick={() => setIsIncognito(!isIncognito)} title={isIncognito ? "Show my cursor" : "Hide my cursor"} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: isIncognito ? '#999' : '#333' }}>{isIncognito ? <FiEyeOff /> : <FiEye />}</button>
+                            <button onClick={() => document.getElementById('json-upload-top').click()} style={{ background: 'rgba(255,255,255,0.2)', color: '#333', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiUpload /> Import</button>
                             <button onClick={exportBoard} style={{ background: 'rgba(255,255,255,0.2)', color: '#333', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiDownload /> Export</button>
+                            <input type="file" id="json-upload-top" accept=".json" style={{ display: 'none' }} onChange={handleImportJSON} />
                             <button onClick={() => setIsShareOpen(true)} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><FiUserPlus /> Invite</button>
                             <button onClick={async () => { await signOut(auth); navigate('/login') }} style={{ background: '#ff4d4f', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer' }}>Logout</button>
                         </>
@@ -954,7 +957,6 @@ export default function BoardPage({ user }) {
                     onCursorMove={handleCursorMove}
                     onAIRequest={handleAIRequest}
                     onSelectionChange={() => { }}
-                    onImport={handleImportJSON}
                 />
             </div>
             <ChatInterface boardId={boardId} user={user} onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />

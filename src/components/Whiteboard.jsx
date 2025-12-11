@@ -1585,7 +1585,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
 }
 
 
-export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge, cursors, onCursorMove, onAIRequest, onSelectionChange, onImport, canvasSize = { w: 3000, h: 2000 }, onUpdateCanvasSize }) {
+export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge, cursors, onCursorMove, onAIRequest, onSelectionChange, canvasSize = { w: 3000, h: 2000 }, onUpdateCanvasSize }) {
     const [scale, setScale] = useState(1); const [offset, setOffset] = useState({ x: 0, y: 0 })
     // Removed local canvasSize state
     const [showCanvasSetup, setShowCanvasSetup] = useState(false)
@@ -2122,9 +2122,6 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                 <ToolBtn icon={<FiGrid />} label="Toolbox" active={toolboxOpen} onClick={() => setToolboxOpen(!toolboxOpen)} />
                 <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
                 <ToolBtn icon={<FiMaximize2 />} label="Canvas Size" onClick={() => setShowCanvasSetup(true)} />
-                <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
-                <ToolBtn icon={<FiUpload />} label="Import" onClick={() => document.getElementById('json-upload').click()} />
-                <input type="file" id="json-upload" accept=".json" style={{ display: 'none' }} onChange={onImport} />
                 <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
                 <ToolBtn icon={<FiLayout />} label="Auto Arrange" onClick={autoArrange} />
             </motion.div>
