@@ -7,7 +7,7 @@ import ChatInterface from './ChatInterface'
 import ShareModal from './ShareModal'
 import { db, auth } from '../firebase'
 import { collection, onSnapshot, setDoc, doc, updateDoc, deleteDoc, arrayUnion, writeBatch } from 'firebase/firestore'
-import { FiHome, FiUserPlus, FiDownload, FiEye, FiEyeOff, FiMenu } from 'react-icons/fi'
+import { FiHome, FiUserPlus, FiDownload, FiEye, FiEyeOff, FiMenu, FiUpload } from 'react-icons/fi'
 import { signOut } from 'firebase/auth'
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { useMediaQuery } from '../hooks/useMediaQuery'
