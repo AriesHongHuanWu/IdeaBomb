@@ -108,7 +108,9 @@ export default function BoardPage({ user }) {
     useEffect(() => {
         if (!boardId || !hasAccess) return
         const unsub = onSnapshot(collection(db, 'boards', boardId, 'nodes'), (snapshot) => {
-            const loaded = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); setNodes(loaded)
+            const loaded = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+            loaded.sort((a, b) => (new Date(a.createdAt || 0) - new Date(b.createdAt || 0)))
+            setNodes(loaded)
             const nodePages = new Set(loaded.map(n => n.page).filter(p => p)); if (nodePages.size > 0) { setPages(prev => Array.from(new Set([...prev, ...nodePages])).sort()) }
         })
         return unsub

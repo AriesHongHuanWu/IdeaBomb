@@ -200,30 +200,32 @@ const StickerNode = ({ node, onUpdate }) => {
 
 // --- New Widgets (10 Items) ---
 const ProgressNode = ({ node, onUpdate }) => {
-    const r = 60
+    const r = 55
     const c = 2 * Math.PI * r
     const p = node.progress || 0
     const off = c - (p / 100) * c
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'white', borderRadius: 24, padding: 10 }}>
-            <div style={{ position: 'relative', width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="140" height="140" style={{ transform: 'rotate(-90deg)' }}>
-                    <circle cx="70" cy="70" r={r} stroke="#f0f0f0" strokeWidth="12" fill="none" />
-                    <circle cx="70" cy="70" r={r} stroke="url(#progress-gradient)" strokeWidth="12" fill="none"
-                        strokeDasharray={c} strokeDashoffset={off} style={{ transition: 'stroke-dashoffset 0.5s ease' }} strokeLinecap="round" />
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'white', borderRadius: 24, padding: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+            <div style={{ position: 'relative', width: 130, height: 130, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="130" height="130" style={{ transform: 'rotate(-90deg)' }}>
+                    <circle cx="65" cy="65" r={r} stroke="#f5f5f5" strokeWidth="10" fill="none" strokeLinecap="round" />
+                    <circle cx="65" cy="65" r={r} stroke="url(#progress-gradient)" strokeWidth="10" fill="none"
+                        strokeDasharray={c} strokeDashoffset={off} style={{ transition: 'stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1)' }} strokeLinecap="round" />
                     <defs>
                         <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#4facfe" />
-                            <stop offset="100%" stopColor="#00f2fe" />
+                            <stop offset="0%" stopColor="#3b82f6" />
+                            <stop offset="100%" stopColor="#8b5cf6" />
                         </linearGradient>
                     </defs>
                 </svg>
-                <div style={{ position: 'absolute', fontSize: '2rem', fontWeight: 'bold', color: '#333' }}>{p}%</div>
+                <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span style={{ fontSize: '2.2rem', fontWeight: 800, color: '#333', lineHeight: 1 }}>{p}%</span>
+                </div>
             </div>
             <input
                 type="range" min="0" max="100" value={p}
                 onChange={e => onUpdate(node.id, { progress: parseInt(e.target.value) })}
-                style={{ width: '80%', marginTop: 15, accentColor: '#00f2fe', cursor: 'grab' }}
+                style={{ width: '70%', marginTop: 12, accentColor: '#3b82f6', cursor: 'pointer', height: 4, borderRadius: 2 }}
                 onPointerDown={e => e.stopPropagation()}
             />
         </div>
@@ -314,10 +316,22 @@ const CodeNode = ({ node, onUpdate }) => {
 
 const EmojiNode = ({ node, onUpdate }) => {
     const emojis = ['👍', '👎', '🔥', '🎉', '❤️', '🚀', '🤔', '👀', '✅', '❌']
+    if (node.selected) {
+        return (
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }} style={{ fontSize: '8rem', lineHeight: 1 }}>
+                    {node.selected}
+                </motion.div>
+                <div onClick={(e) => { e.stopPropagation(); onUpdate(node.id, { selected: null }) }} style={{ position: 'absolute', bottom: 10, right: 10, background: 'rgba(255,255,255,0.8)', padding: 6, borderRadius: '50%', cursor: 'pointer', display: 'flex', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+                    <FiRotateCcw size={16} color="#666" />
+                </div>
+            </div>
+        )
+    }
     return (
-        <div style={{ width: '100%', height: '100%', background: 'white', borderRadius: 20, padding: 10, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5, overflow: 'hidden' }}>
+        <div style={{ width: '100%', height: '100%', background: 'white', borderRadius: 20, padding: 12, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, overflow: 'hidden' }}>
             {emojis.map(e => (
-                <div key={e} style={{ fontSize: '1.5rem', cursor: 'pointer', textAlign: 'center', padding: 5, borderRadius: 5, transition: '0.2s' }} onClick={(ev) => { ev.stopPropagation(); onUpdate(node.id, { selected: e }) }} onMouseEnter={ev => ev.target.style.background = '#f0f0f0'} onMouseLeave={ev => ev.target.style.background = 'transparent'}>
+                <div key={e} style={{ fontSize: '1.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, transition: '0.2s' }} onClick={(ev) => { ev.stopPropagation(); onUpdate(node.id, { selected: e }) }} onMouseEnter={ev => ev.currentTarget.style.background = '#f0f0f0'} onMouseLeave={ev => ev.currentTarget.style.background = 'transparent'}>
                     {e}
                 </div>
             ))}
@@ -429,7 +443,7 @@ const NotifyNode = ({ node, onUpdate }) => {
         }
 
         if (Notification.permission === "granted") {
-            new Notification(node.text || "Hello from Whiteboard!");
+            new Notification("🔔 " + (node.text || "Reminder"), { body: "Your reminder from IdeaBomb" });
             // Clear schedule if it was a scheduled firing
             if (node.scheduledTime && new Date(node.scheduledTime) <= new Date()) {
                 onUpdate(node.id, { scheduledTime: '' })
@@ -473,51 +487,51 @@ const NotifyNode = ({ node, onUpdate }) => {
     return (
         <div style={{
             width: '100%', height: '100%',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: 'white',
             borderRadius: 16, display: 'flex', flexDirection: 'column',
-            padding: 16, color: 'white', boxShadow: '0 4px 15px rgba(118, 75, 162, 0.3)'
+            padding: 16, color: '#333', boxShadow: '0 4px 20px rgba(0,0,0,0.06)'
         }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, color: '#6366f1' }}>
                     <FiBell /> <span>Notifier</span>
                 </div>
-                {timeLeft && <span style={{ fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)', padding: '2px 8px', borderRadius: 10 }}>in {timeLeft}</span>}
+                {timeLeft && <span style={{ fontSize: '0.8rem', background: '#f3f4f6', color: '#6366f1', padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>in {timeLeft}</span>}
             </div>
 
             <textarea
                 value={node.text || ''}
                 onChange={e => onUpdate(node.id, { text: e.target.value })}
-                placeholder="Notification message..."
+                placeholder="What to remember?"
                 onPointerDown={e => e.stopPropagation()}
                 style={{
-                    flex: 1, background: 'rgba(255,255,255,0.2)',
-                    border: 'none', borderRadius: 8, padding: 8,
-                    color: 'white', fontSize: '0.9rem', outline: 'none',
-                    resize: 'none', marginBottom: 10
+                    flex: 1, background: '#f9fafb',
+                    border: '1px solid #e5e7eb', borderRadius: 8, padding: 10,
+                    color: '#333', fontSize: '0.9rem', outline: 'none',
+                    resize: 'none', marginBottom: 10, fontFamily: 'inherit'
                 }}
             />
 
-            <div style={{ display: 'flex', gap: 5 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
                 <div style={{ position: 'relative', flex: 1 }}>
                     <input
                         type="datetime-local"
                         value={node.scheduledTime || ''}
                         onChange={e => onUpdate(node.id, { scheduledTime: e.target.value })}
                         style={{
-                            width: '100%', padding: '6px', borderRadius: 8, border: 'none',
-                            fontSize: '0.8rem', cursor: 'pointer', background: 'rgba(255,255,255,0.9)', color: '#333'
+                            width: '100%', padding: '8px', borderRadius: 8, border: '1px solid #e5e7eb',
+                            fontSize: '0.8rem', cursor: 'pointer', background: 'white', color: '#333', outline: 'none'
                         }}
                         onPointerDown={e => e.stopPropagation()}
                     />
-
                 </div>
 
-                <button onClick={scheduleNotification} onPointerDown={e => e.stopPropagation()} title="Send Now" style={{
-                    background: 'white', color: '#764ba2', border: 'none',
-                    width: 32, borderRadius: 8, fontWeight: 'bold',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                <button onClick={scheduleNotification} onPointerDown={e => e.stopPropagation()} title="Test Notification" style={{
+                    background: '#6366f1', color: 'white', border: 'none',
+                    width: 36, borderRadius: 8, fontWeight: 'bold',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 2px 5px rgba(99, 102, 241, 0.3)'
                 }}>
-                    <FiSend size={14} />
+                    <FiSend size={16} />
                 </button>
             </div>
         </div>
