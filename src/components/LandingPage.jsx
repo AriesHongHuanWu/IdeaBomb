@@ -18,7 +18,7 @@ export default function LandingPage({ user }) {
             {/* Header */}
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: isMobile ? '15px 20px' : '20px 40px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid #eee' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 'bold', fontSize: '1.4rem', color: '#5f6368' }}>
-                    <img src="/logo.svg" alt="Logo" style={{ height: 24 }} /> IdeaBomb
+                    <img src="/logo.svg" alt="IdeaBomb" style={{ height: 24 }} /> IdeaBomb
                 </div>
                 <nav style={{ display: 'flex', gap: isMobile ? 15 : 30, alignItems: 'center' }}>
                     {!isMobile && (
@@ -35,13 +35,17 @@ export default function LandingPage({ user }) {
             </header>
 
             {/* Hero Section */}
-            <section style={{ padding: isMobile ? '60px 20px' : '100px 20px', textAlign: 'center', maxWidth: 1000, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <section style={{ padding: isMobile ? '60px 20px' : '100px 20px', textAlign: 'center', maxWidth: 1000, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                {/* Aurora Background Effect */}
+                <div style={{ position: 'absolute', top: -150, left: '50%', transform: 'translateX(-50%)', width: '120%', height: 600, background: 'radial-gradient(circle at 50% 50%, rgba(66, 133, 244, 0.15) 0%, rgba(255, 255, 255, 0) 60%)', filter: 'blur(60px)', zIndex: -1, pointerEvents: 'none' }}></div>
+                <div style={{ position: 'absolute', top: -100, left: '20%', width: 400, height: 400, background: 'radial-gradient(circle, rgba(234, 67, 53, 0.08) 0%, rgba(255, 255, 255, 0) 70%)', filter: 'blur(50px)', zIndex: -1, pointerEvents: 'none' }}></div>
+                <div style={{ position: 'absolute', top: 50, right: '20%', width: 300, height: 300, background: 'radial-gradient(circle, rgba(52, 168, 83, 0.08) 0%, rgba(255, 255, 255, 0) 70%)', filter: 'blur(50px)', zIndex: -1, pointerEvents: 'none' }}></div>
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
                     <div style={{ background: '#e8f0fe', color: '#1967d2', padding: '6px 16px', borderRadius: 20, fontSize: '0.9rem', fontWeight: 600, display: 'inline-block', marginBottom: 20 }}>
                         ✨ Now with Gemini AI Integration
                     </div>
                     <UserCountBadge />
-                    <h1 style={{ fontSize: isMobile ? '2.5rem' : '4rem', fontWeight: 800, lineHeight: 1.1, marginBottom: 20, color: '#202124' }}>
+                    <h1 style={{ fontSize: isMobile ? '2.5rem' : '4.5rem', fontWeight: 800, lineHeight: 1.1, marginBottom: 20, color: '#202124', letterSpacing: '-0.02em', background: 'linear-gradient(to right, #1a73e8, #8ab4f8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                         Think Bigger.<br /> Collaborate Smarter.
                     </h1>
                     <p style={{ fontSize: isMobile ? '1.1rem' : '1.3rem', color: '#5f6368', marginBottom: 40, maxWidth: 600, margin: '0 auto 40px auto', lineHeight: 1.6 }}>
@@ -189,7 +193,7 @@ export default function LandingPage({ user }) {
                 <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 40 }}>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 'bold', fontSize: '1.2rem', color: '#5f6368', marginBottom: 20 }}>
-                            <div style={{ width: 20, height: 20, background: '#5f6368', borderRadius: 4 }}></div> IdeaBomb
+                            <img src="/logo.svg" alt="IdeaBomb" style={{ height: 24, opacity: 0.7 }} /> IdeaBomb
                         </div>
                         <div style={{ color: '#5f6368', fontSize: '0.9rem' }}>© 2025 IdeaBomb Inc. All rights reserved.</div>
                         <div style={{ color: '#5f6368', fontSize: '0.8rem', marginTop: 10, fontWeight: 500 }}>Created by AWBest Studio</div>
@@ -317,13 +321,22 @@ function UserCountBadge() {
 
 function AnimatedDemoCanvas({ isMobile }) {
     return (
-        <div style={{ height: isMobile ? 300 : 500, background: '#ffffff', position: 'relative', overflow: 'hidden', fontFamily: '"Google Sans", "Inter", sans-serif' }}>
+        <div style={{ height: isMobile ? 350 : 550, background: '#ffffff', position: 'relative', overflow: 'hidden', fontFamily: '"Google Sans", "Inter", sans-serif' }}>
             <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#e0e0e0 1px, transparent 1px)', backgroundSize: '20px 20px', opacity: 0.5 }}></div>
+
+            {/* Mock Toolbar - Top Center */}
+            <div style={{ position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', background: 'white', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', padding: '8px 16px', display: 'flex', gap: 12, alignItems: 'center', zIndex: 100, border: '1px solid #f1f3f4' }}>
+                <div style={{ width: 20, height: 20, border: '2px solid #5f6368', borderRadius: 4 }}></div>
+                <div style={{ width: 20, height: 20, background: '#5f6368', borderRadius: '50%', opacity: 0.2 }}></div>
+                <div style={{ width: 1, height: 20, background: '#eee' }}></div>
+                <div style={{ width: 20, height: 20, border: '2px dashed #5f6368', borderRadius: 4 }}></div>
+                <div style={{ width: 20, height: 20, background: '#ea4335', borderRadius: 4, opacity: 0.2 }}></div>
+            </div>
 
             {/* Simulated Cursor 1 */}
             <motion.div
-                initial={{ x: 100, y: 100 }}
-                animate={{ x: [100, 400, 400, 100], y: [100, 100, 300, 100] }}
+                initial={{ x: 100, y: 150 }}
+                animate={{ x: [100, 420, 420, 100], y: [150, 150, 320, 150] }}
                 transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
                 style={{ position: 'absolute', zIndex: 50, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}
             >
@@ -335,8 +348,8 @@ function AnimatedDemoCanvas({ isMobile }) {
 
             {/* Simulated Cursor 2 */}
             <motion.div
-                initial={{ x: 600, y: 300 }}
-                animate={{ x: [600, 200, 200, 600], y: [300, 300, 150, 300] }}
+                initial={{ x: 600, y: 350 }}
+                animate={{ x: [600, 220, 220, 600], y: [350, 350, 180, 350] }}
                 transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
                 style={{ position: 'absolute', zIndex: 50, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}
             >
@@ -346,24 +359,27 @@ function AnimatedDemoCanvas({ isMobile }) {
                 <div style={{ background: '#4285F4', padding: '2px 8px', borderRadius: 4, color: 'white', fontSize: '10px', marginLeft: 4, fontWeight: 600 }}>Mike</div>
             </motion.div>
 
-            {/* Node 1: App Service (Whiteboard Style) */}
+            {/* Node 1: Client App (Whiteboard Style) */}
             <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
                 style={{
-                    position: 'absolute', top: isMobile ? 40 : 100, left: isMobile ? 40 : 150, width: 220,
-                    background: 'white', border: '1px solid #eee', borderRadius: 12, padding: 16,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)', zIndex: 10,
-                    display: 'flex', flexDirection: 'column', gap: 8
+                    position: 'absolute', top: isMobile ? 60 : 120, left: isMobile ? 40 : 150, width: 240,
+                    background: 'white', border: '1px solid #e0e0e0', borderRadius: 12, padding: 16,
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.05), 0 10px 15px -3px rgba(0,0,0,0.1)', zIndex: 10,
+                    display: 'flex', flexDirection: 'column', gap: 10
                 }}
             >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#1a73e8', fontWeight: 700, fontSize: '1rem' }}>
-                    <FiGrid /> Client App
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#1a73e8', fontWeight: 700, fontSize: '0.95rem' }}>
+                        <FiGrid /> Client App
+                    </div>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#34a853' }}></div>
                 </div>
-                <div style={{ fontSize: '0.9rem', color: '#5f6368', lineHeight: 1.4 }}>
-                    React Frontend<br />
-                    <span style={{ fontSize: '0.8rem', background: '#e8f0fe', color: '#1a73e8', padding: '2px 6px', borderRadius: 4 }}>v2.0.0</span>
+                <div style={{ fontSize: '0.85rem', color: '#5f6368', lineHeight: 1.5 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}><FiCheck size={12} /> React Frontend</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><FiCheck size={12} /> Real-time Sync</div>
                 </div>
             </motion.div>
 
@@ -371,12 +387,12 @@ function AnimatedDemoCanvas({ isMobile }) {
             <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 5 }}>
                 <defs>
                     <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="#ccc" />
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#999" />
                     </marker>
                 </defs>
                 <motion.path
-                    d={isMobile ? "M 150 120 L 150 200" : "M 370 140 C 450 140, 500 140, 550 180"}
-                    stroke="#ccc" strokeWidth="2" fill="none"
+                    d={isMobile ? "M 150 160 L 150 220" : "M 390 180 C 450 180, 500 180, 550 220"}
+                    stroke="#999" strokeWidth="2" fill="none" strokeDasharray="6,4"
                     initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.5, delay: 0.5 }}
                     markerEnd="url(#arrowhead)"
                 />
@@ -388,47 +404,52 @@ function AnimatedDemoCanvas({ isMobile }) {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.8 }}
                 style={{
-                    position: 'absolute', top: isMobile ? 180 : 160, left: isMobile ? 40 : 550, width: 200,
-                    background: 'white', border: '1px solid #eee', borderRadius: 12, padding: 16,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)', zIndex: 10
+                    position: 'absolute', top: isMobile ? 220 : 200, left: isMobile ? 40 : 550, width: 220,
+                    background: 'white', border: '1px solid #e0e0e0', borderRadius: 12, padding: 16,
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.05), 0 10px 15px -3px rgba(0,0,0,0.1)', zIndex: 10
                 }}
             >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ea4335', fontWeight: 700, fontSize: '1rem', marginBottom: 8 }}>
-                    <FiCpu /> Data Store
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ea4335', fontWeight: 700, fontSize: '0.95rem', marginBottom: 12 }}>
+                    <FiCpu /> Primary DB
                 </div>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.75rem', border: '1px solid #eee', padding: '4px 8px', borderRadius: 12, color: '#555' }}>Users</span>
-                    <span style={{ fontSize: '0.75rem', border: '1px solid #eee', padding: '4px 8px', borderRadius: 12, color: '#555' }}>Boards</span>
+                    <span style={{ fontSize: '0.75rem', background: '#fce8e6', color: '#c5221f', padding: '4px 10px', borderRadius: 12, fontWeight: 500 }}>Firestore</span>
+                    <span style={{ fontSize: '0.75rem', background: '#f1f3f4', color: '#5f6368', padding: '4px 10px', borderRadius: 12 }}>Auth</span>
                 </div>
             </motion.div>
 
             {/* Sticky Note (Yellow) */}
             <motion.div
-                initial={{ opacity: 0, rotate: -5 }} animate={{ opacity: 1, rotate: 0 }}
+                initial={{ opacity: 0, rotate: -5, scale: 0.9 }}
+                animate={{ opacity: 1, rotate: -2, scale: 1 }}
                 transition={{ delay: 1.5, duration: 0.4 }}
                 style={{
-                    position: 'absolute', top: isMobile ? 260 : 80, left: isMobile ? 200 : 700,
-                    width: 140, height: 140, background: '#fff9c4', borderRadius: 4,
-                    boxShadow: '2px 4px 8px rgba(0,0,0,0.1)', padding: 15,
-                    fontFamily: '"Kalam", cursive', fontSize: '1.1rem', color: '#333',
-                    transform: 'rotate(-2deg)', zIndex: 15
+                    position: 'absolute', top: isMobile ? 300 : 80, left: isMobile ? 200 : 700,
+                    width: 160, height: 160, background: '#fef08a', borderRadius: 2,
+                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
+                    padding: 16,
+                    fontFamily: '"Kalam", cursive', fontSize: '1.2rem', color: '#1f2937',
+                    zIndex: 15,
+                    borderBottomRightRadius: '20px 5px'
                 }}
             >
-                Don't forget to cache the API results! 🚀
+                <div style={{ width: 30, height: 4, background: 'rgba(0,0,0,0.1)', marginBottom: 10 }}></div>
+                Update api caching layer for 2x speed! 🚀
             </motion.div>
 
             {/* Chat Bubble Simulation */}
             <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: [0, 1, 1, 0], y: [10, 0, 0, -10] }}
-                transition={{ duration: 4, repeat: Infinity, repeatDelay: 3, delay: 2 }}
+                initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                animate={{ opacity: [0, 1, 1, 0], y: [10, 0, 0, -10], scale: [0.9, 1, 1, 0.9] }}
+                transition={{ duration: 5, repeat: Infinity, repeatDelay: 4, delay: 2 }}
                 style={{
-                    position: 'absolute', top: isMobile ? 240 : 130, left: isMobile ? 180 : 400,
-                    background: '#202124', color: 'white', padding: '8px 16px', borderRadius: 20,
-                    fontSize: '0.85rem', zIndex: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                    position: 'absolute', top: isMobile ? 260 : 160, left: isMobile ? 180 : 420,
+                    background: '#202124', color: 'white', padding: '10px 18px', borderRadius: 24,
+                    fontSize: '0.9rem', zIndex: 100, boxShadow: '0 8px 16px rgba(0,0,0,0.15)',
+                    borderBottomLeftRadius: 4
                 }}
             >
-                Architecture looks solid! 👍
+                Looks solid! 👍
             </motion.div>
         </div>
     )
