@@ -347,18 +347,19 @@ export default function TodoView({ user, isOpen, onClose }) {
                                                 ))}
                                             </div>
                                         </div>
-                                        <button
-                                            type="submit"
-                                            disabled={!newTodo}
-                                            style={{
-                                                background: newTodo ? '#db4c3f' : '#f0f0f0',
-                                                color: newTodo ? 'white' : '#aaa',
-                                                border: 'none', padding: '6px 12px', borderRadius: 6, fontWeight: 'bold', cursor: newTodo ? 'pointer' : 'default'
-                                            }}
-                                        >
-                                            Add Task
-                                        </button>
                                     </div>
+                                    <button
+                                        type="submit"
+                                        disabled={!newTodo}
+                                        style={{
+                                            background: newTodo ? '#db4c3f' : '#f0f0f0',
+                                            color: newTodo ? 'white' : '#aaa',
+                                            border: 'none', padding: '6px 12px', borderRadius: 6, fontWeight: 'bold', cursor: newTodo ? 'pointer' : 'default'
+                                        }}
+                                    >
+                                        Add Task
+                                    </button>
+                                </div>
                             </form>
 
                         </div>
