@@ -4,7 +4,7 @@ import { FiX, FiUserPlus, FiMail } from 'react-icons/fi'
 import { doc, updateDoc, arrayUnion, setDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 
-export default function ShareModal({ boardId, isOpen, onClose }) {
+export default function ShareModal({ boardId, isOpen, onClose, collectionName = 'boards' }) {
     const [email, setEmail] = useState('')
     const [loading, setLoading] = useState(false)
     const [copied, setCopied] = useState(false)
@@ -25,25 +25,8 @@ export default function ShareModal({ boardId, isOpen, onClose }) {
         const emailToInvite = email.trim().toLowerCase()
         const selectedRole = role
         try {
-            // Encode email for map key if necessary, but dot notation works if key is just string.
-            // Actually, map keys with dots are tricky. We should sanitize or just rely on 'roles' map.
-            // Ideally we'd use array of objects [{email: x, role: y}] but map is faster lookup.
-            // Let's assume standard emails. If we use updateDoc with "roles.email", dots in email (aries.wu) are interpreted as nested fields!
-            // FIX: We must read, update object, write back OR use special FieldPath? FieldPath is safer.
-            // For now, let's use merge setDoc on top level or just updateDoc with FieldPath.
-            // EASIER SAFER WAY: Use `roles` map. But `updateDoc` "roles.a.b@gmail.com" treats it as roles -> a -> b@gmail.com.
-            // WORKAROUND: We will replace dots in email with something else for the key? No, that's messy.
-            // ALTERNATIVE: Just store `members` array of objects? No, searching is O(N).
-            // BEST WAY: Use `updateDoc` with `new FieldPath('roles', emailToInvite)`.
-
-            // However, since I can't easily import FieldPath right here without checking firebase imports...
-            // Let's use the array approach for now? No, the plan said Map.
-            // Let's try to grab current data and update. It's safer for "Don't crash".
-            // Actually, `updateDoc` with `['roles.' + emailToInvite]` works in JS SDK if you wrap key in quotes? No.
-
-            // Let's stick to simple: Read -> Modify -> Write is safest for consistency, but slightly slower.
-            // Or `setDoc` with `{ roles: { [emailToInvite]: selectedRole } }` and merge: true.
-            await setDoc(doc(db, 'boards', boardId), {
+            // Use dynamic collection name
+            await setDoc(doc(db, collectionName, boardId), {
                 allowedEmails: arrayUnion(emailToInvite),
                 roles: { [emailToInvite]: selectedRole }
             }, { merge: true })
