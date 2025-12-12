@@ -11,14 +11,17 @@ service cloud.firestore {
     
     // Check if user has access to the board (Owner or Collaborator)
     // For evaluating existing documents (resource.data)
+    // Check if user has access to the board (Owner or Collaborator)
+    // For evaluating existing documents (resource.data)
     function hasAccess(data) {
       return (request.auth.uid == data.createdBy) || 
-             (data.allowedEmails is list && request.auth.token.email != null && request.auth.token.email in data.allowedEmails);
+             ("allowedEmails" in data && data.allowedEmails is list && request.auth.token.email != null && request.auth.token.email in data.allowedEmails);
     }
     
     // Check if user is restricted to Viewer (Read-Only)
+    // Note: viewer list might not exist on old boards
     function isViewer(data) {
-       return data.viewers is list && request.auth.token.email in data.viewers;
+       return "viewers" in data && data.viewers is list && request.auth.token.email != null && request.auth.token.email in data.viewers;
     }
     
     // Check if user is trying to WRITE valid board data (Owner must be self)
