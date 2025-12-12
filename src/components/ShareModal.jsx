@@ -36,29 +36,27 @@ export default function ShareModal({ boardId, isOpen, onClose, user }) {
             await updateDoc(doc(db, 'boards', boardId), updates)
 
             // --- EmailJS Logic ---
-            // Requirement: User must have IDs. 
-            // We'll use the provided Service ID 'awbestmail'
             const SERVICE_ID = 'awbestmail'
-            // We need these from the user (or .env)
-            const TEMPLATE_ID = 'YOUR_TEMPLATE_ID' // User must replace this
-            const PUBLIC_KEY = 'YOUR_PUBLIC_KEY'   // User must replace this
+            const TEMPLATE_ID = 'ideabombinvite'
+            const PUBLIC_KEY = '-jg3wr8AP773h-fFD'
 
-            if (TEMPLATE_ID === 'YOUR_TEMPLATE_ID' || PUBLIC_KEY === 'YOUR_PUBLIC_KEY') {
-                // Temporary Fallback / Prompt
-                alert("EmailJS Setup Incomplete!\n\nPlease provide Template ID and Public Key in the code or chat.\n\nOpening default mail client as fallback...")
-                const subject = encodeURIComponent("Invitation: Collaborate on Whiteboard")
-                const body = encodeURIComponent(`Hi,\n\nI've invited you as a ${role.toUpperCase()} to my whiteboard.\n\nBoard Link: ${window.location.href}\n\nPlease log in with: ${emailToInvite}\n\nThanks!`)
-                window.location.href = `mailto:${emailToInvite}?subject=${subject}&body=${body}`
-            } else {
+            try {
                 await emailjs.send(SERVICE_ID, TEMPLATE_ID, {
                     to_email: emailToInvite,
                     to_name: emailToInvite.split('@')[0],
                     role: role,
                     link: window.location.href,
-                    invite_sender: user?.displayName || 'A CollabWhiteboard User'
+                    invite_sender: user?.displayName || 'An IdeaBomb User'
                 }, PUBLIC_KEY)
 
                 alert(`Official invitation sent to ${emailToInvite}!`)
+            } catch (err) {
+                // Fallback if EmailJS fails (e.g. quota exceeded)
+                console.error("EmailJS Error:", err)
+                alert("Automated email failed (quota exceeded?), opening default mail app...")
+                const subject = encodeURIComponent("Invitation: Collaborate on Whiteboard")
+                const body = encodeURIComponent(`Hi,\n\nI've invited you as a ${role.toUpperCase()} to my whiteboard.\n\nBoard Link: ${window.location.href}\n\nPlease log in with: ${emailToInvite}\n\nThanks!`)
+                window.location.href = `mailto:${emailToInvite}?subject=${subject}&body=${body}`
             }
 
             setEmail('')
