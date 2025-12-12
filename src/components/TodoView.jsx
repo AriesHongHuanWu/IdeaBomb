@@ -291,7 +291,7 @@ export default function TodoView({ user, isOpen, onClose }) {
                                     cursor: 'pointer', fontWeight: 600
                                 }}
                             >
-                                {isAIProcessing ? '✨ Processing...' : '✨ AI Projectify'}
+                                {isAIProcessing ? '✨ Processing...' : '✨ To Whiteboard'}
                             </button>
                         </div>
                     </div>
