@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../firebase'
 import { signOut } from 'firebase/auth'
 import { collection, addDoc, query, where, onSnapshot, setDoc } from 'firebase/firestore'
-import { FiPlus, FiLogOut, FiLayout, FiHome, FiFolder, FiUsers, FiGrid, FiShare2, FiClock, FiMoreVertical, FiEdit2, FiTrash2, FiMove, FiShield, FiGlobe, FiCheckSquare, FiCheckCircle } from 'react-icons/fi'
+import { FiPlus, FiLogOut, FiLayout, FiHome, FiFolder, FiUsers, FiGrid, FiShare2, FiClock, FiMoreVertical, FiEdit2, FiTrash2, FiMove, FiShield, FiGlobe, FiCheckSquare, FiCheckCircle, FiSettings, FiSun, FiMoon } from 'react-icons/fi'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { updateDoc, doc, deleteDoc } from 'firebase/firestore'
 import TodoView from './TodoView'
@@ -28,6 +28,46 @@ const NavItem = ({ icon, label, active, onClick, isMobile }) => (
     </div>
 )
 
+// --- Constants ---
+const translations = {
+    en: {
+        home: 'Home Page', all: 'All Boards', my: 'My Boards', shared: 'Shared with me',
+        todo: 'TODO', admin: 'Admin Console', folders: 'FOLDERS', settings: 'Settings',
+        newBoard: 'New Board', signOut: 'Sign Out', noBoards: 'No boards found in this view.',
+        untitled: 'Untitled Board', sharedBy: 'Shared by', lastActive: 'Last Active',
+        rename: 'Rename', move: 'Move to Folder', delete: 'Delete',
+        cancel: 'Cancel', confirm: 'Confirm', typeHere: 'Type here...',
+        deleteTitle: 'Delete Board?', deleteMsg: 'Are you sure you want to delete this board? This action cannot be undone.',
+        renameTitle: 'Rename Board', moveTitle: 'Move to Folder',
+        theme: 'Theme', lang: 'Language', light: 'Light', dark: 'Dark'
+    },
+    'zh-TW': {
+        home: '首頁', all: '所有白板', my: '我的白板', shared: '與我共用',
+        todo: '待辦事項', admin: '管理控制台', folders: '資料夾', settings: '設定',
+        newBoard: '新增白板', signOut: '登出', noBoards: '此檢視中沒有白板。',
+        untitled: '未命名白板', sharedBy: '分享者', lastActive: '最後活動',
+        rename: '重新命名', move: '移動到資料夾', delete: '刪除',
+        cancel: '取消', confirm: '確認', typeHere: '在此輸入...',
+        deleteTitle: '刪除白板？', deleteMsg: '您確定要刪除此白板嗎？此動作無法復原。',
+        renameTitle: '重新命名白板', moveTitle: '移動到資料夾',
+        theme: '主題', lang: '語言', light: '亮色', dark: '深色'
+    }
+}
+
+const themeColors = {
+    light: {
+        bg: '#f8f9fa', sidebar: '#ffffff', text: '#5f6368', textPrim: '#202124',
+        border: '#dadce0', activeBg: '#e8f0fe', activeText: '#1a73e8',
+        cardBg: '#ffffff', cardHover: '#ffffff', header: '#ffffff'
+    },
+    dark: {
+        bg: '#121212', sidebar: '#1e1e1e', text: '#aaaaaa', textPrim: '#e0e0e0',
+        border: '#333333', activeBg: '#2c3e50', activeText: '#4facfe',
+        cardBg: '#1e1e1e', cardHover: '#252525', header: '#1e1e1e'
+    }
+}
+
+
 export default function Dashboard({ user }) {
     const [boards, setBoards] = useState([])
     const navigate = useNavigate()
@@ -36,8 +76,21 @@ export default function Dashboard({ user }) {
     const [showTodo, setShowTodo] = useState(false)
     const isMobile = useMediaQuery('(max-width: 768px)')
 
+    // Settings State (Persisted)
+    const [settings, setSettings] = useState(() => {
+        const saved = localStorage.getItem('dashboard_settings')
+        return saved ? JSON.parse(saved) : { theme: 'light', lang: 'en' }
+    })
+
+    useEffect(() => {
+        localStorage.setItem('dashboard_settings', JSON.stringify(settings))
+    }, [settings])
+
+    const t = (key) => translations[settings.lang][key] || key
+    const theme = themeColors[settings.theme]
+
     // Modal State
-    const [modalConfig, setModalConfig] = useState(null) // { type: 'create_folder' | 'rename_board' | 'move_board', title: string, initialValue: string, onConfirm: (val) => void }
+    const [modalConfig, setModalConfig] = useState(null) // { type: 'create_folder' | 'rename' | 'settings' | ... }
     const [contextMenu, setContextMenu] = useState(null) // { x, y, boardId }
 
     // QueryMemo to prevent re-creation loop
@@ -134,30 +187,20 @@ export default function Dashboard({ user }) {
                 setContextMenu(null)
                 setModalConfig({
                     type: 'confirm',
-                    title: 'Delete Board?',
-                    message: 'Are you sure you want to delete this board? This action cannot be undone.',
+                    title: t('deleteTitle'),
+                    message: t('deleteMsg'),
                     board: board, // crucial for handleAction id access
                     onConfirm: async () => {
-                        // Deep Delete: Clean up sub-collections
+                        // (Deep Delete Implementation Omitted for Brevity - Same as before)
                         try {
                             const batch = writeBatch(db)
-
-                            // 1. Delete Nodes
                             const nodesSnap = await getDocs(collection(db, 'boards', board.id, 'nodes'))
                             nodesSnap.forEach(doc => batch.delete(doc.ref))
-
-                            // 2. Delete Edges
                             const edgesSnap = await getDocs(collection(db, 'boards', board.id, 'edges'))
                             edgesSnap.forEach(doc => batch.delete(doc.ref))
-
-                            // 3. Delete Messages (if any)
                             const msgsSnap = await getDocs(collection(db, 'boards', board.id, 'messages'))
                             msgsSnap.forEach(doc => batch.delete(doc.ref))
-
-                            // Commit batch delete of content
                             await batch.commit()
-
-                            // 4. Delete Board Doc
                             await deleteDoc(boardRef)
                         } catch (err) {
                             console.error("Deep delete failed", err)
@@ -166,7 +209,7 @@ export default function Dashboard({ user }) {
                         setModalConfig(null)
                     }
                 })
-                return // Don't close modal immediately for delete
+                return
             }
         } catch (e) {
             console.error(e)
@@ -182,20 +225,20 @@ export default function Dashboard({ user }) {
     }
 
     return (
-        <div style={{ minHeight: '100vh', background: '#f8f9fa', fontFamily: '"Google Sans", "Inter", sans-serif', overflowX: 'hidden' }}>
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 40px', background: 'white', borderBottom: '1px solid #dadce0' }}>
-                <h1 onClick={() => navigate('/')} style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: 10, margin: 0, cursor: 'pointer' }}>
+        <div style={{ minHeight: '100vh', background: theme.bg, fontFamily: '"Google Sans", "Inter", sans-serif', overflowX: 'hidden', color: theme.text }}>
+            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 40px', background: theme.header, borderBottom: `1px solid ${theme.border}` }}>
+                <h1 onClick={() => navigate('/')} style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: 10, margin: 0, cursor: 'pointer', color: theme.textPrim }}>
                     <img src="/logo.svg" alt="Logo" style={{ height: 24 }} /> IdeaBomb
                 </h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                     {user && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: theme.textPrim }}>
                             <img src={user.photoURL} alt="User" style={{ width: 32, height: 32, borderRadius: '50%' }} />
                             <span>{user.displayName}</span>
                         </div>
                     )}
-                    <button onClick={() => signOut(auth)} style={{ background: 'white', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <FiLogOut /> Sign Out
+                    <button onClick={() => signOut(auth)} style={{ background: theme.bg, border: `1px solid ${theme.border}`, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: theme.text }}>
+                        <FiLogOut /> {t('signOut')}
                     </button>
                 </div>
             </header>
@@ -206,21 +249,21 @@ export default function Dashboard({ user }) {
                 {/* Sidebar */}
                 <div style={{
                     width: isMobile ? '60px' : '250px',
-                    background: 'white',
-                    borderRight: '1px solid #dadce0',
+                    background: theme.sidebar,
+                    borderRight: `1px solid ${theme.border}`,
                     padding: '20px 0',
                     display: 'flex',
                     flexDirection: 'column',
                     flexShrink: 0
                 }}>
-                    <NavItem icon={<FiGlobe />} label="Home Page" active={false} onClick={() => navigate('/home')} isMobile={isMobile} />
-                    <NavItem icon={<FiGrid />} label="All Boards" active={activeView === 'all'} onClick={() => { setActiveView('all'); setSelectedFolder(null) }} isMobile={isMobile} />
-                    <NavItem icon={<FiLayout />} label="My Boards" active={activeView === 'created'} onClick={() => { setActiveView('created'); setSelectedFolder(null) }} isMobile={isMobile} />
-                    <NavItem icon={<FiShare2 />} label="Shared with me" active={activeView === 'shared'} onClick={() => { setActiveView('shared'); setSelectedFolder(null) }} isMobile={isMobile} />
+                    <NavItem icon={<FiGlobe />} label={t('home')} active={false} onClick={() => navigate('/home')} isMobile={isMobile} />
+                    <NavItem icon={<FiGrid />} label={t('all')} active={activeView === 'all'} onClick={() => { setActiveView('all'); setSelectedFolder(null) }} isMobile={isMobile} />
+                    <NavItem icon={<FiLayout />} label={t('my')} active={activeView === 'created'} onClick={() => { setActiveView('created'); setSelectedFolder(null) }} isMobile={isMobile} />
+                    <NavItem icon={<FiShare2 />} label={t('shared')} active={activeView === 'shared'} onClick={() => { setActiveView('shared'); setSelectedFolder(null) }} isMobile={isMobile} />
 
                     <NavItem
                         icon={<FiCheckCircle style={{ color: '#db4c3f' }} />}
-                        label="TODO"
+                        label={t('todo')}
                         active={showTodo}
                         onClick={() => setShowTodo(!showTodo)}
                         isMobile={isMobile}
@@ -228,14 +271,14 @@ export default function Dashboard({ user }) {
 
                     {/* Admin Link */}
                     {['aries0d0f@gmail.com', 'aries.wu@ideabomb.com', 'arieswu001@gmail.com'].includes(user?.email?.toLowerCase()) && (
-                        <NavItem icon={<FiShield />} label="Admin Console" active={false} onClick={() => navigate('/admin')} isMobile={isMobile} />
+                        <NavItem icon={<FiShield />} label={t('admin')} active={false} onClick={() => navigate('/admin')} isMobile={isMobile} />
                     )}
 
-                    <div style={{ margin: '10px 0', borderTop: '1px solid #eee' }}></div>
+                    <div style={{ margin: '10px 0', borderTop: `1px solid ${theme.border}` }}></div>
 
                     {!isMobile && (
-                        <div style={{ padding: '0 20px', marginBottom: 10, fontSize: '0.8rem', fontWeight: 'bold', color: '#5f6368' }}>
-                            FOLDERS
+                        <div style={{ padding: '0 20px', marginBottom: 10, fontSize: '0.8rem', fontWeight: 'bold', color: theme.text }}>
+                            {t('folders')}
                         </div>
                     )}
 
@@ -249,6 +292,16 @@ export default function Dashboard({ user }) {
                             isMobile={isMobile}
                         />
                     ))}
+
+                    <div style={{ marginTop: 'auto' }}>
+                        <NavItem
+                            icon={<FiSettings />}
+                            label={t('settings')}
+                            active={false}
+                            onClick={() => setModalConfig({ type: 'settings' })}
+                            isMobile={isMobile}
+                        />
+                    </div>
                 </div>
 
                 {/* Content Area */}
@@ -260,11 +313,11 @@ export default function Dashboard({ user }) {
                     {/* Dashboard Content */}
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 }}>
-                            <h1 style={{ fontSize: '1.8rem', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <h1 style={{ fontSize: '1.8rem', margin: 0, display: 'flex', alignItems: 'center', gap: 10, color: theme.textPrim }}>
                                 {activeView === 'folder' ? <><FiFolder /> {selectedFolder}</> :
-                                    activeView === 'shared' ? <><FiShare2 /> Shared with me</> :
-                                        activeView === 'created' ? <><FiLayout /> My Boards</> :
-                                            <><FiGrid /> All Boards</>}
+                                    activeView === 'shared' ? <><FiShare2 /> {t('shared')}</> :
+                                        activeView === 'created' ? <><FiLayout /> {t('my')}</> :
+                                            <><FiGrid /> {t('all')}</>}
                             </h1>
                             <button
                                 onClick={createBoard}
@@ -274,14 +327,14 @@ export default function Dashboard({ user }) {
                                     boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
                                 }}
                             >
-                                <FiPlus /> New Board
+                                <FiPlus /> {t('newBoard')}
                             </button>
                         </div>
 
                         {filteredBoards.length === 0 ? (
-                            <div style={{ textAlign: 'center', marginTop: 80, color: '#5f6368' }}>
+                            <div style={{ textAlign: 'center', marginTop: 80, color: theme.text }}>
                                 <div style={{ fontSize: '3rem', marginBottom: 20, opacity: 0.2 }}><FiLayout /></div>
-                                <p>No boards found in this view.</p>
+                                <p>{t('noBoards')}</p>
                             </div>
                         ) : (
                             <div style={{
@@ -296,17 +349,17 @@ export default function Dashboard({ user }) {
                                         whileHover={{ y: -5, boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}
                                         onClick={() => navigate(`/board/${board.id}`)}
                                         style={{
-                                            background: 'white', borderRadius: 8, border: '1px solid #dadce0',
+                                            background: theme.cardBg, borderRadius: 8, border: `1px solid ${theme.border}`,
                                             overflow: 'hidden', cursor: 'pointer', transition: 'box-shadow 0.2s',
                                             position: 'relative'
                                         }}
                                     >
                                         {/* Preview Area */}
-                                        <div style={{ height: 140, background: '#f8f9fa', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #eee', position: 'relative' }}>
+                                        <div style={{ height: 140, background: theme.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: `1px solid ${theme.border}`, position: 'relative' }}>
                                             {board.thumbnail ? (
                                                 <img src={board.thumbnail} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                             ) : (
-                                                <div style={{ opacity: 0.1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                <div style={{ opacity: 0.1, display: 'flex', flexDirection: 'column', alignItems: 'center', color: theme.text }}>
                                                     <FiLayout style={{ fontSize: '3rem' }} />
                                                 </div>
                                             )}
@@ -315,7 +368,7 @@ export default function Dashboard({ user }) {
                                                 <div style={{
                                                     position: 'absolute', top: 10, left: 10,
                                                     background: 'rgba(0,0,0,0.05)', padding: '2px 8px', borderRadius: 12,
-                                                    fontSize: '0.75rem', color: '#5f6368', display: 'flex', alignItems: 'center', gap: 4
+                                                    fontSize: '0.75rem', color: theme.text, display: 'flex', alignItems: 'center', gap: 4
                                                 }}>
                                                     <FiFolder size={12} /> {board.folder}
                                                 </div>
@@ -325,12 +378,12 @@ export default function Dashboard({ user }) {
                                         {/* Info Area */}
                                         <div style={{ padding: 15 }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', color: '#202124', fontWeight: 500 }}>
-                                                    {board.title || 'Untitled Board'}
+                                                <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', color: theme.textPrim, fontWeight: 500 }}>
+                                                    {board.title || t('untitled')}
                                                 </h3>
                                                 <div
                                                     onClick={(e) => openContextMenu(e, board)}
-                                                    style={{ cursor: 'pointer', padding: 6, borderRadius: '50%', color: '#5f6368', marginRight: -5 }}
+                                                    style={{ cursor: 'pointer', padding: 6, borderRadius: '50%', color: theme.text, marginRight: -5 }}
                                                     onMouseEnter={e => e.target.style.background = 'rgba(0,0,0,0.05)'}
                                                     onMouseLeave={e => e.target.style.background = 'transparent'}
                                                 >
@@ -338,18 +391,18 @@ export default function Dashboard({ user }) {
                                                 </div>
                                             </div>
 
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 15, marginTop: 10, fontSize: '0.8rem', color: '#5f6368' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 15, marginTop: 10, fontSize: '0.8rem', color: theme.text }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} title="Collaborators">
                                                     <FiUsers /> {board.allowedEmails?.length || 1}
                                                 </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} title="Last Active">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} title={t('lastActive')}>
                                                     <FiClock /> {formatDate(board.createdAt)}
                                                 </div>
                                             </div>
 
                                             {(board.createdBy !== user.uid && board.ownerEmail !== user.email) && (
-                                                <div style={{ marginTop: 8, fontSize: '0.75rem', color: '#1a73e8', background: '#e8f0fe', display: 'inline-block', padding: '2px 6px', borderRadius: 4 }}>
-                                                    Shared by {board.ownerEmail}
+                                                <div style={{ marginTop: 8, fontSize: '0.75rem', color: theme.activeText, background: theme.activeBg, display: 'inline-block', padding: '2px 6px', borderRadius: 4 }}>
+                                                    {t('sharedBy')} {board.ownerEmail}
                                                 </div>
                                             )}
                                         </div>
@@ -366,34 +419,80 @@ export default function Dashboard({ user }) {
             {modalConfig && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-                    background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(8px)',
+                    background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
                 }}>
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                         style={{
                             background: 'white', padding: 30, borderRadius: 24,
-                            boxShadow: '0 20px 60px rgba(0,0,0,0.15)', width: '90%', maxWidth: 400,
-                            border: '1px solid rgba(0,0,0,0.05)'
+                            boxShadow: '0 20px 60px rgba(0,0,0,0.3)', width: '90%', maxWidth: 400,
+                            border: '1px solid rgba(0,0,0,0.1)'
                         }}
                     >
                         {modalConfig.type === 'confirm' ? (
                             <>
-                                <h2 style={{ margin: '0 0 10px 0', fontSize: '1.4rem' }}>{modalConfig.title}</h2>
+                                <h2 style={{ margin: '0 0 10px 0', fontSize: '1.4rem', color: '#202124' }}>{modalConfig.title}</h2>
                                 <p style={{ color: '#666', marginBottom: 25, lineHeight: 1.5 }}>{modalConfig.message}</p>
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                                    <button onClick={() => setModalConfig(null)} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'transparent', color: '#666', cursor: 'pointer' }}>Cancel</button>
-                                    <button onClick={() => handleAction(modalConfig.type, modalConfig.board, null)} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#1a73e8', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Confirm</button>
+                                    <button onClick={() => setModalConfig(null)} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'transparent', color: '#666', cursor: 'pointer' }}>{t('cancel')}</button>
+                                    <button onClick={() => handleAction(modalConfig.type, modalConfig.board, null)} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#d93025', color: 'white', cursor: 'pointer', fontWeight: 600 }}>{t('confirm')}</button>
+                                </div>
+                            </>
+                        ) : modalConfig.type === 'settings' ? (
+                            <>
+                                <h2 style={{ margin: '0 0 20px 0', fontSize: '1.4rem', color: '#202124', display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <FiSettings /> {t('settings')}
+                                </h2>
+
+                                <div style={{ marginBottom: 20 }}>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#5f6368', marginBottom: 10 }}>{t('theme')}</div>
+                                    <div style={{ display: 'flex', gap: 10 }}>
+                                        <button
+                                            onClick={() => setSettings(s => ({ ...s, theme: 'light' }))}
+                                            style={{ flex: 1, padding: 12, borderRadius: 8, border: settings.theme === 'light' ? '2px solid #1a73e8' : '1px solid #dadce0', background: 'white', color: settings.theme === 'light' ? '#1a73e8' : '#5f6368', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                                        >
+                                            <FiSun /> {t('light')}
+                                        </button>
+                                        <button
+                                            onClick={() => setSettings(s => ({ ...s, theme: 'dark' }))}
+                                            style={{ flex: 1, padding: 12, borderRadius: 8, border: settings.theme === 'dark' ? '2px solid #1a73e8' : '1px solid #dadce0', background: '#333', color: settings.theme === 'dark' ? '#1a73e8' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                                        >
+                                            <FiMoon /> {t('dark')}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div style={{ marginBottom: 30 }}>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#5f6368', marginBottom: 10 }}>{t('lang')}</div>
+                                    <div style={{ display: 'flex', gap: 10 }}>
+                                        <button
+                                            onClick={() => setSettings(s => ({ ...s, lang: 'en' }))}
+                                            style={{ flex: 1, padding: 12, borderRadius: 8, border: settings.lang === 'en' ? '2px solid #1a73e8' : '1px solid #dadce0', background: settings.lang === 'en' ? '#e8f0fe' : 'transparent', color: settings.lang === 'en' ? '#1a73e8' : '#5f6368', cursor: 'pointer' }}
+                                        >
+                                            English
+                                        </button>
+                                        <button
+                                            onClick={() => setSettings(s => ({ ...s, lang: 'zh-TW' }))}
+                                            style={{ flex: 1, padding: 12, borderRadius: 8, border: settings.lang === 'zh-TW' ? '2px solid #1a73e8' : '1px solid #dadce0', background: settings.lang === 'zh-TW' ? '#e8f0fe' : 'transparent', color: settings.lang === 'zh-TW' ? '#1a73e8' : '#5f6368', cursor: 'pointer' }}
+                                        >
+                                            繁體中文
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                    <button onClick={() => setModalConfig(null)} style={{ padding: '10px 25px', borderRadius: 12, border: 'none', background: '#1a73e8', color: 'white', cursor: 'pointer', fontWeight: 600 }}>{t('confirm')}</button>
                                 </div>
                             </>
                         ) : (
                             <>
-                                <h2 style={{ margin: '0 0 20px 0', fontSize: '1.4rem' }}>{modalConfig.title}</h2>
+                                <h2 style={{ margin: '0 0 20px 0', fontSize: '1.4rem', color: '#202124' }}>{modalConfig.title}</h2>
                                 <input
                                     autoFocus
                                     id="modal-input"
                                     defaultValue={modalConfig.initialValue}
-                                    placeholder="Type here..."
+                                    placeholder={t('typeHere')}
                                     onKeyDown={e => { if (e.key === 'Enter') handleAction(modalConfig.type, modalConfig.board, e.target.value) }}
                                     style={{
                                         width: '100%', padding: '12px 16px', borderRadius: 12,
@@ -407,13 +506,13 @@ export default function Dashboard({ user }) {
                                         onClick={() => setModalConfig(null)}
                                         style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: 'transparent', color: '#5f6368', fontWeight: 600, cursor: 'pointer' }}
                                     >
-                                        Cancel
+                                        {t('cancel')}
                                     </button>
                                     <button
                                         onClick={() => handleAction(modalConfig.type, modalConfig.board, document.getElementById('modal-input').value)}
                                         style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#1a73e8', color: 'white', fontWeight: 600, cursor: 'pointer' }}
                                     >
-                                        Confirm
+                                        {t('confirm')}
                                     </button>
                                 </div>
                             </>
