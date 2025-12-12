@@ -375,35 +375,44 @@ function AnimatedDemoCanvas({ isMobile }) {
                 </div>
             </motion.div>
 
-            {/* 2. Youtube Video Embed (Simulated) */}
+            {/* 2. Youtube Video Embed (Simulated -> CSS Chart) */}
             <motion.div
                 initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
                 style={{
                     position: 'absolute', top: isMobile ? 280 : 100, left: isMobile ? 20 : 550,
                     width: isMobile ? 200 : 320, height: isMobile ? 120 : 180,
-                    background: '#202124', borderRadius: 16, overflow: 'hidden',
+                    background: 'white', borderRadius: 16, overflow: 'hidden',
                     boxShadow: '0 15px 40px rgba(0,0,0,0.2)', zIndex: 12,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column'
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column',
+                    border: '1px solid #f1f3f4'
                 }}
             >
-                <img src="https://images.unsplash.com/photo-1497436072909-60f360e1d4b0?w=500&auto=format&fit=crop&q=60" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
-                <div style={{ position: 'absolute', width: 48, height: 48, background: 'rgba(255,255,255,0.9)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#ea4335"><path d="M8 5v14l11-7z" /></svg>
+                {/* CSS Bar Chart Mock */}
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, height: '60%', marginBottom: 10 }}>
+                    <div style={{ width: 24, height: '40%', background: '#ffbdcb', borderRadius: 4 }}></div>
+                    <div style={{ width: 24, height: '70%', background: '#ff80ab', borderRadius: 4 }}></div>
+                    <div style={{ width: 24, height: '55%', background: '#f48fb1', borderRadius: 4 }}></div>
+                    <div style={{ width: 24, height: '90%', background: '#ec407a', borderRadius: 4 }}></div>
+                    <div style={{ width: 24, height: '65%', background: '#d81b60', borderRadius: 4 }}></div>
                 </div>
-                <div style={{ position: 'absolute', bottom: 10, left: 15, color: 'white', fontWeight: 600, fontSize: '0.9rem', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Market Analysis.mp4</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#333' }}>Market Growth 2025 📈</div>
             </motion.div>
 
-            {/* 3. Image/Moodboard Node */}
+            {/* 3. Image/Moodboard Node (CSS Blueprint) */}
             <motion.div
                 initial={{ opacity: 0, rotate: 5 }} animate={{ opacity: 1, rotate: 3 }} transition={{ duration: 0.6, delay: 0.5 }}
                 style={{
                     position: 'absolute', top: isMobile ? 380 : 350, left: isMobile ? 150 : 600,
-                    width: 200, padding: 10, background: 'white', borderRadius: 8,
+                    width: 200, padding: 16, background: 'white', borderRadius: 8,
                     boxShadow: '0 4px 20px rgba(0,0,0,0.1)', transform: 'rotate(3deg)', zIndex: 9
                 }}
             >
-                <img src="https://images.unsplash.com/photo-1542601906990-24d4c16419d9?w=400&q=80" style={{ width: '100%', borderRadius: 4, height: 120, objectFit: 'cover' }} />
-                <div style={{ fontSize: '0.8rem', color: '#5f6368', marginTop: 8, textAlign: 'center', fontFamily: 'cursive' }}>Solar Layout Concept</div>
+                {/* CSS Blueprint Mock */}
+                <div style={{ width: '100%', height: 100, background: '#e3f2fd', borderRadius: 4, position: 'relative', overflow: 'hidden', border: '1px solid #90caf9' }}>
+                    <div style={{ position: 'absolute', top: 10, left: 10, right: 10, bottom: 10, border: '2px dashed #1e88e5', borderRadius: 4 }}></div>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 40, height: 40, background: '#2196f3', borderRadius: '50%', opacity: 0.3 }}></div>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#1565c0', marginTop: 12, textAlign: 'center', fontFamily: 'monospace', letterSpacing: 1, fontWeight: 'bold' }}>SOLAR_LAYOUT_V2</div>
             </motion.div>
 
             {/* 4. Sticky Note Cluster */}
