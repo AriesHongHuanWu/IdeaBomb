@@ -34,17 +34,21 @@ export default function ShareModal({ boardId, isOpen, onClose }) {
 
             await updateDoc(doc(db, 'boards', boardId), updates)
 
-            const subject = encodeURIComponent("Invitation: Collaborate on Whiteboard");
-            const body = encodeURIComponent(`Hi,\n\nI've invited you as a ${role.toUpperCase()} to my whiteboard. Login: ${emailToInvite}.\n\nLink: ${window.location.href}\n\nThanks!`);
-            window.location.href = `mailto:${emailToInvite}?subject=${subject}&body=${body}`;
+            // Construct Email Logic
+            const subject = encodeURIComponent(`Invitation: Collaborate on Whiteboard`)
+            const body = encodeURIComponent(`Hi,\n\nI've invited you as a ${role.toUpperCase()} to my whiteboard.\n\nBoard Link: ${window.location.href}\n\nPlease log in with: ${emailToInvite}\n\nThanks!`)
 
-            alert(`Access granted to ${emailToInvite} as ${role}.`);
-            setEmail('');
+            // Open Email Client
+            window.location.href = `mailto:${emailToInvite}?subject=${subject}&body=${body}`
+
+            // UI Feedback (Non-blocking)
+            setEmail('')
+            alert(`Invite sent to ${emailToInvite}!`) // Keep alert but ensure it runs AFTER mailto check by browser
         } catch (error) {
-            console.error("Invite failed", error);
-            alert("Failed to invite: " + error.message);
+            console.error("Invite failed", error)
+            alert("Failed to invite: " + error.message)
         } finally {
-            setLoading(false);
+            setLoading(false)
         }
     }
 
