@@ -809,6 +809,29 @@ const YouTubeNode = ({ node, onUpdate }) => {
         </div>
     )
 }
+
+const MemoizedCanvasSetup = ({ initialW, initialH, onSave, onClose }) => {
+    const [w, setW] = useState(initialW)
+    const [h, setH] = useState(initialH)
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: 'white', padding: 24, borderRadius: 20, width: 320 }} onClick={e => e.stopPropagation()}>
+                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: 15, display: 'flex', alignItems: 'center', gap: 10 }}><FiMaximize2 /> Canvas Size</div>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: 4 }}>Width (px)</div>
+                        <input type="number" value={w} onChange={e => setW(parseInt(e.target.value) || 0)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd', outline: 'none', fontSize: '1rem' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: 4 }}>Height (px)</div>
+                        <input type="number" value={h} onChange={e => setH(parseInt(e.target.value) || 0)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd', outline: 'none', fontSize: '1rem' }} />
+                    </div>
+                </div>
+                <button onClick={() => onSave(w, h)} style={{ width: '100%', background: '#007bff', color: 'white', border: 'none', padding: 12, borderRadius: 12, fontWeight: 'bold', cursor: 'pointer' }}>Done</button>
+            </motion.div>
+        </motion.div>
+    )
+}
 const TodoNode = ({ node, onUpdate }) => {
     const items = node.items || []
     const [newItem, setNewItem] = useState('')
@@ -2247,27 +2270,15 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
             {/* Canvas Size Modal */}
             <AnimatePresence>
                 {showCanvasSetup && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowCanvasSetup(false)}>
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: 'white', padding: 24, borderRadius: 20, width: 320 }} onClick={e => e.stopPropagation()}>
-                            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: 15, display: 'flex', alignItems: 'center', gap: 10 }}><FiMaximize2 /> Canvas Size</div>
-                            <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: 4 }}>Width (px)</div>
-                                    <input type="number" defaultValue={(canvasSize?.w || 3000)} id="canvas-w-input" style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd', outline: 'none', fontSize: '1rem' }} />
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: 4 }}>Height (px)</div>
-                                    <input type="number" defaultValue={(canvasSize?.h || 2000)} id="canvas-h-input" style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd', outline: 'none', fontSize: '1rem' }} />
-                                </div>
-                            </div>
-                            <button onClick={() => {
-                                const w = parseInt(document.getElementById('canvas-w-input').value) || 3000
-                                const h = parseInt(document.getElementById('canvas-h-input').value) || 2000
-                                if (onUpdateCanvasSize) onUpdateCanvasSize(w, h)
-                                setShowCanvasSetup(false)
-                            }} style={{ width: '100%', background: '#007bff', color: 'white', border: 'none', padding: 12, borderRadius: 12, fontWeight: 'bold', cursor: 'pointer' }}>Done</button>
-                        </motion.div>
-                    </motion.div>
+                    <MemoizedCanvasSetup
+                        initialW={canvasSize?.w || 3000}
+                        initialH={canvasSize?.h || 2000}
+                        onSave={(w, h) => {
+                            if (onUpdateCanvasSize) onUpdateCanvasSize(w, h)
+                            setShowCanvasSetup(false)
+                        }}
+                        onClose={() => setShowCanvasSetup(false)}
+                    />
                 )}
             </AnimatePresence>
             {connectMode && <div style={{ position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', background: '#007bff', color: 'white', padding: '10px 20px', borderRadius: 20, fontWeight: 'bold' }}>Select two nodes to connect</div>}
