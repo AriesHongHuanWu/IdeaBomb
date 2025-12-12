@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import ReactDOM from 'react-dom'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { BsStars } from 'react-icons/bs'
 import { FiTrash2, FiCalendar, FiCheckSquare, FiImage, FiType, FiPlus, FiX, FiGrid, FiYoutube, FiCopy, FiArrowRight, FiLink, FiMaximize2, FiGlobe, FiScissors, FiClipboard, FiLayers, FiCheck, FiMusic, FiMic, FiCode, FiMousePointer, FiSquare, FiClock, FiPlay, FiPause, FiRotateCcw, FiLayout, FiBarChart2, FiSmile, FiStar, FiCircle, FiUser, FiColumns, FiActivity, FiTerminal, FiMessageSquare, FiCheckCircle, FiTarget, FiBell, FiSend, FiUpload } from 'react-icons/fi'
@@ -1227,19 +1228,22 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
                 />
             </div>
 
-            {/* Floating Link Toolbar */}
-            {toolbar && toolbar.visible && (
+            {/* Floating Link Toolbar - Portaled to avoid Transform issues */}
+            {toolbar && toolbar.visible && ReactDOM.createPortal(
                 <div style={{
                     position: 'fixed', top: toolbar.top, left: toolbar.left,
                     background: '#222', padding: '6px 10px', borderRadius: 8,
                     display: 'flex', gap: 8, alignItems: 'center',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)', zIndex: 9999,
-                    animation: 'fadeIn 0.2s ease'
-                }} onPointerDown={e => e.preventDefault() /* Prevent losing focus */}>
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.3)', zIndex: 99999,
+                    animation: 'fadeIn 0.2s ease', pointerEvents: 'auto'
+                }} onPointerDown={e => e.preventDefault() /* Prevent losing focus */} onClick={e => e.stopPropagation()}>
                     <button onClick={execLink} title="Add Link" style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}><FiLink size={14} /></button>
                     <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.2)' }} />
                     <button onClick={execUnlink} title="Remove Link" style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', display: 'flex' }}><FiTrash2 size={14} /></button>
-                </div>
+                    <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.2)' }} />
+                    {/* Translation Logic could go here later if needed */}
+                </div>,
+                document.body
             )}
         </div>
     )
@@ -1842,8 +1846,8 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     // Keyboard Shortcuts
     useEffect(() => {
         const handleKeyDown = (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
-
+            // Check for inputs, textareas, AND contentEditable elements
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return
 
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 if (selectedIds.length > 0) {
