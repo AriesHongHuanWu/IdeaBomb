@@ -5,6 +5,7 @@ import { FiX } from 'react-icons/fi'
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { db } from '../firebase'
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, setDoc, updateDoc, doc, limit } from 'firebase/firestore'
+import { useSettings } from '../App'
 
 const SYSTEM_PROMPT = `You are an expert Project Manager & Board Architect AI for IdeaBomb.
 Today is {{TODAY}}. Your goal is to be an **EXPANSIVE, PROACTIVE CONSULTANT**.
@@ -73,6 +74,7 @@ JSON Array of objects:
 `
 
 export default function ChatInterface({ boardId, user, onAction, nodes, collaborators, selectedNodeIds = [] }) {
+    const { theme, t } = useSettings()
     const [messages, setMessages] = useState([])
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
@@ -276,33 +278,25 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                         className="glass-panel"
                         style={{
-                            width: 360, height: 520, pointerEvents: 'auto',
-                            background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)',
-                            borderRadius: '24px 24px 24px 8px', overflow: 'hidden',
-                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.5)',
-                            display: 'flex', flexDirection: 'column'
+                            position: 'fixed', bottom: 100, right: 30, width: 380, height: 600,
+                            background: theme?.cardBg || 'white', borderRadius: 24,
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column',
+                            zIndex: 2000, overflow: 'hidden', border: `1px solid ${theme?.border || 'rgba(0,0,0,0.1)'}`, color: theme?.text
                         }}
                     >
-                        <div style={{ padding: '15px 20px', background: 'linear-gradient(135deg, #4facfe, #00f2fe)', color: 'white', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <BsStars size={20} />
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <span style={{ fontSize: '1rem', lineHeight: '1.2' }}>Team Collaboration</span>
-                                    <span style={{ fontSize: '0.7rem', fontWeight: 'normal', opacity: 0.9 }}>Type <strong>@ai</strong> for help</span>
-                                </div>
+                        {/* Header */}
+                        <div style={{ padding: '15px 20px', borderBottom: `1px solid ${theme?.border || '#eee'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: theme?.cardBg || 'rgba(255,255,255,0.5)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#52c41a', boxShadow: '0 0 10px #52c41a' }}></div>
+                                <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>AI Consultant</span>
                             </div>
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background 0.2s' }}
-                                onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.3)'}
-                                onMouseLeave={e => e.target.style.background = 'rgba(255,255,255,0.2)'}
-                            >
+                            <button onClick={() => setIsOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: theme?.text || '#999' }}>
                                 <FiX size={16} />
                             </button>
                         </div>
 
                         <div style={{ flex: 1, padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                            <div style={{ background: 'rgba(0,0,0,0.05)', padding: '10px 15px', borderRadius: '15px 15px 15px 0', alignSelf: 'flex-start', maxWidth: '85%', fontSize: '0.9rem', lineHeight: 1.5, color: '#444' }}>
+                            <div style={{ background: theme?.bg || 'rgba(0,0,0,0.05)', padding: '10px 15px', borderRadius: '15px 15px 15px 0', alignSelf: 'flex-start', maxWidth: '85%', fontSize: '0.9rem', lineHeight: 1.5, color: theme?.text || '#444' }}>
                                 I am your Whiteboard Assistant. Try saying "Create a marketing plan"!
                             </div>
                             {messages.map((msg, i) => {
@@ -311,15 +305,15 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                                 const align = isMe ? 'flex-end' : 'flex-start'
                                 return (
                                     <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ alignSelf: align, maxWidth: '85%', display: 'flex', flexDirection: 'column', alignItems: align }}>
-                                        {!isMe && !isAI && <span style={{ fontSize: '0.7rem', color: '#666', marginBottom: 2, marginLeft: 4 }}>{msg.sender || 'User'}</span>}
+                                        {!isMe && !isAI && <span style={{ fontSize: '0.7rem', color: theme?.text || '#666', marginBottom: 2, marginLeft: 4 }}>{msg.sender || 'User'}</span>}
                                         <div style={{
-                                            background: isMe ? 'linear-gradient(135deg, #4facfe, #00f2fe)' : (isAI ? 'white' : '#f1f3f4'),
-                                            color: isMe ? 'white' : '#333',
+                                            background: isMe ? 'linear-gradient(135deg, #4facfe, #00f2fe)' : (isAI ? (theme?.bg || 'white') : (theme?.bg || '#f1f3f4')),
+                                            color: isMe ? 'white' : (theme?.text || '#333'),
                                             padding: '10px 15px',
                                             borderRadius: isMe ? '15px 15px 0 15px' : '15px 15px 15px 0',
                                             boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
                                             fontSize: '0.95rem',
-                                            border: isAI ? '1px solid #eee' : 'none'
+                                            border: isAI ? `1px solid ${theme?.border || '#eee'}` : 'none'
                                         }}>
                                             {msg.content}
                                         </div>
@@ -330,14 +324,14 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                             <div ref={messagesEndRef} />
                         </div>
 
-                        <div style={{ padding: 15, background: 'rgba(255,255,255,0.5)', borderTop: '1px solid rgba(0,0,0,0.05)', display: 'flex', gap: 10 }}>
+                        <div style={{ padding: 15, background: theme?.cardBg || 'rgba(255,255,255,0.5)', borderTop: `1px solid ${theme?.border || 'rgba(0,0,0,0.05)'}`, display: 'flex', gap: 10 }}>
                             <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
                                 <input
                                     value={input}
                                     onChange={e => setInput(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && handleSend()}
                                     placeholder={isListening ? "Listening..." : "Ask AI to create..."}
-                                    style={{ width: '100%', padding: '12px 40px 12px 15px', borderRadius: 24, border: '1px solid #ddd', outline: 'none', background: 'white', color: '#333', boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.02)', fontSize: '0.95rem' }}
+                                    style={{ width: '100%', padding: '12px 40px 12px 15px', borderRadius: 24, border: `1px solid ${theme?.border || '#ddd'}`, outline: 'none', background: theme?.bg || 'white', color: theme?.text || '#333', boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.02)', fontSize: '0.95rem' }}
                                 />
                                 <button
                                     onClick={startListening}

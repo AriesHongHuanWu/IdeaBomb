@@ -8,6 +8,7 @@ import {
 import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, orderBy, serverTimestamp, setDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import { useSettings } from '../App'
 
 // --- Components ---
 
@@ -44,6 +45,7 @@ export default function TodoView({ user, isOpen, onClose }) {
     const [newTodoPriority, setNewTodoPriority] = useState(4) // 4 = normal
     const [isAIProcessing, setIsAIProcessing] = useState(false)
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+    const { t, theme } = useSettings()
 
     // --- Data Sync ---
     useEffect(() => {
@@ -125,29 +127,29 @@ export default function TodoView({ user, isOpen, onClose }) {
             const taskList = todos.map(t => `- [P${t.priority || 4}] ${t.text} (Due: ${t.dueDate || 'None'})`).join('\n')
 
             const prompt = `
-                Act as a Project Manager using Kanban methodology.
-                Organize these tasks into a structured project board.
-                
-                Tasks:
-                ${taskList}
-                
-                Goal: Group tasks into logical Columns (e.g., "To Do", "In Progress", "Backlog", or by Topic).
-                Sort them by Priority (P1 highest) within columns.
-                
-                Return validated JSON strictly matching this structure:
-                {
-                    "title": "Smart Project Board",
-                    "columns": [
-                        {
-                            "title": "Column Name",
-                            "color": "#e0e0e0", 
-                            "tasks": [
-                                { "content": "Task Content", "priority": 1 }
-                            ]
-                        }
-                    ]
-                }
-            `
+                    Act as a Project Manager using Kanban methodology.
+                    Organize these tasks into a structured project board.
+                    
+                    Tasks:
+                    ${taskList}
+                    
+                    Goal: Group tasks into logical Columns (e.g., "To Do", "In Progress", "Backlog", or by Topic).
+                    Sort them by Priority (P1 highest) within columns.
+                    
+                    Return validated JSON strictly matching this structure:
+                    {
+                        "title": "Smart Project Board",
+                        "columns": [
+                            {
+                                "title": "Column Name",
+                                "color": "#e0e0e0", 
+                                "tasks": [
+                                    { "content": "Task Content", "priority": 1 }
+                                ]
+                            }
+                        ]
+                    }
+                `
 
             const result = await model.generateContent(prompt)
             const text = (await result.response).text()
@@ -246,15 +248,15 @@ export default function TodoView({ user, isOpen, onClose }) {
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                     style={{
                         position: 'fixed', top: 70, right: 0, bottom: 0,
-                        width: '100%', maxWidth: 700, // Wider for fuller experience
-                        background: 'white', borderLeft: '1px solid #ddd',
-                        boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
-                        zIndex: 900, display: 'flex'
+                        width: '100%', maxWidth: 700,
+                        background: theme.modalBg, borderLeft: `1px solid ${theme.border}`,
+                        boxShadow: '0 0 30px rgba(0,0,0,0.1)',
+                        zIndex: 900, display: 'flex', color: theme.text
                     }}
                 >
                     {/* --- Sidebar (Navigation) --- */}
                     <div style={{
-                        width: 200, background: '#fafafa', borderRight: '1px solid #eee',
+                        width: 200, background: theme.sidebar, borderRight: `1px solid ${theme.border}`,
                         padding: '20px 0', display: isMobile ? 'none' : 'flex', flexDirection: 'column'
                     }}>
                         <div style={{ padding: '0 20px 20px', fontWeight: 'bold', fontSize: '1.1rem', color: '#db4c3f', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -263,22 +265,22 @@ export default function TodoView({ user, isOpen, onClose }) {
 
                         <div
                             onClick={() => setActiveView('inbox')}
-                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'inbox' ? '#fff' : 'transparent', fontWeight: activeView === 'inbox' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'inbox' ? '#333' : '#666' }}
+                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'inbox' ? theme.activeBg : 'transparent', fontWeight: activeView === 'inbox' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'inbox' ? theme.activeText : theme.text }}
                         >
-                            <FiInbox color="#246fe0" /> Inbox
-                            <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: '#aaa' }}>{todos.length}</span>
+                            <FiInbox color="#246fe0" /> {t('inbox')}
+                            <span style={{ marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.7 }}>{todos.length}</span>
                         </div>
                         <div
                             onClick={() => setActiveView('today')}
-                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'today' ? '#fff' : 'transparent', fontWeight: activeView === 'today' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'inbox' ? '#333' : '#666' }}
+                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'today' ? theme.activeBg : 'transparent', fontWeight: activeView === 'today' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'today' ? theme.activeText : theme.text }}
                         >
-                            <FiSun color="#058527" /> Today
+                            <FiSun color="#058527" /> {t('today')}
                         </div>
                         <div
                             onClick={() => setActiveView('upcoming')}
-                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'upcoming' ? '#fff' : 'transparent', fontWeight: activeView === 'upcoming' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'inbox' ? '#333' : '#666' }}
+                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'upcoming' ? theme.activeBg : 'transparent', fontWeight: activeView === 'upcoming' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'upcoming' ? theme.activeText : theme.text }}
                         >
-                            <FiUpcoming color="#692fc2" /> Upcoming
+                            <FiUpcoming color="#692fc2" /> {t('upcoming')}
                         </div>
 
                         <div style={{ marginTop: 'auto', padding: 20 }}>
@@ -287,11 +289,11 @@ export default function TodoView({ user, isOpen, onClose }) {
                                 disabled={isAIProcessing}
                                 style={{
                                     width: '100%', padding: '10px', borderRadius: 8, border: 'none',
-                                    background: '#f0f0f0', color: '#333', fontSize: '0.8rem',
+                                    background: theme.activeBg, color: theme.activeText, fontSize: '0.8rem',
                                     cursor: 'pointer', fontWeight: 600
                                 }}
                             >
-                                {isAIProcessing ? '✨ Processing...' : '✨ To Whiteboard'}
+                                {isAIProcessing ? `${t('loading')}` : '✨ To Whiteboard'}
                             </button>
                         </div>
                     </div>
@@ -300,46 +302,48 @@ export default function TodoView({ user, isOpen, onClose }) {
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
 
                         {/* Header */}
-                        <div style={{ padding: '15px 20px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>
-                                {activeView === 'inbox' && 'Inbox'}
-                                {activeView === 'today' && 'Today'}
-                                {activeView === 'upcoming' && 'Upcoming'}
+                        <div style={{ padding: '15px 20px', borderBottom: `1px solid ${theme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: theme.textPrim }}>
+                                {activeView === 'inbox' && t('inbox')}
+                                {activeView === 'today' && t('today')}
+                                {activeView === 'upcoming' && t('upcoming')}
                             </h2>
-                            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 5 }}><FiX size={20} color="#666" /></button>
+                            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 5, color: theme.text }}><FiX size={20} /></button>
                         </div>
 
                         {/* Task List */}
                         <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
 
-                            {filteredTodos.map(todo => (
+                            {filteredTodos.length === 0 ? (
+                                <div style={{ textAlign: 'center', marginTop: 50, color: theme.text, opacity: 0.5 }}>
+                                    {t('noTasks')}
+                                </div>
+                            ) : filteredTodos.map(todo => (
                                 <div
                                     key={todo.id}
                                     style={{
                                         display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 15, position: 'relative',
-                                        padding: '10px 0', borderBottom: '1px solid #f5f5f5'
+                                        padding: '10px 0', borderBottom: `1px solid ${theme.border}`
                                     }}
                                 >
-                                    {/* Checkbox with Priority Color */}
                                     <div
                                         onClick={() => toggleComplete(todo)}
                                         style={{
                                             cursor: 'pointer', marginTop: 3,
                                             width: 18, height: 18, borderRadius: '50%',
-                                            border: `2px solid ${todo.priority === 1 ? '#d1453b' : todo.priority === 2 ? '#eb8909' : todo.priority === 3 ? '#246fe0' : '#ccc'}`,
+                                            border: `2px solid ${todo.priority === 1 ? '#d1453b' : todo.priority === 2 ? '#eb8909' : todo.priority === 3 ? '#246fe0' : theme.text}`,
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            background: todo.completed ? '#f0f0f0' : 'transparent'
+                                            background: todo.completed ? theme.text : 'transparent'
                                         }}
                                     >
-                                        {todo.completed && <FiCheck size={12} color="#aaa" />}
+                                        {todo.completed && <FiCheck size={12} color={theme.bg} />}
                                     </div>
 
-                                    {/* Task Content */}
                                     <div style={{ flex: 1 }}>
                                         <div style={{
                                             textDecoration: todo.completed ? 'line-through' : 'none',
-                                            color: todo.completed ? '#aaa' : '#202020',
-                                            fontSize: '0.95rem', lineHeight: '1.5'
+                                            color: todo.completed ? theme.text : theme.textPrim,
+                                            fontSize: '0.95rem', lineHeight: '1.5', opacity: todo.completed ? 0.6 : 1
                                         }}>
                                             {todo.text}
                                         </div>
@@ -350,24 +354,23 @@ export default function TodoView({ user, isOpen, onClose }) {
                                         )}
                                     </div>
 
-                                    {/* Actions */}
                                     <div style={{ display: 'flex', gap: 5, opacity: 0.5 }}>
-                                        <div style={{ fontSize: '0.7rem', color: '#999', marginTop: 5 }}>P{todo.priority || 4}</div>
-                                        <button onClick={() => deleteTodo(todo.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#999' }}>
+                                        <div style={{ fontSize: '0.7rem', color: theme.text, marginTop: 5 }}>P{todo.priority || 4}</div>
+                                        <button onClick={() => deleteTodo(todo.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: theme.text }}>
                                             <FiTrash2 size={14} />
                                         </button>
                                     </div>
                                 </div>
                             ))}
 
-                            {/* Standard "Add Task" Row */}
-                            <form onSubmit={handleAdd} style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, border: '1px solid #ddd', borderRadius: 10, padding: 10 }}>
+                            <form onSubmit={handleAdd} style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, border: `1px solid ${theme.border}`, borderRadius: 10, padding: 10 }}>
                                 <input
                                     value={newTodo}
                                     onChange={e => setNewTodo(e.target.value)}
-                                    placeholder="Add a task..."
+                                    placeholder={t('addTask') + "..."}
                                     style={{
-                                        border: 'none', outline: 'none', fontSize: '1rem', fontWeight: 500
+                                        border: 'none', outline: 'none', fontSize: '1rem', fontWeight: 500,
+                                        background: 'transparent', color: theme.textPrim
                                     }}
                                     autoFocus
                                 />
@@ -379,14 +382,12 @@ export default function TodoView({ user, isOpen, onClose }) {
                                                 value={newTodoDate}
                                                 onChange={e => setNewTodoDate(e.target.value)}
                                                 style={{
-                                                    border: '1px solid #ccc', borderRadius: 4, padding: '4px 8px',
-                                                    fontSize: '0.8rem', color: '#666', outline: 'none',
-                                                    fontFamily: 'inherit'
+                                                    border: `1px solid ${theme.border}`, borderRadius: 4, padding: '4px 8px',
+                                                    fontSize: '0.8rem', color: theme.text, outline: 'none',
+                                                    fontFamily: 'inherit', background: theme.inputBg || 'transparent'
                                                 }}
                                             />
-
-                                            {/* Priority Selector */}
-                                            <div style={{ display: 'flex', gap: 2 }}>
+                                            <div style={{ display: 'flex', gap: 2, marginLeft: 8 }}>
                                                 {[1, 2, 3, 4].map(p => (
                                                     <PriorityFlag
                                                         key={p}
@@ -402,12 +403,12 @@ export default function TodoView({ user, isOpen, onClose }) {
                                         type="submit"
                                         disabled={!newTodo}
                                         style={{
-                                            background: newTodo ? '#db4c3f' : '#f0f0f0',
-                                            color: newTodo ? 'white' : '#aaa',
+                                            background: newTodo ? '#db4c3f' : theme.activeBg,
+                                            color: newTodo ? 'white' : theme.activeText,
                                             border: 'none', padding: '6px 12px', borderRadius: 6, fontWeight: 'bold', cursor: newTodo ? 'pointer' : 'default'
                                         }}
                                     >
-                                        Add Task
+                                        {t('addTask')}
                                     </button>
                                 </div>
                             </form>

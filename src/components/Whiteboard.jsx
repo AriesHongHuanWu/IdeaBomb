@@ -829,21 +829,21 @@ const YouTubeNode = ({ node, onUpdate }) => {
     )
 }
 
-const MemoizedCanvasSetup = ({ initialW, initialH, onSave, onClose }) => {
+const MemoizedCanvasSetup = ({ initialW, initialH, onSave, onClose, theme, t }) => {
     const [w, setW] = useState(initialW)
     const [h, setH] = useState(initialH)
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: 'white', padding: 24, borderRadius: 20, width: 320 }} onClick={e => e.stopPropagation()}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ background: theme?.modalBg || 'white', padding: 24, borderRadius: 20, width: 320, color: theme?.text }} onClick={e => e.stopPropagation()}>
                 <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: 15, display: 'flex', alignItems: 'center', gap: 10 }}><FiMaximize2 /> Canvas Size</div>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
                     <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: 4 }}>Width (px)</div>
-                        <input type="number" value={w} onChange={e => setW(parseInt(e.target.value) || 0)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd', outline: 'none', fontSize: '1rem' }} />
+                        <div style={{ fontSize: '0.8rem', color: theme?.text || '#666', marginBottom: 4 }}>Width (px)</div>
+                        <input type="number" value={w} onChange={e => setW(parseInt(e.target.value) || 0)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${theme?.border || '#ddd'}`, outline: 'none', fontSize: '1rem', background: theme?.bg, color: theme?.text }} />
                     </div>
                     <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: 4 }}>Height (px)</div>
-                        <input type="number" value={h} onChange={e => setH(parseInt(e.target.value) || 0)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd', outline: 'none', fontSize: '1rem' }} />
+                        <div style={{ fontSize: '0.8rem', color: theme?.text || '#666', marginBottom: 4 }}>Height (px)</div>
+                        <input type="number" value={h} onChange={e => setH(parseInt(e.target.value) || 0)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${theme?.border || '#ddd'}`, outline: 'none', fontSize: '1rem', background: theme?.bg, color: theme?.text }} />
                     </div>
                 </div>
                 <button onClick={() => onSave(w, h)} style={{ width: '100%', background: '#007bff', color: 'white', border: 'none', padding: 12, borderRadius: 12, fontWeight: 'bold', cursor: 'pointer' }}>Done</button>
@@ -851,7 +851,7 @@ const MemoizedCanvasSetup = ({ initialW, initialH, onSave, onClose }) => {
         </motion.div>
     )
 }
-const TodoNode = ({ node, onUpdate }) => {
+const TodoNode = ({ node, onUpdate, theme }) => {
     const items = node.items || []
     const [newItem, setNewItem] = useState('')
 
@@ -882,15 +882,15 @@ const TodoNode = ({ node, onUpdate }) => {
     return (
         <div style={{
             width: '100%', height: '100%',
-            background: 'white', borderRadius: 16,
+            background: theme?.cardBg || 'white', borderRadius: 16,
             display: 'flex', flexDirection: 'column',
             boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-            overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)'
+            overflow: 'hidden', border: `1px solid ${theme?.border || 'rgba(0,0,0,0.05)'}`
         }}>
             {/* Header with Title and Progress */}
-            <div style={{ padding: '12px 16px', background: '#f8f9fa', borderBottom: '1px solid #eee' }}>
+            <div style={{ padding: '12px 16px', background: theme?.bg || '#f8f9fa', borderBottom: `1px solid ${theme?.border || '#eee'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, color: '#333' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, color: theme?.text || '#333' }}>
                         <div style={{ padding: 6, background: '#e6f7ff', borderRadius: 8, color: '#1890ff', display: 'flex' }}>
                             <FiCheckSquare />
                         </div>
@@ -909,17 +909,17 @@ const TodoNode = ({ node, onUpdate }) => {
             {/* List Body */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
                 {items.length === 0 && (
-                    <div style={{ padding: 20, textAlign: 'center', color: '#ccc', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                    <div style={{ padding: 20, textAlign: 'center', color: theme?.text || '#ccc', fontStyle: 'italic', fontSize: '0.9rem', opacity: 0.6 }}>
                         No tasks yet.<br />Add one below!
                     </div>
                 )}
                 {items.map((it, i) => (
                     <div key={i} className="todo-item" style={{
                         display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '8px 16px', borderBottom: '1px solid rgba(0,0,0,0.03)',
+                        padding: '8px 16px', borderBottom: `1px solid ${theme?.border || 'rgba(0,0,0,0.03)'}`,
                         transition: 'background 0.2s'
                     }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#f9f9f9'}
+                        onMouseEnter={e => e.currentTarget.style.background = theme?.activeBg || '#f9f9f9'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                         <div
@@ -941,7 +941,7 @@ const TodoNode = ({ node, onUpdate }) => {
                             style={{
                                 flex: 1, border: 'none', background: 'transparent',
                                 outline: 'none', fontSize: '0.95rem',
-                                color: it.done ? '#aaa' : '#333',
+                                color: it.done ? (theme?.text ? theme.text + '88' : '#aaa') : (theme?.text || '#333'), // Opacity for done
                                 textDecoration: it.done ? 'line-through' : 'none',
                                 transition: 'color 0.2s'
                             }}
@@ -1187,7 +1187,7 @@ const LinkNode = ({ node, onUpdate }) => {
     )
 }
 
-const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
+const NoteNode = ({ node, onUpdate, isSelected, isDragging, theme }) => {
     const [hover, setHover] = useState(false)
     const [toolbar, setToolbar] = useState(null) // { x, y, visible, mode: 'default' | 'link' }
     const [linkUrl, setLinkUrl] = useState('')
@@ -1266,7 +1266,7 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
             style={{
                 width: '100%', height: '100%',
                 display: 'flex', flexDirection: 'column',
-                background: isTransparent ? 'rgba(255,255,255,0.2)' : activeColor,
+                background: isTransparent ? (theme?.bg && theme.bg.includes('#1') ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.2)') : activeColor,
                 backdropFilter: isTransparent ? 'blur(10px)' : 'none',
                 borderRadius: 12,
                 boxShadow: isSelected
@@ -1287,7 +1287,7 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
                 borderBottom: '1px solid rgba(0,0,0,0.04)',
                 cursor: 'grab'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 700, opacity: 0.6, color: '#333' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 700, opacity: 0.6, color: isTransparent ? (theme?.text || '#333') : '#333' }}>
                     <FiType size={14} /> <span>NOTE</span>
                 </div>
 
@@ -1361,7 +1361,7 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
                         outline: 'none',
                         fontSize: '1rem',
                         lineHeight: 1.6,
-                        color: '#2d3436',
+                        color: isTransparent ? (theme?.text || '#2d3436') : '#2d3436',
                         padding: '16px',
                         fontFamily: isHandwriting ? '"Kalam", cursive' : '"Inter", sans-serif',
                         whiteSpace: 'pre-wrap',
@@ -1720,7 +1720,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
                                                                                                         node.type === 'Emoji' ? [<EmojiNode key="emoji" node={node} onUpdate={onUpdateData} />] :
                                                                                                             node.type === 'Pomodoro' ? [<PomodoroNode key="pomo" node={node} onUpdate={onUpdateData} />] :
                                                                                                                 [<NoteNode key="note" node={node} onUpdate={onUpdateData} />],
-                    (child) => React.cloneElement(child, { isSelected, isDragging })
+                    (child) => React.cloneElement(child, { isSelected, isDragging, theme })
                 )}
             </div>
 
@@ -1745,7 +1745,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
 }
 
 
-export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge, cursors, onCursorMove, onAIRequest, onSelectionChange, canvasSize = { w: 3000, h: 2000 }, onUpdateCanvasSize }) {
+export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge, cursors, onCursorMove, onAIRequest, onSelectionChange, canvasSize = { w: 3000, h: 2000 }, onUpdateCanvasSize, theme, t }) {
     const [scale, setScale] = useState(1); const [offset, setOffset] = useState({ x: 0, y: 0 })
     // Removed local canvasSize state
     const [showCanvasSetup, setShowCanvasSetup] = useState(false)
@@ -2051,14 +2051,14 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
             <div style={{
                 position: 'absolute', left: 0, top: 0,
                 width: canvasSize.w, height: canvasSize.h,
-                background: 'rgba(255, 255, 255, 0.4)', // Premium Translucency
+                background: theme?.text === '#EDEDED' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.4)', // Premium Translucency
                 backdropFilter: 'blur(40px)', // The "Frost" Key
                 borderRadius: 32,
-                boxShadow: '0 0 0 1px rgba(255,255,255,0.2), 0 30px 80px rgba(0,0,0,0.1)', // Deeper shadow
+                boxShadow: '0 0 0 1px rgba(255,255,255,0.1), 0 30px 80px rgba(0,0,0,0.1)', // Deeper shadow
                 transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transformOrigin: '0 0',
                 pointerEvents: 'none'
             }}>
-                <div className="grid-bg" style={{ width: '100%', height: '100%', backgroundImage: 'radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.8 }} />
+                <div className="grid-bg" style={{ width: '100%', height: '100%', backgroundImage: theme?.text === '#EDEDED' ? 'radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px)' : 'radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.8 }} />
             </div>
 
             <motion.div style={{ width: '100%', height: '100%', x: offset.x, y: offset.y, scale, transformOrigin: '0 0', pointerEvents: 'none' }}>
@@ -2161,14 +2161,14 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
             </motion.div>
 
             {contextMenu && (
-                <div style={{ position: 'fixed', top: contextMenu.y, left: contextMenu.x, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 12, boxShadow: '0 10px 30px rgba(0,0,0,0.15)', zIndex: 1000, padding: 6, minWidth: 180, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ position: 'fixed', top: contextMenu.y, left: contextMenu.x, background: theme?.cardBg || 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)', border: `1px solid ${theme?.border || 'rgba(0,0,0,0.1)'}`, borderRadius: 12, boxShadow: '0 10px 30px rgba(0,0,0,0.15)', zIndex: 1000, padding: 6, minWidth: 180, display: 'flex', flexDirection: 'column', gap: 2, color: theme?.text }}>
                     {contextMenu.type === 'node' ? (
                         <>
-                            <button onClick={() => { onCopy(getTargets()); if (onBatchDelete) onBatchDelete(getTargets()); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiScissors /> Cut</button>
-                            <button onClick={() => { onCopy(getTargets()); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiCopy /> Copy</button>
-                            <button onClick={() => { onCopy(getTargets()); setTimeout(() => onPaste(contextMenu.x + 20, contextMenu.y + 20), 100); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiLayers /> Duplicate</button>
-                            <button onClick={() => { onAIRequest(getTargets()[0], 'improve'); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transarent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#6e8efb', fontWeight: 600 }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><BsStars /> AI Enhance</button>
-                            <button onClick={() => { const t = getTargets(); if (onBatchDelete) onBatchDelete(t); else t.forEach(id => onDeleteNode(id)); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#ff4d4f' }} onMouseEnter={e => e.target.style.background = '#fff1f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiTrash2 /> Delete {getTargets().length > 1 && `(${getTargets().length})`}</button>
+                            <button onClick={() => { onCopy(getTargets()); if (onBatchDelete) onBatchDelete(getTargets()); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: theme?.text || '#333' }} onMouseEnter={e => e.target.style.background = theme?.activeBg || '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiScissors /> Cut</button>
+                            <button onClick={() => { onCopy(getTargets()); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: theme?.text || '#333' }} onMouseEnter={e => e.target.style.background = theme?.activeBg || '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiCopy /> Copy</button>
+                            <button onClick={() => { onCopy(getTargets()); setTimeout(() => onPaste(contextMenu.x + 20, contextMenu.y + 20), 100); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: theme?.text || '#333' }} onMouseEnter={e => e.target.style.background = theme?.activeBg || '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiLayers /> Duplicate</button>
+                            <button onClick={() => { onAIRequest(getTargets()[0], 'improve'); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transarent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#6e8efb', fontWeight: 600 }} onMouseEnter={e => e.target.style.background = theme?.activeBg || '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><BsStars /> AI Enhance</button>
+                            <button onClick={() => { const t = getTargets(); if (onBatchDelete) onBatchDelete(t); else t.forEach(id => onDeleteNode(id)); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#ff4d4f' }} onMouseEnter={e => e.target.style.background = 'rgba(255, 77, 79, 0.1)'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiTrash2 /> Delete {getTargets().length > 1 && `(${getTargets().length})`}</button>
 
                             <div style={{ height: 1, background: '#eee', margin: '4px 0' }} />
                             <div style={{ padding: '4px 12px', fontSize: '0.75rem', color: '#999', fontWeight: 'bold' }}>MOVE TO PAGE</div>
@@ -2182,8 +2182,8 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                         </>
                     ) : (
                         <>
-                            <button onClick={() => { onPaste(contextMenu.x, contextMenu.y); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiClipboard /> Paste Here</button>
-                            <button onClick={() => { autoArrange(); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: '#333' }} onMouseEnter={e => e.target.style.background = '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiGrid /> Auto Arrange</button>
+                            <button onClick={() => { onPaste(contextMenu.x, contextMenu.y); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: theme?.text || '#333' }} onMouseEnter={e => e.target.style.background = theme?.activeBg || '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiClipboard /> Paste Here</button>
+                            <button onClick={() => { autoArrange(); closeMenu() }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 6, fontSize: '0.9rem', color: theme?.text || '#333' }} onMouseEnter={e => e.target.style.background = theme?.activeBg || '#f0f0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}><FiGrid /> Auto Arrange</button>
                         </>
                     )}
                 </div>
@@ -2198,19 +2198,19 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                         exit={{ opacity: 0, y: 20, scale: 0.9 }}
                         style={{
                             position: 'absolute', bottom: 90, left: '50%', transform: 'translateX(-50%)',
-                            background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(16px)',
+                            background: theme?.cardBg || 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(16px)',
                             padding: '16px', borderRadius: 24,
-                            boxShadow: '0 20px 50px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.5) inset',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.1) inset',
                             zIndex: 100, minWidth: 320, maxWidth: 400
                         }}
                     >
-                        <div style={{ marginBottom: 12, display: 'flex', gap: 8, borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: 8, overflowX: 'auto' }}>
+                        <div style={{ marginBottom: 12, display: 'flex', gap: 8, borderBottom: `1px solid ${theme?.border || 'rgba(0,0,0,0.1)'}`, paddingBottom: 8, overflowX: 'auto' }}>
                             {['General', 'Interaction', 'Media', 'Visuals'].map(tab => (
                                 <button key={tab}
                                     onClick={() => setToolboxTab(tab)}
                                     style={{
-                                        background: toolboxTab === tab ? '#333' : 'transparent',
-                                        color: toolboxTab === tab ? 'white' : '#777',
+                                        background: toolboxTab === tab ? (theme?.highlight || '#333') : 'transparent',
+                                        color: toolboxTab === tab ? 'white' : (theme?.text || '#777'),
                                         padding: '6px 14px', borderRadius: 20, border: 'none',
                                         fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: '0.2s',
                                         whiteSpace: 'nowrap'
@@ -2263,8 +2263,8 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                                     whileTap={{ scale: 0.95 }}
                                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '12px 8px', borderRadius: 16, background: 'rgba(0,0,0,0.02)' }}
                                 >
-                                    <div style={{ width: 48, height: 48, background: 'white', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>{item.icon}</div>
-                                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#555' }}>{item.label}</span>
+                                    <div style={{ width: 48, height: 48, background: theme?.cardBg || 'white', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>{item.icon}</div>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: theme?.text || '#555' }}>{item.label}</span>
                                 </motion.div>
                             ))}
                         </div>
@@ -2272,7 +2272,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                 )}
             </AnimatePresence>
 
-            <motion.div className="glass-panel" style={{ position: 'absolute', bottom: useMediaQuery('(max-width: 768px)') ? 85 : 30, left: '50%', x: '-50%', padding: '12px 24px', display: 'flex', gap: 20, borderRadius: 24, zIndex: 100, pointerEvents: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.1)', maxWidth: '90vw', overflowX: 'auto' }} initial={{ y: 100 }} animate={{ y: 0 }}>
+            <motion.div className="glass-panel" style={{ position: 'absolute', bottom: useMediaQuery('(max-width: 768px)') ? 85 : 30, left: '50%', x: '-50%', padding: '12px 24px', display: 'flex', gap: 20, borderRadius: 24, zIndex: 100, pointerEvents: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.1)', maxWidth: '90vw', overflowX: 'auto', background: theme?.cardBg, border: `1px solid ${theme?.border}` }} initial={{ y: 100 }} animate={{ y: 0 }}>
                 <ToolBtn icon={<FiType />} label="Note" onClick={() => addCenteredNode('Note')} />
                 <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => addCenteredNode('Todo')} />
                 <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => addCenteredNode('Calendar')} />
@@ -2292,6 +2292,8 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                     <MemoizedCanvasSetup
                         initialW={canvasSize?.w || 3000}
                         initialH={canvasSize?.h || 2000}
+                        theme={theme}
+                        t={t}
                         onSave={(w, h) => {
                             if (onUpdateCanvasSize) onUpdateCanvasSize(w, h)
                             setShowCanvasSetup(false)
@@ -2312,10 +2314,10 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                     >
                         <motion.div
                             initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
-                            style={{ background: 'white', padding: 24, borderRadius: 24, width: '90%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}
+                            style={{ background: theme?.modalBg || 'white', padding: 24, borderRadius: 24, width: '90%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.2)', color: theme?.text }}
                             onClick={e => e.stopPropagation()}
                         >
-                            <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', color: '#333' }}>Add {embedModal.provider}</h3>
+                            <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', color: theme?.text }}>Add {embedModal.provider}</h3>
                             <form onSubmit={handleEmbedSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: '#666', fontWeight: 600 }}>URL or Embed Code</label>

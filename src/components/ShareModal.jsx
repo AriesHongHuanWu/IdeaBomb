@@ -4,8 +4,10 @@ import { FiX, FiUserPlus, FiMail } from 'react-icons/fi'
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { db } from '../firebase'
 import emailjs from '@emailjs/browser'
+import { useSettings } from '../App'
 
 export default function ShareModal({ boardId, isOpen, onClose, user }) {
+    const { theme, t } = useSettings()
     const [email, setEmail] = useState('')
     const [loading, setLoading] = useState(false)
     const [copied, setCopied] = useState(false)
@@ -72,15 +74,15 @@ export default function ShareModal({ boardId, isOpen, onClose, user }) {
 
     return (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)' }}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ background: 'white', padding: 40, borderRadius: 24, width: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.2)', position: 'relative' }}>
-                <button onClick={onClose} style={{ position: 'absolute', top: 20, right: 20, border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiX /></button>
-                <h2 style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 0 }}><FiUserPlus /> Share Board</h2>
-                <p style={{ color: '#666', lineHeight: '1.5', fontSize: '0.9rem' }}>Invite collaborators by email (must use Google Login).</p>
-                <div style={{ background: '#f5f5f5', padding: 10, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                    <span style={{ fontSize: '0.8rem', color: '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>{window.location.href}</span>
-                    <button onClick={copyLink} style={{ border: 'none', background: copied ? '#4caf50' : 'white', color: copied ? 'white' : '#333', padding: '5px 10px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>{copied ? 'Copied!' : 'Copy Link'}</button>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ background: theme?.modalBg || 'white', padding: 40, borderRadius: 24, width: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.2)', position: 'relative', color: theme?.text }}>
+                <button onClick={onClose} style={{ position: 'absolute', top: 20, right: 20, border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.2rem', color: theme?.text }}><FiX /></button>
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 0 }}><FiUserPlus /> {t('invite') || 'Share Board'}</h2>
+                <p style={{ color: theme?.text || '#666', lineHeight: '1.5', fontSize: '0.9rem', opacity: 0.8 }}>Invite collaborators by email (must use Google Login).</p>
+                <div style={{ background: theme?.bg || '#f5f5f5', padding: 10, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                    <span style={{ fontSize: '0.8rem', color: theme?.text || '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>{window.location.href}</span>
+                    <button onClick={copyLink} style={{ border: 'none', background: copied ? '#4caf50' : (theme?.cardBg || 'white'), color: copied ? 'white' : (theme?.text || '#333'), padding: '5px 10px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', border: `1px solid ${theme?.border}` }}>{copied ? 'Copied!' : 'Copy Link'}</button>
                 </div>
-                <div style={{ borderBottom: '1px solid #eee', marginBottom: 20 }}></div>
+                <div style={{ borderBottom: `1px solid ${theme?.border || '#eee'}`, marginBottom: 20 }}></div>
                 <form onSubmit={handleInvite} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
                     <div style={{ display: 'flex', gap: 10 }}>
                         <div style={{ position: 'relative', flex: 1 }}>
@@ -90,13 +92,13 @@ export default function ShareModal({ boardId, isOpen, onClose, user }) {
                                 placeholder="friend@example.com"
                                 value={email}
                                 onChange={e => setEmail(e.target.value)}
-                                style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: 12, border: '1px solid #ddd', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }}
+                                style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: 12, border: `1px solid ${theme?.border || '#ddd'}`, fontSize: '1rem', outline: 'none', boxSizing: 'border-box', background: theme?.bg || 'white', color: theme?.text }}
                                 required
                             />
                         </div>
                         <select
                             id="role-select"
-                            style={{ padding: '0 15px', borderRadius: 12, border: '1px solid #ddd', background: 'white', fontSize: '0.9rem', cursor: 'pointer' }}
+                            style={{ padding: '0 15px', borderRadius: 12, border: `1px solid ${theme?.border || '#ddd'}`, background: theme?.bg || 'white', fontSize: '0.9rem', cursor: 'pointer', color: theme?.text }}
                         >
                             <option value="editor">Editor</option>
                             <option value="viewer">Viewer</option>

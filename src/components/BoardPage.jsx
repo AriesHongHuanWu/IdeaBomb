@@ -788,7 +788,7 @@ export default function BoardPage({ user }) {
     const [editName, setEditName] = useState('')
     const [tabMenu, setTabMenu] = useState(null) // { x, y, page }
 
-    // Board Renaming
+    // --- Board Renaming ---
     const [isEditingTitle, setIsEditingTitle] = useState(false)
     const [tempTitle, setTempTitle] = useState('')
     const saveTitle = async () => { setIsEditingTitle(false); if (tempTitle && tempTitle !== boardTitle) { try { await updateDoc(doc(db, 'boards', boardId), { title: tempTitle }) } catch (e) { console.error(e) } } }
@@ -802,7 +802,8 @@ export default function BoardPage({ user }) {
             const canvas = await html2canvas(container, {
                 scale: 0.2, // 20% resolution
                 useCORS: true, // Allow cross-origin images if any
-                logging: false
+                logging: false,
+                backgroundColor: null // Transparent logic handled by CSS?
             })
 
             const thumbnail = canvas.toDataURL('image/jpeg', 0.6) // Compress JPEG
@@ -822,10 +823,10 @@ export default function BoardPage({ user }) {
         return () => window.removeEventListener('click', h)
     }, [])
 
-    if (!hasAccess) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'white', background: '#111' }}>Access Denied</div>
+    if (!hasAccess) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: theme.text, background: theme.bg }}>{t('accessDenied')}</div>
 
     return (
-        <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden', background: theme.bg }}>
             <ShareModal boardId={boardId} isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} user={user} />
 
             {/* Top Bar - Mobile Optimized & Auto-Hide Pages */}
@@ -837,12 +838,16 @@ export default function BoardPage({ user }) {
                     zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     borderRadius: 50, pointerEvents: 'auto',
                     flexWrap: isMobile ? 'wrap' : 'nowrap',
-                    gap: isMobile ? 10 : 0
+                    gap: isMobile ? 10 : 0,
+                    background: theme.header, // Theme
+                    color: theme.text,
+                    border: `1px solid ${theme.border}`,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
                 }}
                 initial={{ y: -100 }} animate={{ y: 0 }}
             >
                 <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 20 }}>
-                    <button onClick={async () => { try { updateThumbnail() } catch (e) { console.error(e) }; navigate('/dashboard') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button>
+                    <button onClick={async () => { try { updateThumbnail() } catch (e) { console.error(e) }; navigate('/dashboard') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: theme.text }}><FiHome /></button>
                     {isEditingTitle ? (
                         <input
                             value={tempTitle}
@@ -850,7 +855,7 @@ export default function BoardPage({ user }) {
                             onBlur={saveTitle}
                             onKeyDown={e => e.key === 'Enter' && saveTitle()}
                             autoFocus
-                            style={{ fontSize: '1.2rem', fontWeight: 'bold', border: '1px solid #ccc', borderRadius: 4, padding: '2px 5px', outline: 'none', width: 250 }}
+                            style={{ fontSize: '1.2rem', fontWeight: 'bold', border: `1px solid ${theme.border}`, background: theme.bg, color: theme.text, borderRadius: 4, padding: '2px 5px', outline: 'none', width: 250 }}
                         />
                     ) : (
                         <h1 onClick={() => { setTempTitle(boardTitle); setIsEditingTitle(true) }} style={{ fontSize: '1.2rem', margin: 0, cursor: 'pointer', border: '1px solid transparent', padding: '2px 5px' }} title="Click to rename">{boardTitle}</h1>
@@ -858,31 +863,31 @@ export default function BoardPage({ user }) {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     {/* Presence Filter: 1 min timeout */}
-                    <div style={{ display: 'flex', paddingRight: 10, borderRight: '1px solid #ddd' }}>
+                    <div style={{ display: 'flex', paddingRight: 10, borderRight: `1px solid ${theme.border}` }}>
                         {collaborators.filter(c => !c.lastActive || (Date.now() - new Date(c.lastActive).getTime() < 60000)).map(c => (
-                            <img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: cursors[c.uid] ? '2px solid #52c41a' : '2px solid white', marginLeft: -10 }} />
+                            <img key={c.uid} src={c.photoURL} title={c.displayName} style={{ width: 32, height: 32, borderRadius: '50%', border: cursors[c.uid] ? '2px solid #52c41a' : `2px solid ${theme.bg}`, marginLeft: -10 }} />
                         ))}
                     </div>
 
                     {isMobile ? (
                         <div style={{ position: 'relative' }}>
-                            <button onClick={(e) => { e.stopPropagation(); setTabMenu({ x: window.innerWidth - 140, y: 70, type: 'top-menu' }) }} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}><FiMenu /></button>
+                            <button onClick={(e) => { e.stopPropagation(); setTabMenu({ x: window.innerWidth - 140, y: 70, type: 'top-menu' }) }} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: theme.text }}><FiMenu /></button>
                             {tabMenu?.type === 'top-menu' && (
-                                <div style={{ position: 'fixed', top: 60, right: 20, background: 'white', borderRadius: 12, boxShadow: '0 5px 20px rgba(0,0,0,0.15)', padding: 10, zIndex: 999, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    <button onClick={() => { setIsShareOpen(true); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: 'var(--primary)', color: 'white', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiUserPlus /> Invite</button>
-                                    <button onClick={() => document.getElementById('json-upload-top').click()} style={{ padding: '8px 12px', border: 'none', background: '#f5f5f5', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiUpload /> Import</button>
-                                    <button onClick={() => { exportBoard(); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: '#f5f5f5', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiDownload /> Export</button>
-                                    <button onClick={() => { setIsIncognito(!isIncognito); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: 'transparent', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>{isIncognito ? <><FiEyeOff /> Show Me</> : <><FiEye /> Hide Me</>}</button>
-                                    <button onClick={async () => { await signOut(auth); navigate('/login') }} style={{ padding: '8px 12px', border: 'none', background: '#fff1f0', color: 'red', borderRadius: 8, width: '100%' }}>Logout</button>
+                                <div style={{ position: 'fixed', top: 60, right: 20, background: theme.cardBg, borderRadius: 12, boxShadow: '0 5px 20px rgba(0,0,0,0.15)', padding: 10, zIndex: 999, display: 'flex', flexDirection: 'column', gap: 8, border: `1px solid ${theme.border}`, color: theme.text }}>
+                                    <button onClick={() => { setIsShareOpen(true); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: theme.activeBg, color: theme.activeText, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiUserPlus /> {t('invite') || 'Invite'}</button>
+                                    <button onClick={() => document.getElementById('json-upload-top').click()} style={{ padding: '8px 12px', border: 'none', background: 'rgba(0,0,0,0.05)', color: theme.text, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiUpload /> Import</button>
+                                    <button onClick={() => { exportBoard(); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: 'rgba(0,0,0,0.05)', color: theme.text, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiDownload /> Export</button>
+                                    <button onClick={() => { setIsIncognito(!isIncognito); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: 'transparent', color: theme.text, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>{isIncognito ? <><FiEyeOff /> Show Me</> : <><FiEye /> Hide Me</>}</button>
+                                    <button onClick={async () => { await signOut(auth); navigate('/login') }} style={{ padding: '8px 12px', border: 'none', background: '#fff1f0', color: 'red', borderRadius: 8, width: '100%' }}>{t('signOut')}</button>
                                 </div>
                             )}
                         </div>
                     ) : (
                         <>
-                            <button onClick={() => setIsIncognito(!isIncognito)} title={isIncognito ? "Show my cursor" : "Hide my cursor"} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: isIncognito ? '#999' : '#333' }}>{isIncognito ? <FiEyeOff /> : <FiEye />}</button>
-                            <button onClick={() => document.getElementById('json-upload-top').click()} style={{ background: 'rgba(255,255,255,0.2)', color: '#333', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiUpload /> Import</button>
-                            <button onClick={exportBoard} style={{ background: 'rgba(255,255,255,0.2)', color: '#333', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiDownload /> Export</button>
-                            <button onClick={async () => { await signOut(auth); navigate('/login') }} style={{ background: '#ff4d4f', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer' }}>Logout</button>
+                            <button onClick={() => setIsIncognito(!isIncognito)} title={isIncognito ? "Show my cursor" : "Hide my cursor"} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: isIncognito ? theme.text : theme.activeText }}>{isIncognito ? <FiEyeOff /> : <FiEye />}</button>
+                            <button onClick={() => document.getElementById('json-upload-top').click()} style={{ background: 'rgba(0,0,0,0.05)', color: theme.text, border: `1px solid ${theme.border}`, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiUpload /> Import</button>
+                            <button onClick={exportBoard} style={{ background: 'rgba(0,0,0,0.05)', color: theme.text, border: `1px solid ${theme.border}`, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiDownload /> Export</button>
+                            <button onClick={async () => { await signOut(auth); navigate('/login') }} style={{ background: '#ff4d4f', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer' }}>{t('signOut')}</button>
                         </>
                     )}
                     {/* Always render input for both Mobile/Desktop access */}
@@ -922,7 +927,7 @@ export default function BoardPage({ user }) {
                 onMouseEnter={e => e.currentTarget.style.opacity = 1}
                 onMouseLeave={e => !isMobile && (e.currentTarget.style.opacity = 0.3)}
             >
-                <div style={{ display: 'flex', gap: 5, background: 'rgba(0,0,0,0.8)', padding: '8px 12px', borderRadius: 16, pointerEvents: 'auto', overflowX: 'auto', scrollbarWidth: 'none', whiteSpace: 'nowrap' }}>
+                <div style={{ display: 'flex', gap: 5, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', padding: '8px 12px', borderRadius: 16, pointerEvents: 'auto', overflowX: 'auto', scrollbarWidth: 'none', whiteSpace: 'nowrap' }}>
                     {pages.map(p => (
                         editingPage === p ? (
                             <input
@@ -940,7 +945,7 @@ export default function BoardPage({ user }) {
                                 onClick={() => setActivePage(p)}
                                 onDoubleClick={() => { setEditingPage(p); setEditName(p) }}
                                 onContextMenu={(e) => { e.preventDefault(); setTabMenu({ x: e.clientX, y: e.clientY, page: p }) }}
-                                style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: activePage === p ? 'var(--primary)' : 'rgba(255,255,255,0.2)', color: 'white', fontWeight: activePage === p ? 'bold' : 'normal', cursor: 'pointer' }}
+                                style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: activePage === p ? theme.activeBg : 'rgba(255,255,255,0.2)', color: activePage === p ? theme.activeText : 'white', fontWeight: activePage === p ? 'bold' : 'normal', cursor: 'pointer' }}
                             >
                                 {p}
                             </button>
@@ -952,10 +957,10 @@ export default function BoardPage({ user }) {
 
             {/* Tab Context Menu */}
             {tabMenu && (
-                <div style={{ position: 'fixed', top: tabMenu.y - 100, left: tabMenu.x, background: 'white', borderRadius: 8, boxShadow: '0 5px 15px rgba(0,0,0,0.2)', zIndex: 1000, overflow: 'hidden', minWidth: 120 }}>
-                    <div style={{ padding: '8px 12px', borderBottom: '1px solid #eee', fontWeight: 'bold', fontSize: '0.9rem' }}>{tabMenu.page}</div>
-                    <button onClick={() => { setEditingPage(tabMenu.page); setEditName(tabMenu.page); setTabMenu(null) }} style={{ display: 'block', width: '100%', padding: '8px 12px', border: 'none', background: 'white', textAlign: 'left', cursor: 'pointer' }} onMouseEnter={e => e.target.style.background = '#f5f5f5'} onMouseLeave={e => e.target.style.background = 'white'}>Rename</button>
-                    <button onClick={() => { deletePage(tabMenu.page); setTabMenu(null) }} style={{ display: 'block', width: '100%', padding: '8px 12px', border: 'none', background: 'white', textAlign: 'left', cursor: 'pointer', color: 'red' }} onMouseEnter={e => e.target.style.background = '#fff1f0'} onMouseLeave={e => e.target.style.background = 'white'}>Delete</button>
+                <div style={{ position: 'fixed', top: tabMenu.y - 100, left: tabMenu.x, background: theme.cardBg, color: theme.text, borderRadius: 8, boxShadow: '0 5px 15px rgba(0,0,0,0.2)', zIndex: 1000, overflow: 'hidden', minWidth: 120 }}>
+                    <div style={{ padding: '8px 12px', borderBottom: `1px solid ${theme.border}`, fontWeight: 'bold', fontSize: '0.9rem' }}>{tabMenu.page}</div>
+                    <button onClick={() => { setEditingPage(tabMenu.page); setEditName(tabMenu.page); setTabMenu(null) }} style={{ display: 'block', width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', color: theme.text, textAlign: 'left', cursor: 'pointer' }} onMouseEnter={e => e.target.style.background = theme.activeBg} onMouseLeave={e => e.target.style.background = 'transparent'}>{t('rename') || 'Rename'}</button>
+                    <button onClick={() => { deletePage(tabMenu.page); setTabMenu(null) }} style={{ display: 'block', width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', color: 'red' }} onMouseEnter={e => e.target.style.background = '#fff1f0'} onMouseLeave={e => e.target.style.background = 'transparent'}>{t('delete') || 'Delete'}</button>
                 </div>
             )}
 
@@ -981,6 +986,8 @@ export default function BoardPage({ user }) {
                     onCursorMove={handleCursorMove}
                     onAIRequest={handleAIRequest}
                     onSelectionChange={() => { }}
+                    theme={theme}
+                    t={t}
                 />
             </div>
             <ChatInterface boardId={boardId} user={user} onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />
@@ -994,16 +1001,16 @@ export default function BoardPage({ user }) {
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                         style={{
-                            background: 'white', padding: 30, borderRadius: 24,
+                            background: theme.modalBg, padding: 30, borderRadius: 24,
                             boxShadow: '0 20px 60px rgba(0,0,0,0.15)', width: '90%', maxWidth: 400,
-                            border: '1px solid rgba(0,0,0,0.05)'
+                            border: `1px solid ${theme.border}`, color: theme.text
                         }}
                     >
                         <h2 style={{ margin: '0 0 10px 0', fontSize: '1.4rem' }}>{confirmModal.title}</h2>
-                        <p style={{ color: '#666', marginBottom: 25, lineHeight: 1.5 }}>{confirmModal.message}</p>
+                        <p style={{ color: theme.text, opacity: 0.8, marginBottom: 25, lineHeight: 1.5 }}>{confirmModal.message}</p>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                            <button onClick={() => setConfirmModal(null)} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#f1f2f6', color: '#666', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
-                            <button onClick={confirmModal.onConfirm} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#ff4757', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Delete</button>
+                            <button onClick={() => setConfirmModal(null)} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: theme.activeBg, color: theme.text, cursor: 'pointer', fontWeight: 600 }}>{t('cancel')}</button>
+                            <button onClick={confirmModal.onConfirm} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#ff4757', color: 'white', cursor: 'pointer', fontWeight: 600 }}>{t('delete')}</button>
                         </div>
                     </motion.div>
                 </div>

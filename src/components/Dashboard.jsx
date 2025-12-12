@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { auth, db } from '../firebase'
 import { signOut } from 'firebase/auth'
 import { collection, addDoc, query, where, onSnapshot, setDoc } from 'firebase/firestore'
@@ -8,6 +8,15 @@ import { FiPlus, FiLogOut, FiLayout, FiHome, FiFolder, FiUsers, FiGrid, FiShare2
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { updateDoc, doc, deleteDoc } from 'firebase/firestore'
 import TodoView from './TodoView'
+import { writeBatch, getDocs } from 'firebase/firestore'
+import { useSettings } from '../App'
+
+// Helper for dates
+const formatDate = (date) => {
+    if (!date) return ''
+    const d = new Date(date)
+    return d.toLocaleDateString()
+}
 
 const NavItem = ({ icon, label, active, onClick, isMobile }) => (
     <div
@@ -28,46 +37,6 @@ const NavItem = ({ icon, label, active, onClick, isMobile }) => (
     </div>
 )
 
-// --- Constants ---
-const translations = {
-    en: {
-        home: 'Home Page', all: 'All Boards', my: 'My Boards', shared: 'Shared with me',
-        todo: 'TODO', admin: 'Admin Console', folders: 'FOLDERS', settings: 'Settings',
-        newBoard: 'New Board', signOut: 'Sign Out', noBoards: 'No boards found in this view.',
-        untitled: 'Untitled Board', sharedBy: 'Shared by', lastActive: 'Last Active',
-        rename: 'Rename', move: 'Move to Folder', delete: 'Delete',
-        cancel: 'Cancel', confirm: 'Confirm', typeHere: 'Type here...',
-        deleteTitle: 'Delete Board?', deleteMsg: 'Are you sure you want to delete this board? This action cannot be undone.',
-        renameTitle: 'Rename Board', moveTitle: 'Move to Folder',
-        theme: 'Theme', lang: 'Language', light: 'Light', dark: 'Dark'
-    },
-    'zh-TW': {
-        home: '首頁', all: '所有白板', my: '我的白板', shared: '與我共用',
-        todo: '待辦事項', admin: '管理控制台', folders: '資料夾', settings: '設定',
-        newBoard: '新增白板', signOut: '登出', noBoards: '此檢視中沒有白板。',
-        untitled: '未命名白板', sharedBy: '分享者', lastActive: '最後活動',
-        rename: '重新命名', move: '移動到資料夾', delete: '刪除',
-        cancel: '取消', confirm: '確認', typeHere: '在此輸入...',
-        deleteTitle: '刪除白板？', deleteMsg: '您確定要刪除此白板嗎？此動作無法復原。',
-        renameTitle: '重新命名白板', moveTitle: '移動到資料夾',
-        theme: '主題', lang: '語言', light: '亮色', dark: '深色'
-    }
-}
-
-const themeColors = {
-    light: {
-        bg: '#f8f9fa', sidebar: '#ffffff', text: '#5f6368', textPrim: '#202124',
-        border: '#dadce0', activeBg: '#e8f0fe', activeText: '#1a73e8',
-        cardBg: '#ffffff', cardHover: '#ffffff', header: '#ffffff'
-    },
-    dark: {
-        bg: '#121212', sidebar: '#1e1e1e', text: '#aaaaaa', textPrim: '#e0e0e0',
-        border: '#333333', activeBg: '#2c3e50', activeText: '#4facfe',
-        cardBg: '#1e1e1e', cardHover: '#252525', header: '#1e1e1e'
-    }
-}
-
-
 export default function Dashboard({ user }) {
     const [boards, setBoards] = useState([])
     const navigate = useNavigate()
@@ -76,18 +45,8 @@ export default function Dashboard({ user }) {
     const [showTodo, setShowTodo] = useState(false)
     const isMobile = useMediaQuery('(max-width: 768px)')
 
-    // Settings State (Persisted)
-    const [settings, setSettings] = useState(() => {
-        const saved = localStorage.getItem('dashboard_settings')
-        return saved ? JSON.parse(saved) : { theme: 'light', lang: 'en' }
-    })
-
-    useEffect(() => {
-        localStorage.setItem('dashboard_settings', JSON.stringify(settings))
-    }, [settings])
-
-    const t = (key) => translations[settings.lang][key] || key
-    const theme = themeColors[settings.theme]
+    // Global Settings
+    const { settings, setSettings, t, theme } = useSettings()
 
     // Modal State
     const [modalConfig, setModalConfig] = useState(null) // { type: 'create_folder' | 'rename' | 'settings' | ... }
