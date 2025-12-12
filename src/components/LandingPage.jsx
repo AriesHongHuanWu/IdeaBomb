@@ -268,17 +268,23 @@ function UserCountBadge() {
     const [count, setCount] = useState(null)
 
     React.useEffect(() => {
+        let unsub = () => { }
         const fetchCount = async () => {
-            const { doc, onSnapshot } = await import('firebase/firestore')
-            const { db } = await import('../firebase')
-            const unsub = onSnapshot(doc(db, 'system', 'stats'), (doc) => {
-                if (doc.exists()) setCount(doc.data().userCount)
-            })
-            return unsub
+            try {
+                const { doc, onSnapshot, getFirestore } = await import('firebase/firestore')
+                const db = getFirestore()
+                // Add error callback to suppress permission-denied spam if rules are lagging
+                unsub = onSnapshot(doc(db, 'system', 'stats'), (d) => {
+                    if (d.exists()) setCount(d.data().userCount)
+                }, (error) => {
+                    console.log("User count sync suppressed:", error.code)
+                })
+            } catch (e) {
+                console.warn("Failed to load user count:", e)
+            }
         }
-        let unsub
-        fetchCount().then(u => unsub = u)
-        return () => unsub && unsub()
+        fetchCount()
+        return () => unsub()
     }, [])
 
     if (!count) return null
