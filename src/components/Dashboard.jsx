@@ -138,7 +138,31 @@ export default function Dashboard({ user }) {
                     message: 'Are you sure you want to delete this board? This action cannot be undone.',
                     board: board, // crucial for handleAction id access
                     onConfirm: async () => {
-                        await deleteDoc(boardRef)
+                        // Deep Delete: Clean up sub-collections
+                        try {
+                            const batch = writeBatch(db)
+
+                            // 1. Delete Nodes
+                            const nodesSnap = await getDocs(collection(db, 'boards', board.id, 'nodes'))
+                            nodesSnap.forEach(doc => batch.delete(doc.ref))
+
+                            // 2. Delete Edges
+                            const edgesSnap = await getDocs(collection(db, 'boards', board.id, 'edges'))
+                            edgesSnap.forEach(doc => batch.delete(doc.ref))
+
+                            // 3. Delete Messages (if any)
+                            const msgsSnap = await getDocs(collection(db, 'boards', board.id, 'messages'))
+                            msgsSnap.forEach(doc => batch.delete(doc.ref))
+
+                            // Commit batch delete of content
+                            await batch.commit()
+
+                            // 4. Delete Board Doc
+                            await deleteDoc(boardRef)
+                        } catch (err) {
+                            console.error("Deep delete failed", err)
+                            alert("Failed to clean up board files: " + err.message)
+                        }
                         setModalConfig(null)
                     }
                 })

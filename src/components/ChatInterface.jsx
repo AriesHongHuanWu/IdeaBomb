@@ -4,7 +4,7 @@ import { BsStars, BsMic, BsMicFill, BsSend } from 'react-icons/bs'
 import { FiX } from 'react-icons/fi'
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { db } from '../firebase'
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, setDoc, updateDoc, doc } from 'firebase/firestore'
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, setDoc, updateDoc, doc, limit } from 'firebase/firestore'
 
 const SYSTEM_PROMPT = `You are an expert Project Manager & Board Architect AI for IdeaBomb.
 Today is {{TODAY}}. Your goal is to be an **EXPANSIVE, PROACTIVE CONSULTANT**.
@@ -81,15 +81,23 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
     const messagesEndRef = useRef(null)
 
     // Sync Messages
+    // Sync Messages
     useEffect(() => {
         if (!boardId) return
-        const q = query(collection(db, 'boards', boardId, 'messages'), orderBy('createdAt', 'asc'))
+        // OPTIMIZATION: Limit to last 50 messages to save bandwidth
+        const q = query(
+            collection(db, 'boards', boardId, 'messages'),
+            orderBy('createdAt', 'desc'),
+            limit(50)
+        )
         const unsub = onSnapshot(q, (snapshot) => {
             const msgs = snapshot.docs.map(d => d.data())
             if (msgs.length === 0) {
                 setMessages([{ role: 'system', content: 'Welcome to Team Chat! Mention @ai to get help.' }])
             } else {
-                setMessages(msgs)
+                // Reverse because we queried 'desc' to get the NEWEST 50, 
+                // but we want to display them 'asc' (oldest at top).
+                setMessages(msgs.reverse())
             }
         })
         return unsub
