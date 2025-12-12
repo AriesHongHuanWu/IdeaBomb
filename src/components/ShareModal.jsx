@@ -5,7 +5,7 @@ import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { db } from '../firebase'
 import emailjs from '@emailjs/browser'
 
-export default function ShareModal({ boardId, isOpen, onClose }) {
+export default function ShareModal({ boardId, isOpen, onClose, user }) {
     const [email, setEmail] = useState('')
     const [loading, setLoading] = useState(false)
     const [copied, setCopied] = useState(false)
@@ -55,7 +55,7 @@ export default function ShareModal({ boardId, isOpen, onClose }) {
                     to_name: emailToInvite.split('@')[0],
                     role: role,
                     link: window.location.href,
-                    invite_sender: 'IdeaBoard User'
+                    invite_sender: user?.displayName || 'A CollabWhiteboard User'
                 }, PUBLIC_KEY)
 
                 alert(`Official invitation sent to ${emailToInvite}!`)

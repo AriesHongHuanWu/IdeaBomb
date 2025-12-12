@@ -826,7 +826,7 @@ export default function BoardPage({ user }) {
 
     return (
         <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-            <ShareModal boardId={boardId} isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
+            <ShareModal boardId={boardId} isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} user={user} />
 
             {/* Top Bar - Mobile Optimized & Auto-Hide Pages */}
             <motion.div
