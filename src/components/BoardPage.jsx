@@ -190,7 +190,7 @@ export default function BoardPage({ user }) {
         if (!node) return
         try {
             const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+            const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash-lite" })
             const prompt = `Improve the following text for a whiteboard note (make it clearer/better): "${node.content}"\nReturn ONLY the improved text.`
             const result = await model.generateContent(prompt)
             const text = result.response.text().trim()
@@ -882,11 +882,11 @@ export default function BoardPage({ user }) {
                             <button onClick={() => setIsIncognito(!isIncognito)} title={isIncognito ? "Show my cursor" : "Hide my cursor"} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: isIncognito ? '#999' : '#333' }}>{isIncognito ? <FiEyeOff /> : <FiEye />}</button>
                             <button onClick={() => document.getElementById('json-upload-top').click()} style={{ background: 'rgba(255,255,255,0.2)', color: '#333', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiUpload /> Import</button>
                             <button onClick={exportBoard} style={{ background: 'rgba(255,255,255,0.2)', color: '#333', border: '1px solid #ddd', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiDownload /> Export</button>
-                            <input type="file" id="json-upload-top" accept=".json" style={{ display: 'none' }} onChange={handleImportJSON} />
-                            <button onClick={() => setIsShareOpen(true)} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><FiUserPlus /> Invite</button>
                             <button onClick={async () => { await signOut(auth); navigate('/login') }} style={{ background: '#ff4d4f', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer' }}>Logout</button>
                         </>
                     )}
+                    {/* Always render input for both Mobile/Desktop access */}
+                    <input type="file" id="json-upload-top" accept=".json" style={{ display: 'none' }} onChange={handleImportJSON} />
                 </div>
             </motion.div>
 
