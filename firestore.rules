@@ -4,67 +4,63 @@ service cloud.firestore {
     
     // --- Helper Functions ---
     
-    // Validates string length
     function validString(text, max) {
       return text is string && text.size() <= max;
     }
     
-    // Check if user has access - NULL SAFE version
-    function hasAccess(data) {
-      // Check if user is owner (createdBy or ownerId)
-      let isOwner = (data.keys().hasAny(['createdBy']) && request.auth.uid == data.createdBy) ||
-                    (data.keys().hasAny(['ownerId']) && request.auth.uid == data.ownerId);
-      
-      // Check if user is in allowedEmails
-      let isCollaborator = data.keys().hasAny(['allowedEmails']) && 
-                           data.allowedEmails is list && 
-                           request.auth.token.email != null && 
-                           request.auth.token.email in data.allowedEmails;
-      
-      return isOwner || isCollaborator;
+    function isOwner(data) {
+      return ('createdBy' in data && data.createdBy == request.auth.uid) ||
+             ('ownerId' in data && data.ownerId == request.auth.uid);
+    }
+    
+    function isCollaborator(data) {
+      return 'allowedEmails' in data && 
+             data.allowedEmails is list && 
+             request.auth.token.email != null && 
+             request.auth.token.email in data.allowedEmails;
     }
 
-    // Check Role (Default to 'editor' for legacy or missing role)
+    function hasAccess(data) {
+      return isOwner(data) || isCollaborator(data);
+    }
+
     function getRole(data) {
-      return (data.keys().hasAny(['roles']) && data.roles is map && request.auth.token.email in data.roles) 
+      return ('roles' in data && data.roles is map && request.auth.token.email in data.roles) 
              ? data.roles[request.auth.token.email] 
              : 'editor';
     }
 
-    // Check if user has WRITE access (Owner or Editor)
     function canWrite(data) {
-      let isOwner = (data.keys().hasAny(['createdBy']) && request.auth.uid == data.createdBy) ||
-                    (data.keys().hasAny(['ownerId']) && request.auth.uid == data.ownerId);
-      return isOwner || (hasAccess(data) && getRole(data) == 'editor');
+      return isOwner(data) || (hasAccess(data) && getRole(data) == 'editor');
     }
     
-    // Check if user is trying to WRITE valid board data
     function isValidBoardWrite() {
+      // For create, we check request.resource.data
       return request.resource.data.createdBy == request.auth.uid;
     }
 
     // --- Rules ---
 
-    // User Profiles & Nested Data (AI Usage)
+    // User Context
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      
       match /ai_usage/{docId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
     
-    // Global Settings
     match /settings/{settingId} {
       allow read: if request.auth != null;
     }
 
+    // Boards
     match /boards/{boardId} {
       allow read: if request.auth != null && hasAccess(resource.data);
       allow create: if request.auth != null && isValidBoardWrite();
-      allow update: if request.auth != null && canWrite(resource.data); 
+      allow update: if request.auth != null && canWrite(resource.data);
       allow delete: if request.auth != null && canWrite(resource.data);
       
+      // Helper to fetch parent board data for subcollections
       function getBoardData() {
         return get(/databases/$(database)/documents/boards/$(boardId)).data;
       }
@@ -92,7 +88,7 @@ service cloud.firestore {
       }
     }
     
-    // --- Task Lists ---
+    // Task Lists
     match /task_lists/{listId} {
       allow read: if request.auth != null && hasAccess(resource.data);
       allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
