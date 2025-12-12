@@ -51,7 +51,7 @@ const Button = ({ children, onClick, variant = 'primary', style }) => {
         </motion.button>
     )
 }
-const ToolBtn = ({ icon, label, onClick, active }) => (
+const ToolBtn = ({ icon, label, onClick, active, theme }) => (
     <motion.button
         whileHover={{ scale: 1.1, translateY: -4 }}
         whileTap={{ scale: 0.9 }}
@@ -829,7 +829,7 @@ const YouTubeNode = ({ node, onUpdate }) => {
     )
 }
 
-const MemoizedCanvasSetup = ({ initialW, initialH, onSave, onClose, theme, t }) => {
+const MemoizedCanvasSetup = ({ initialW, initialH, onSave, onClose, theme = {}, t }) => {
     const [w, setW] = useState(initialW)
     const [h, setH] = useState(initialH)
     return (
@@ -851,7 +851,7 @@ const MemoizedCanvasSetup = ({ initialW, initialH, onSave, onClose, theme, t }) 
         </motion.div>
     )
 }
-const TodoNode = ({ node, onUpdate, theme }) => {
+const TodoNode = ({ node, onUpdate, theme = {} }) => {
     const items = node.items || []
     const [newItem, setNewItem] = useState('')
 
@@ -1187,7 +1187,7 @@ const LinkNode = ({ node, onUpdate }) => {
     )
 }
 
-const NoteNode = ({ node, onUpdate, isSelected, isDragging, theme }) => {
+const NoteNode = ({ node, onUpdate, isSelected, isDragging, theme = {} }) => {
     const [hover, setHover] = useState(false)
     const [toolbar, setToolbar] = useState(null) // { x, y, visible, mode: 'default' | 'link' }
     const [linkUrl, setLinkUrl] = useState('')
@@ -1495,7 +1495,7 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode, tempEdge, dragOverr
 }
 
 // --- Draggable Node (Resizable + Handles) ---
-const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onResize, onResizeEnd, onDragEnd, magnetMode, canvasSize, theme }) => {
+const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onResize, onResizeEnd, onDragEnd, magnetMode, canvasSize, theme = {} }) => {
     const x = useMotionValue(node.x); const y = useMotionValue(node.y);
     const [isHovered, setIsHovered] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
@@ -2273,17 +2273,17 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
             </AnimatePresence>
 
             <motion.div className="glass-panel" style={{ position: 'absolute', bottom: useMediaQuery('(max-width: 768px)') ? 85 : 30, left: '50%', x: '-50%', padding: '12px 24px', display: 'flex', gap: 20, borderRadius: 24, zIndex: 100, pointerEvents: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.1)', maxWidth: '90vw', overflowX: 'auto', background: theme?.cardBg, border: `1px solid ${theme?.border}` }} initial={{ y: 100 }} animate={{ y: 0 }}>
-                <ToolBtn icon={<FiType />} label="Note" onClick={() => addCenteredNode('Note')} />
-                <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => addCenteredNode('Todo')} />
-                <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => addCenteredNode('Calendar')} />
-                <ToolBtn icon={<FiImage />} label="Image" onClick={() => addCenteredNode('Image')} />
+                <ToolBtn icon={<FiType />} label="Note" onClick={() => addCenteredNode('Note')} theme={theme} />
+                <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => addCenteredNode('Todo')} theme={theme} />
+                <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => addCenteredNode('Calendar')} theme={theme} />
+                <ToolBtn icon={<FiImage />} label="Image" onClick={() => addCenteredNode('Image')} theme={theme} />
                 <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
-                <ToolBtn icon={<FiTarget />} label="Magnet" active={magnetMode} onClick={() => setMagnetMode(!magnetMode)} />
-                <ToolBtn icon={<FiGrid />} label="Toolbox" active={toolboxOpen} onClick={() => setToolboxOpen(!toolboxOpen)} />
+                <ToolBtn icon={<FiTarget />} label="Magnet" active={magnetMode} onClick={() => setMagnetMode(!magnetMode)} theme={theme} />
+                <ToolBtn icon={<FiGrid />} label="Toolbox" active={toolboxOpen} onClick={() => setToolboxOpen(!toolboxOpen)} theme={theme} />
                 <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
-                <ToolBtn icon={<FiMaximize2 />} label="Canvas Size" onClick={() => setShowCanvasSetup(true)} />
+                <ToolBtn icon={<FiMaximize2 />} label="Canvas Size" onClick={() => setShowCanvasSetup(true)} theme={theme} />
                 <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
-                <ToolBtn icon={<FiLayout />} label="Auto Arrange" onClick={autoArrange} />
+                <ToolBtn icon={<FiLayout />} label="Auto Arrange" onClick={autoArrange} theme={theme} />
             </motion.div>
 
             {/* Canvas Size Modal */}
