@@ -977,7 +977,7 @@ export default function BoardPage({ user }) {
                     onMoveToPage={batchMoveToPage}
                     onAddEdge={addEdge}
                     onDeleteEdge={async (id) => { await deleteDoc(doc(db, 'boards', boardId, 'edges', id)) }}
-                    cursors={Object.values(cursors).filter(c => c.page === activePage)}
+                    cursors={Object.values(cursors).filter(c => c.page === activePage && (Date.now() - new Date(c.lastActive).getTime() < 60000))}
                     onCursorMove={handleCursorMove}
                     onAIRequest={handleAIRequest}
                     onSelectionChange={() => { }}
