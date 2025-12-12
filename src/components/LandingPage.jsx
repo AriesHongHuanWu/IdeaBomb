@@ -326,16 +326,33 @@ function UserCountBadge() {
 }
 
 function AnimatedDemoCanvas({ isMobile }) {
+    // 3D Glass Effect Styles
+    const glassStyle = {
+        background: 'rgba(255, 255, 255, 0.7)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        border: '1px solid rgba(255, 255, 255, 0.8)',
+        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+    }
+
     // 3D Floating Animation for the whole board
     return (
-        <div style={{ height: isMobile ? 400 : 600, background: '#ffffff', position: 'relative', overflow: 'hidden', fontFamily: '"Google Sans", "Inter", sans-serif' }}>
+        <div style={{ height: isMobile ? 400 : 700, background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)', position: 'relative', overflow: 'hidden', fontFamily: '"Google Sans", "Inter", sans-serif' }}>
             {/* Grid Background */}
-            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#e0e0e0 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.6 }}></div>
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '32px 32px', opacity: 0.8 }}></div>
 
-            {/* Mock Toolbar - Top Center (Floating) */}
+            {/* Decorative 3D Glass Orbs */}
+            <motion.div animate={{ y: [0, -20, 0], rotate: [0, 10, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} style={{ position: 'absolute', top: -50, right: -50, width: 300, height: 300, borderRadius: '50%', background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', opacity: 0.6, filter: 'blur(40px)' }}></motion.div>
+            <motion.div animate={{ y: [0, 30, 0] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} style={{ position: 'absolute', bottom: -50, left: -50, width: 250, height: 250, borderRadius: '50%', background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)', opacity: 0.6, filter: 'blur(30px)' }}></motion.div>
+
+            {/* Mock Toolbar - Top Center (Floating Glass) */}
             <motion.div
                 initial={{ y: -50, opacity: 0 }} animate={{ y: 20, opacity: 1 }} transition={{ duration: 0.8, delay: 0.2 }}
-                style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', background: 'white', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.12)', padding: '10px 20px', display: 'flex', gap: 16, alignItems: 'center', zIndex: 100, border: '1px solid rgba(255,255,255,0.8)' }}
+                style={{
+                    position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+                    borderRadius: 16, padding: '10px 20px', display: 'flex', gap: 16, alignItems: 'center', zIndex: 100,
+                    ...glassStyle
+                }}
             >
                 <div style={{ display: 'flex', gap: 12 }}>
                     <div style={{ width: 32, height: 32, background: '#f1f3f4', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5f6368' }}><FiGrid /></div>
@@ -354,17 +371,17 @@ function AnimatedDemoCanvas({ isMobile }) {
 
             {/* Content Group: Research Topic (Market Analysis) */}
 
-            {/* 1. Central Topic Node */}
+            {/* 1. Central Topic Node (Glass) */}
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}
                 style={{
                     position: 'absolute', top: isMobile ? 80 : 150, left: isMobile ? '50%' : 150, transform: isMobile ? 'translateX(-50%)' : 'none',
-                    width: isMobile ? 260 : 280, background: 'white', borderRadius: 16, padding: 20,
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.1)', border: '1px solid #f1f3f4', zIndex: 10
+                    width: isMobile ? 260 : 280, borderRadius: 16, padding: 20, zIndex: 10,
+                    ...glassStyle
                 }}
             >
-                <div style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: '1.5rem' }}>🌍</span> Global Trends 2025
+                <div style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10, color: '#202124' }}>
+                    <span style={{ fontSize: '1.5rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>🌍</span> Global Trends 2025
                 </div>
                 <div style={{ fontSize: '0.9rem', color: '#5f6368', lineHeight: 1.5 }}>
                     Researching renewable energy adoption rates across Asia and Europe.
@@ -375,16 +392,16 @@ function AnimatedDemoCanvas({ isMobile }) {
                 </div>
             </motion.div>
 
-            {/* 2. Youtube Video Embed (Simulated -> CSS Chart) */}
+            {/* 2. Youtube Video Embed (Simulated -> CSS Chart + Glass) */}
             <motion.div
                 initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
                 style={{
                     position: 'absolute', top: isMobile ? 280 : 100, left: isMobile ? 20 : 550,
                     width: isMobile ? 200 : 320, height: isMobile ? 120 : 180,
-                    background: 'white', borderRadius: 16, overflow: 'hidden',
-                    boxShadow: '0 15px 40px rgba(0,0,0,0.2)', zIndex: 12,
+                    borderRadius: 16, overflow: 'hidden', zIndex: 12,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column',
-                    border: '1px solid #f1f3f4'
+                    ...glassStyle,
+                    background: 'rgba(255, 255, 255, 0.6)' // Slightly more opaque for content visibility
                 }}
             >
                 {/* CSS Bar Chart Mock */}
@@ -398,13 +415,14 @@ function AnimatedDemoCanvas({ isMobile }) {
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#333' }}>Market Growth 2025 📈</div>
             </motion.div>
 
-            {/* 3. Image/Moodboard Node (CSS Blueprint) */}
+            {/* 3. Image/Moodboard Node (CSS Blueprint + Glass) */}
             <motion.div
                 initial={{ opacity: 0, rotate: 5 }} animate={{ opacity: 1, rotate: 3 }} transition={{ duration: 0.6, delay: 0.5 }}
                 style={{
                     position: 'absolute', top: isMobile ? 380 : 350, left: isMobile ? 150 : 600,
-                    width: 200, padding: 16, background: 'white', borderRadius: 8,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)', transform: 'rotate(3deg)', zIndex: 9
+                    width: 200, padding: 16, borderRadius: 8,
+                    transform: 'rotate(3deg)', zIndex: 9,
+                    ...glassStyle
                 }}
             >
                 {/* CSS Blueprint Mock */}
