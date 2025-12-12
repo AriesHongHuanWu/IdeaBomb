@@ -396,7 +396,7 @@ function AnimatedDemoCanvas({ isMobile }) {
                     boxShadow: '0 4px 20px rgba(0,0,0,0.1)', transform: 'rotate(3deg)', zIndex: 9
                 }}
             >
-                <img src="https://images.unsplash.com/photo-1542601906990-24d4c16419d9?w=300&auto=format&fit=crop&q=60" style={{ width: '100%', borderRadius: 4, height: 120, objectFit: 'cover' }} />
+                <img src="https://images.unsplash.com/photo-1542601906990-24d4c16419d9?w=400&q=80" style={{ width: '100%', borderRadius: 4, height: 120, objectFit: 'cover' }} />
                 <div style={{ fontSize: '0.8rem', color: '#5f6368', marginTop: 8, textAlign: 'center', fontFamily: 'cursive' }}>Solar Layout Concept</div>
             </motion.div>
 
