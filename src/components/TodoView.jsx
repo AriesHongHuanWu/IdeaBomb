@@ -1,19 +1,29 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence, Reorder } from 'framer-motion'
-import { FiMenu, FiPlus, FiCheck, FiMoreHorizontal, FiCalendar, FiFlag, FiShare2, FiInbox, FiSun, FiTrash2, FiEdit2, FiGrid, FiZap } from 'react-icons/fi'
+import { FiMenu, FiPlus, FiCheck, FiMoreHorizontal, FiCalendar, FiFlag, FiShare2, FiInbox, FiSun, FiTrash2, FiEdit2, FiZap } from 'react-icons/fi'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { db } from '../firebase'
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, orderBy, setDoc } from 'firebase/firestore'
 import ShareModal from './ShareModal'
 
-// --- Internal Sidebar Component ---
-const InternalSidebar = ({ activeView, setActiveView, lists, onAddList, onRenameList, onDeleteList }) => {
-    const navItems = [
-        { id: 'inbox', label: 'Inbox', icon: <FiInbox />, color: '#246fe0' },
-        { id: 'today', label: 'Today', icon: <FiSun />, color: '#058527' },
-    ]
+// --- Internal Sidebar Component (Defined outside main component to prevent recreation) ---
+function InternalSidebar({ activeView, setActiveView, lists, onAddList, onRenameList, onDeleteList }) {
     const [hoveredList, setHoveredList] = useState(null)
     const [menuOpenId, setMenuOpenId] = useState(null)
+
+    const navItems = [
+        { id: 'inbox', label: 'Inbox', icon: 'inbox', color: '#246fe0' },
+        { id: 'today', label: 'Today', icon: 'sun', color: '#058527' },
+    ]
+
+    const getIcon = (iconName) => {
+        if (iconName === 'inbox') return <FiInbox />
+        if (iconName === 'sun') return <FiSun />
+        return null
+    }
+
+    // Filter out Inbox from project list
+    const filteredLists = lists.filter(list => list.title !== 'Inbox')
 
     return (
         <div style={{ width: 220, borderRight: '1px solid #f0f0f0', padding: '20px 10px', display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -31,7 +41,7 @@ const InternalSidebar = ({ activeView, setActiveView, lists, onAddList, onRename
                             marginBottom: 4
                         }}
                     >
-                        <span style={{ color: item.color, display: 'flex' }}>{item.icon}</span>
+                        <span style={{ color: item.color, display: 'flex' }}>{getIcon(item.icon)}</span>
                         <span style={{ fontSize: '0.9rem', fontWeight: activeView === item.id ? 600 : 400 }}>{item.label}</span>
                     </motion.div>
                 ))}
@@ -43,7 +53,7 @@ const InternalSidebar = ({ activeView, setActiveView, lists, onAddList, onRename
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto' }}>
-                {lists.filter(list => list.title !== 'Inbox').map(list => (
+                {filteredLists.map(list => (
                     <div key={list.id} style={{ position: 'relative' }}
                         onMouseEnter={() => setHoveredList(list.id)}
                         onMouseLeave={() => { setHoveredList(null); if (menuOpenId !== list.id) setMenuOpenId(null); }}>
@@ -60,7 +70,7 @@ const InternalSidebar = ({ activeView, setActiveView, lists, onAddList, onRename
                             <span style={{ color: list.color || '#999' }}>●</span>
                             <span style={{ fontSize: '0.9rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.title}</span>
 
-                            {(hoveredList === list.id || menuOpenId === list.id) && list.title !== 'Inbox' && (
+                            {(hoveredList === list.id || menuOpenId === list.id) && (
                                 <div onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === list.id ? null : list.id); }}
                                     style={{ padding: 4, borderRadius: 4, cursor: 'pointer', color: '#666', display: 'flex' }}>
                                     <FiMoreHorizontal />
@@ -93,42 +103,38 @@ const InternalSidebar = ({ activeView, setActiveView, lists, onAddList, onRename
 
 export default function TodoView({ user }) {
     const isMobile = useMediaQuery('(max-width: 768px)')
-    const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
+
+    // All useState hooks at the top, unconditionally
+    const [sidebarOpen, setSidebarOpen] = useState(true)
     const [activeView, setActiveView] = useState('inbox')
     const [taskLists, setTaskLists] = useState([])
     const [tasks, setTasks] = useState([])
-
-    // Input states
     const [inputFocus, setInputFocus] = useState(false)
     const [newTaskContent, setNewTaskContent] = useState('')
     const [newTaskPriority, setNewTaskPriority] = useState(4)
     const [newTaskDueDate, setNewTaskDueDate] = useState('')
     const [editingTask, setEditingTask] = useState(null)
-
-    // UI States
     const [isShareOpen, setIsShareOpen] = useState(false)
     const [isVisualizeLoading, setIsVisualizeLoading] = useState(false)
-
-    // Modal State
     const [modalConfig, setModalConfig] = useState(null)
     const [modalInput, setModalInput] = useState('')
 
-    // --- Handlers for List Management ---
-    const openCreateModal = () => {
+    // --- Handlers (wrapped in useCallback to prevent recreation) ---
+    const openCreateModal = useCallback(() => {
         setModalConfig({ type: 'create', title: 'Start a new project', initialValue: '' })
         setModalInput('')
-    }
+    }, [])
 
-    const openRenameModal = (list) => {
+    const openRenameModal = useCallback((list) => {
         setModalConfig({ type: 'rename', title: 'Rename project', initialValue: list.title, listId: list.id })
         setModalInput(list.title)
-    }
+    }, [])
 
-    const openDeleteModal = (list) => {
+    const openDeleteModal = useCallback((list) => {
         setModalConfig({ type: 'delete', title: 'Delete project?', listId: list.id, message: `Are you sure you want to delete "${list.title}"? This cannot be undone.` })
-    }
+    }, [])
 
-    const handleModalSubmit = async () => {
+    const handleModalSubmit = useCallback(async () => {
         if (!modalConfig) return
         const { type, listId } = modalConfig
 
@@ -156,64 +162,80 @@ export default function TodoView({ user }) {
         } finally {
             setModalConfig(null)
         }
-    }
+    }, [modalConfig, modalInput, user, activeView])
 
     // --- Listen to Task Lists ---
     useEffect(() => {
         if (!user) return
+
         const q = query(
             collection(db, 'task_lists'),
             where('allowedEmails', 'array-contains', user.email)
-        );
+        )
+
         const unsub = onSnapshot(q, (snap) => {
             setTaskLists(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+        }, (error) => {
+            console.error("Task Lists Query Error:", error)
         })
-        return unsub
+
+        return () => unsub()
     }, [user])
 
     // --- Listen to Tasks ---
     useEffect(() => {
         if (!user) return
-        let unsub = () => { }
 
-        if (['inbox', 'today'].includes(activeView)) {
+        let listIdToQuery = activeView
+
+        // For inbox/today views, find the Inbox list
+        if (activeView === 'inbox' || activeView === 'today') {
             const inboxList = taskLists.find(l => l.title === 'Inbox' && l.ownerId === user.uid)
-            if (inboxList) {
-                const qTasks = query(collection(db, 'task_lists', inboxList.id, 'tasks'), orderBy('createdAt', 'asc'))
-                unsub = onSnapshot(qTasks, (snap) => {
-                    setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-                })
-            } else {
-                setTasks([])
+            if (!inboxList) {
+                // No inbox yet, just return without setting tasks (initial state is [])
+                return
             }
-        } else {
-            const qTasks = query(collection(db, 'task_lists', activeView, 'tasks'), orderBy('createdAt', 'asc'))
-            unsub = onSnapshot(qTasks, (snap) => {
-                setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-            })
+            listIdToQuery = inboxList.id
         }
+
+        const qTasks = query(
+            collection(db, 'task_lists', listIdToQuery, 'tasks'),
+            orderBy('createdAt', 'asc')
+        )
+
+        const unsub = onSnapshot(qTasks, (snap) => {
+            setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+        }, (error) => {
+            console.error("Tasks Query Error:", error)
+        })
 
         return () => unsub()
     }, [user, activeView, taskLists])
 
     // --- Task Actions ---
-    const handleAddTask = async (e) => {
+    const getTargetListId = useCallback(async () => {
+        if (activeView !== 'inbox' && activeView !== 'today') {
+            return activeView
+        }
+
+        const inbox = taskLists.find(l => l.title === 'Inbox' && l.ownerId === user.uid)
+        if (inbox) return inbox.id
+
+        // Auto-create Inbox
+        const ref = await addDoc(collection(db, 'task_lists'), {
+            title: 'Inbox',
+            ownerId: user.uid,
+            allowedEmails: [user.email],
+            color: '#246fe0',
+            createdAt: serverTimestamp()
+        })
+        return ref.id
+    }, [activeView, taskLists, user])
+
+    const handleAddTask = useCallback(async (e) => {
         if ((e.key === 'Enter' || e.type === 'click') && newTaskContent.trim()) {
-            let targetListId = activeView
-
-            if (['inbox', 'today'].includes(activeView)) {
-                const inbox = taskLists.find(l => l.title === 'Inbox' && l.ownerId === user.uid)
-                if (!inbox) {
-                    const ref = await addDoc(collection(db, 'task_lists'), {
-                        title: 'Inbox', ownerId: user.uid, allowedEmails: [user.email], color: '#246fe0', createdAt: serverTimestamp()
-                    })
-                    targetListId = ref.id
-                } else {
-                    targetListId = inbox.id
-                }
-            }
-
             try {
+                const targetListId = await getTargetListId()
                 await addDoc(collection(db, 'task_lists', targetListId, 'tasks'), {
                     content: newTaskContent,
                     isCompleted: false,
@@ -226,72 +248,62 @@ export default function TodoView({ user }) {
                 setNewTaskPriority(4)
                 setNewTaskDueDate('')
                 setInputFocus(false)
-            } catch (err) { console.error(err) }
+            } catch (err) {
+                console.error(err)
+            }
         }
-    }
+    }, [newTaskContent, newTaskPriority, newTaskDueDate, user, getTargetListId])
 
-    const toggleComplete = async (task) => {
-        let listId = activeView
-        if (['inbox', 'today'].includes(activeView)) {
-            const inbox = taskLists.find(l => l.title === 'Inbox' && l.ownerId === user.uid)
-            if (inbox) listId = inbox.id
-        }
+    const toggleComplete = useCallback(async (task) => {
         try {
-            await updateDoc(doc(db, 'task_lists', listId, 'tasks', task.id), { isCompleted: !task.isCompleted })
+            const listId = await getTargetListId()
+            await updateDoc(doc(db, 'task_lists', listId, 'tasks', task.id), {
+                isCompleted: !task.isCompleted
+            })
         } catch (err) { console.error(err) }
-    }
+    }, [getTargetListId])
 
-    const handleUpdateTask = async (taskId, newContent) => {
+    const handleUpdateTask = useCallback(async (taskId, newContent) => {
         if (!newContent.trim()) return
-        let listId = activeView
-        if (['inbox', 'today'].includes(activeView)) {
-            const inbox = taskLists.find(l => l.title === 'Inbox' && l.ownerId === user.uid)
-            if (inbox) listId = inbox.id
-        }
         try {
+            const listId = await getTargetListId()
             await updateDoc(doc(db, 'task_lists', listId, 'tasks', taskId), { content: newContent })
             setEditingTask(null)
         } catch (err) { console.error(err) }
-    }
+    }, [getTargetListId])
 
-    const deleteTask = async (taskId) => {
-        let listId = activeView
-        if (['inbox', 'today'].includes(activeView)) {
-            const inbox = taskLists.find(l => l.title === 'Inbox' && l.ownerId === user.uid)
-            if (inbox) listId = inbox.id
-        }
+    const deleteTask = useCallback(async (taskId) => {
         try {
+            const listId = await getTargetListId()
             await deleteDoc(doc(db, 'task_lists', listId, 'tasks', taskId))
         } catch (err) { console.error(err) }
-    }
+    }, [getTargetListId])
 
-    const handleClearCompleted = async () => {
-        let listId = activeView
-        if (['inbox', 'today'].includes(activeView)) {
-            const inbox = taskLists.find(l => l.title === 'Inbox' && l.ownerId === user.uid)
-            if (inbox) listId = inbox.id
-        }
+    const handleClearCompleted = useCallback(async () => {
         try {
+            const listId = await getTargetListId()
             const completed = tasks.filter(t => t.isCompleted)
             await Promise.all(completed.map(t => deleteDoc(doc(db, 'task_lists', listId, 'tasks', t.id))))
         } catch (e) {
             console.error(e)
             alert(e.message)
         }
-    }
+    }, [tasks, getTargetListId])
 
-    // --- AI Visualization Logic (Smart Categorization) ---
-    const handleVisualize = async () => {
-        if (tasks.length === 0) return alert("No tasks to visualize!")
+    // --- AI Visualization ---
+    const handleVisualize = useCallback(async () => {
+        if (tasks.length === 0) {
+            alert("No tasks to visualize!")
+            return
+        }
         setIsVisualizeLoading(true)
 
         try {
-            // Group tasks by priority
             const priorityGroups = {
-                1: { label: '🚩 High Priority', color: '#ffebee', tasks: [] },
-                2: { label: '🏳️ Medium Priority', color: '#fff3e0', tasks: [] },
-                3: { label: '🔹 Low Priority', color: '#e3f2fd', tasks: [] },
-                4: { label: '⚪ No Priority', color: '#f5f5f5', tasks: [] },
+                1: { label: '🚩 High Priority', color: '#ffebee', items: [] },
+                2: { label: '🏳️ Medium Priority', color: '#fff3e0', items: [] },
+                3: { label: '🔹 Low Priority', color: '#e3f2fd', items: [] },
+                4: { label: '⚪ No Priority', color: '#f5f5f5', items: [] },
             }
             const completedTasks = []
 
@@ -299,12 +311,12 @@ export default function TodoView({ user }) {
                 if (task.isCompleted) {
                     completedTasks.push(task)
                 } else {
-                    const priority = task.priority || 4
-                    priorityGroups[priority].tasks.push(task)
+                    const p = task.priority || 4
+                    priorityGroups[p].items.push(task)
                 }
             })
 
-            // Create new board
+            const activeList = taskLists.find(l => l.id === activeView)
             const boardRef = await addDoc(collection(db, 'boards'), {
                 title: `📋 ${activeList?.title || 'Tasks'} - Visualized`,
                 createdBy: user.uid,
@@ -323,11 +335,9 @@ export default function TodoView({ user }) {
             const startX = 100
             const startY = 100
 
-            // Create category headers and sticky notes for each priority group
             for (const [priority, group] of Object.entries(priorityGroups)) {
-                if (group.tasks.length === 0) continue
+                if (group.items.length === 0) continue
 
-                // Category Header (Text Node)
                 const headerId = `header-${priority}-${Date.now()}`
                 nodePromises.push(setDoc(doc(db, 'boards', boardRef.id, 'nodes', headerId), {
                     id: headerId,
@@ -339,8 +349,7 @@ export default function TodoView({ user }) {
                     createdAt: new Date().toISOString()
                 }))
 
-                // Sticky notes for tasks
-                group.tasks.forEach((task, taskIndex) => {
+                group.items.forEach((task, taskIndex) => {
                     const nodeId = `task-${task.id}`
                     const dueDateStr = task.dueDate?.toDate ? task.dueDate.toDate().toLocaleDateString() : ''
                     nodePromises.push(setDoc(doc(db, 'boards', boardRef.id, 'nodes', nodeId), {
@@ -358,7 +367,6 @@ export default function TodoView({ user }) {
                 colIndex++
             }
 
-            // Add completed tasks in a separate column
             if (completedTasks.length > 0) {
                 const headerId = `header-done-${Date.now()}`
                 nodePromises.push(setDoc(doc(db, 'boards', boardRef.id, 'nodes', headerId), {
@@ -395,14 +403,16 @@ export default function TodoView({ user }) {
         } finally {
             setIsVisualizeLoading(false)
         }
-    }
+    }, [tasks, taskLists, activeView, user])
 
+    // Derived state (computed, not stored)
     const activeList = taskLists.find(l => l.id === activeView)
+    const showSidebar = !isMobile || sidebarOpen
 
     return (
         <div style={{ display: 'flex', height: '100%', background: 'white', borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
             {/* Internal Sidebar */}
-            {(!isMobile || sidebarOpen) && (
+            {showSidebar && (
                 <InternalSidebar
                     activeView={activeView}
                     setActiveView={setActiveView}
