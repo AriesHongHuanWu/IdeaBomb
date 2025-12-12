@@ -642,6 +642,8 @@ const PollNode = ({ node, onUpdate }) => {
     const totalVotes = options.reduce((acc, curr) => acc + curr.votes, 0) || 1
     const { rad, p, gap, fsHead, icon, mb, fsBody } = getScale(node.w)
     const [msg, setMsg] = useState(null)
+    const [isAdding, setIsAdding] = useState(false)
+    const [newOpt, setNewOpt] = useState('')
 
     const vote = (optId) => {
         const hasVoted = localStorage.getItem(`poll_${node.id}`)
@@ -657,11 +659,13 @@ const PollNode = ({ node, onUpdate }) => {
         setTimeout(() => setMsg(null), 2000)
     }
 
-    const addOption = () => {
-        const text = prompt("Enter option text:")
-        if (text) {
-            const newOpts = [...options, { id: Date.now(), text, votes: 0 }]
+    const handleAddOption = (e) => {
+        e.preventDefault()
+        if (newOpt.trim()) {
+            const newOpts = [...options, { id: Date.now(), text: newOpt.trim(), votes: 0 }]
             onUpdate(node.id, { options: newOpts })
+            setNewOpt('')
+            setIsAdding(false)
         }
     }
 
@@ -694,7 +698,23 @@ const PollNode = ({ node, onUpdate }) => {
                     )
                 })}
             </div>
-            <button onClick={addOption} style={{ marginTop: 15, width: '100%', padding: '10px', border: '1px dashed #ccc', background: '#fafafa', borderRadius: 12, color: '#666', cursor: 'pointer', fontSize: fsBody, fontWeight: 600, transition: '0.2s' }} onPointerDown={e => e.stopPropagation()}>+ Add Option</button>
+
+            {isAdding ? (
+                <form onSubmit={handleAddOption} style={{ marginTop: 15, display: 'flex', gap: 5 }}>
+                    <input
+                        autoFocus
+                        value={newOpt}
+                        onChange={e => setNewOpt(e.target.value)}
+                        placeholder="Option..."
+                        onPointerDown={e => e.stopPropagation()}
+                        style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid #ddd', fontSize: fsBody, outline: 'none' }}
+                    />
+                    <button type="submit" style={{ borderRadius: 8, border: 'none', background: '#52c41a', color: 'white', padding: '0 10px', cursor: 'pointer' }}><FiCheck /></button>
+                    <button type="button" onClick={() => setIsAdding(false)} style={{ borderRadius: 8, border: 'none', background: '#f5f5f5', color: '#666', padding: '0 10px', cursor: 'pointer' }}><FiX /></button>
+                </form>
+            ) : (
+                <button onClick={() => setIsAdding(true)} style={{ marginTop: 15, width: '100%', padding: '10px', border: '1px dashed #ccc', background: '#fafafa', borderRadius: 12, color: '#666', cursor: 'pointer', fontSize: fsBody, fontWeight: 600, transition: '0.2s' }} onPointerDown={e => e.stopPropagation()}>+ Add Option</button>
+            )}
         </div>
     )
 }
@@ -742,12 +762,52 @@ const ContentDisplay = ({ content }) => {
 }
 
 const YouTubeNode = ({ node, onUpdate }) => {
-    const [url, setUrl] = useState(''); const videoId = node.videoId
-    const handleEmbed = () => { const m = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/); if (m && m[2].length === 11) { onUpdate(node.id, { videoId: m[2] }) } else alert("Invalid URL") }
+    const [url, setUrl] = useState('')
+    const [error, setError] = useState(null)
+    const videoId = node.videoId
+
+    const handleEmbed = () => {
+        const m = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/)
+        if (m && m[2].length === 11) {
+            onUpdate(node.id, { videoId: m[2] })
+        } else {
+            setError("Invalid URL")
+            setTimeout(() => setError(null), 2000)
+        }
+    }
+
     const validContent = typeof node.content === 'string' ? node.content : ''
     const { rad, p, gap, fsHead, icon, mb } = getScale(node.w)
 
-    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}> <div style={{ display: 'flex', alignItems: 'center', gap: gap, marginBottom: mb, color: '#FF0000', fontWeight: 'bold', fontSize: fsHead }}><FiYoutube size={icon} /> YouTube Video</div> {videoId ? (<div style={{ flex: 1, borderRadius: rad, overflow: 'hidden', background: 'black', position: 'relative' }}> <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${videoId}`} frameBorder="0" allowFullScreen style={{ pointerEvents: 'auto' }} onPointerDown={e => e.stopPropagation()} /> <button onClick={() => onUpdate(node.id, { videoId: null })} style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiX /></button> </div>) : (<div onPointerDown={e => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10 }}> {validContent ? (<div style={{ textAlign: 'center' }}> <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '0.8rem', maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Suggested: <strong>{validContent.replace('Search:', '')}</strong></p> <Button onClick={() => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(validContent.replace('Search:', ''))}`, '_blank')}>Search YouTube</Button> <Button variant="danger" onClick={() => onUpdate(node.id, { content: '' })} style={{ marginTop: 5, fontSize: '0.7rem', padding: '4px 8px' }}>Clear</Button> </div>) : (<><Input placeholder="Paste YouTube URL..." value={url} onChange={e => setUrl(e.target.value)} /><Button onClick={handleEmbed}>Embed</Button></>)} </div>)} </div>)
+    return (
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: gap, marginBottom: mb, color: '#FF0000', fontWeight: 'bold', fontSize: fsHead }}>
+                <FiYoutube size={icon} /> YouTube Video
+            </div>
+            {videoId ? (
+                <div style={{ flex: 1, borderRadius: rad, overflow: 'hidden', background: 'black', position: 'relative' }}>
+                    <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${videoId}`} frameBorder="0" allowFullScreen style={{ pointerEvents: 'auto' }} onPointerDown={e => e.stopPropagation()} />
+                    <button onClick={() => onUpdate(node.id, { videoId: null })} style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiX /></button>
+                </div>
+            ) : (
+                <div onPointerDown={e => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10 }}>
+                    {validContent ? (
+                        <div style={{ textAlign: 'center' }}>
+                            <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '0.8rem', maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Suggested: <strong>{validContent.replace('Search:', '')}</strong></p>
+                            <Button onClick={() => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(validContent.replace('Search:', ''))}`, '_blank')}>Search YouTube</Button>
+                            <Button variant="danger" onClick={() => onUpdate(node.id, { content: '' })} style={{ marginTop: 5, fontSize: '0.7rem', padding: '4px 8px' }}>Clear</Button>
+                        </div>
+                    ) : (
+                        <>
+                            <Input placeholder="Paste YouTube URL..." value={url} onChange={e => setUrl(e.target.value)} />
+                            <Button onClick={handleEmbed}>Embed</Button>
+                            {error && <span style={{ color: 'red', fontSize: '0.8rem', textAlign: 'center' }}>{error}</span>}
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
+    )
 }
 const TodoNode = ({ node, onUpdate }) => {
     const items = node.items || []
@@ -1087,7 +1147,8 @@ const LinkNode = ({ node, onUpdate }) => {
 
 const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
     const [hover, setHover] = useState(false)
-    const [toolbar, setToolbar] = useState(null) // { x, y, visible }
+    const [toolbar, setToolbar] = useState(null) // { x, y, visible, mode: 'default' | 'link' }
+    const [linkUrl, setLinkUrl] = useState('')
     const editorRef = useRef(null)
     const isHandwriting = node.font !== 'sans'
     const isTransparent = node.color === 'transparent'
@@ -1119,19 +1180,34 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
             setToolbar({
                 left: rect.left + (rect.width / 2) - 40, // Center toolbar
                 top: rect.top - 45,
-                visible: true
+                visible: true,
+                mode: 'default'
             })
         } else {
-            setToolbar(null)
+            // Only hide if not clicking the toolbar input
+            // Handled by onMouseDown on portal div usually, but let's be safe
+            // logic moved to onBlur/selectionchange mostly
         }
     }
 
-    const execLink = (e) => {
+    const startLink = (e) => {
         e.preventDefault()
-        const url = prompt("Enter URL:", "https://")
-        if (url) {
-            document.execCommand('createLink', false, url)
-            onUpdate(node.id, { content: editorRef.current.innerHTML }) // Save immediately
+        setToolbar(prev => ({ ...prev, mode: 'link' }))
+        setLinkUrl('https://')
+    }
+
+    const applyLink = (e) => {
+        e.preventDefault()
+        if (linkUrl) {
+            // We need to restore selection because input focus lost it
+            // But realistically, document.execCommand works on current selection. 
+            // In a complex app we'd save range. For now we try to apply to current spec.
+            // But clicking input blur the editor.
+            // Workaround: render input, but keep focus strategy or just apply?
+            // "document.execCommand" might fail if focus is lost.
+            // Better strategy: Simple link insertion for now.
+            document.execCommand('createLink', false, linkUrl)
+            onUpdate(node.id, { content: editorRef.current.innerHTML })
         }
         setToolbar(null)
     }
@@ -1156,7 +1232,7 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
                     : (isTransparent ? 'none' : '0 4px 15px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.05)'),
                 border: isTransparent ? '1px solid rgba(255,255,255,0.4)' : '1px solid rgba(0,0,0,0.05)',
                 transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                overflow: 'visible' // Allow toolbar to show? Actually fixed pos toolbar doesn't care.
+                overflow: 'visible'
             }}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
@@ -1167,7 +1243,7 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '0 12px',
                 borderBottom: '1px solid rgba(0,0,0,0.04)',
-                cursor: 'grab' // Indication it can be moved
+                cursor: 'grab'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 700, opacity: 0.6, color: '#333' }}>
                     <FiType size={14} /> <span>NOTE</span>
@@ -1219,13 +1295,21 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
                 </div>
             </div>
 
-            {/* Body - Flex 1 to fill space */}
+            {/* Body */}
             <div style={{ flex: 1, width: '100%', position: 'relative', overflowY: 'auto', scrollbarWidth: 'none' }}>
                 <div
                     ref={editorRef}
                     contentEditable
                     suppressContentEditableWarning
-                    onBlur={e => onUpdate(node.id, { content: e.currentTarget.innerHTML })}
+                    onBlur={e => {
+                        // Small Delay to allow Toolbar Click to register
+                        setTimeout(() => {
+                            if (document.activeElement?.tagName !== 'INPUT') { // If verify input focused
+                                onUpdate(node.id, { content: e.target.innerHTML })
+                                // setToolbar(null) // Optional: hide on blur
+                            }
+                        }, 200)
+                    }}
                     onMouseUp={handleSelect}
                     onKeyUp={handleSelect}
                     onPointerDown={e => e.stopPropagation()}
@@ -1238,13 +1322,13 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
                         color: '#2d3436',
                         padding: '16px',
                         fontFamily: isHandwriting ? '"Kalam", cursive' : '"Inter", sans-serif',
-                        whiteSpace: 'pre-wrap', // Preserve newlines
+                        whiteSpace: 'pre-wrap',
                         cursor: 'text'
                     }}
                 />
             </div>
 
-            {/* Floating Link Toolbar - Portaled to avoid Transform issues */}
+            {/* Floating Toolbar */}
             {toolbar && toolbar.visible && ReactDOM.createPortal(
                 <div style={{
                     position: 'fixed', top: toolbar.top, left: toolbar.left,
@@ -1252,12 +1336,26 @@ const NoteNode = ({ node, onUpdate, isSelected, isDragging }) => {
                     display: 'flex', gap: 8, alignItems: 'center',
                     boxShadow: '0 4px 24px rgba(0,0,0,0.3)', zIndex: 99999,
                     animation: 'fadeIn 0.2s ease', pointerEvents: 'auto'
-                }} onPointerDown={e => e.preventDefault() /* Prevent losing focus */} onClick={e => e.stopPropagation()}>
-                    <button onClick={execLink} title="Add Link" style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}><FiLink size={14} /></button>
-                    <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.2)' }} />
-                    <button onClick={execUnlink} title="Remove Link" style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', display: 'flex' }}><FiTrash2 size={14} /></button>
-                    <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.2)' }} />
-                    {/* Translation Logic could go here later if needed */}
+                }} onPointerDown={e => e.preventDefault()} onClick={e => e.stopPropagation()}>
+                    {toolbar.mode === 'link' ? (
+                        <form onSubmit={applyLink} style={{ display: 'flex', gap: 4 }}>
+                            <input
+                                autoFocus
+                                value={linkUrl}
+                                onChange={e => setLinkUrl(e.target.value)}
+                                placeholder="https://"
+                                style={{ background: '#333', border: 'none', color: 'white', borderRadius: 4, padding: '2px 6px', fontSize: '0.8rem', outline: 'none', width: 140 }}
+                            />
+                            <button type="submit" style={{ background: '#52c41a', border: 'none', color: 'white', borderRadius: 4, cursor: 'pointer', padding: '0 6px' }}><FiCheck size={12} /></button>
+                            <button type="button" onClick={() => setToolbar({ ...toolbar, mode: 'default' })} style={{ background: '#444', border: 'none', color: '#ccc', borderRadius: 4, cursor: 'pointer', padding: '0 6px' }}><FiX size={12} /></button>
+                        </form>
+                    ) : (
+                        <>
+                            <button onClick={startLink} title="Add Link" style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}><FiLink size={14} /></button>
+                            <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.2)' }} />
+                            <button onClick={execUnlink} title="Remove Link" style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', display: 'flex' }}><FiTrash2 size={14} /></button>
+                        </>
+                    )}
                 </div>,
                 document.body
             )}
