@@ -13,6 +13,10 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+
+// Debug: Verify Project Connection
+console.log("%c [Firebase] Connected to Project ID: " + firebaseConfig.projectId, "color: #bada55; font-size: 14px; font-weight: bold;");
+
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const db = initializeFirestore(app, {
