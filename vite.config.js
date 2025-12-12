@@ -9,7 +9,7 @@ export default defineConfig({
         react(),
         VitePWA({
             registerType: 'autoUpdate',
-            includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
+            includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png', 'logo.svg'],
             manifest: {
                 name: 'IdeaBomb - AI Collaborative Whiteboard',
                 short_name: 'IdeaBomb',
