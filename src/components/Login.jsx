@@ -14,7 +14,23 @@ export default function Login() {
 
     const handleLogin = async () => {
         try {
-            await signInWithPopup(auth, googleProvider)
+            const result = await signInWithPopup(auth, googleProvider)
+            const { getAdditionalUserInfo } = await import('firebase/auth') // Import conditionally or move up
+            const { doc, setDoc, increment, updateDoc, getDoc } = await import('firebase/firestore')
+            const { db } = await import('../firebase')
+
+            const details = getAdditionalUserInfo(result)
+            if (details?.isNewUser) {
+                const statsRef = doc(db, 'system', 'stats')
+                // Use setDoc with merge to ensure doc exists, or update if exists
+                // Safe increment pattern
+                try {
+                    await updateDoc(statsRef, { userCount: increment(1) })
+                } catch (e) {
+                    // Doc might not exist yet
+                    await setDoc(statsRef, { userCount: 1 }, { merge: true })
+                }
+            }
         } catch (error) {
             console.error("Login failed", error)
             alert("Login failed: " + error.message)

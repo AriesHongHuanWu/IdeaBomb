@@ -40,6 +40,7 @@ export default function LandingPage({ user }) {
                     <div style={{ background: '#e8f0fe', color: '#1967d2', padding: '6px 16px', borderRadius: 20, fontSize: '0.9rem', fontWeight: 600, display: 'inline-block', marginBottom: 20 }}>
                         ✨ Now with Gemini AI Integration
                     </div>
+                    <UserCountBadge />
                     <h1 style={{ fontSize: isMobile ? '2.5rem' : '4rem', fontWeight: 800, lineHeight: 1.1, marginBottom: 20, color: '#202124' }}>
                         Think Bigger.<br /> Collaborate Smarter.
                     </h1>
@@ -57,56 +58,15 @@ export default function LandingPage({ user }) {
                 </motion.div>
 
                 {/* Hero Image Mockup - Responsive */}
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, duration: 1 }} style={{ marginTop: 80, width: '100%', borderRadius: 16, border: '1px solid #dadce0', boxShadow: '0 20px 60px rgba(0,0,0,0.1)', overflow: 'hidden', maxWidth: 1000 }}>
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, duration: 1 }} style={{ marginTop: 80, width: '100%', borderRadius: 16, border: '1px solid #dadce0', boxShadow: '0 20px 60px rgba(0,0,0,0.1)', overflow: 'hidden', maxWidth: 1000, position: 'relative' }}>
                     <div style={{ background: '#f1f3f4', padding: '12px 20px', display: 'flex', gap: 8, alignItems: 'center', borderBottom: '1px solid #e0e0e0' }}>
                         <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ff5f56' }}></div>
                         <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ffbd2e' }}></div>
                         <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#27c93f' }}></div>
-                        {!isMobile && <div style={{ background: 'white', borderRadius: 4, flex: 1, margin: '0 20px', height: 28, display: 'flex', alignItems: 'center', paddingLeft: 10, fontSize: '0.8rem', color: '#888' }}>ideabomb.app/board/marketing-plan</div>}
+                        {!isMobile && <div style={{ background: 'white', borderRadius: 4, flex: 1, margin: '0 20px', height: 28, display: 'flex', alignItems: 'center', paddingLeft: 10, fontSize: '0.8rem', color: '#888' }}>ideabomb.app/board/system-architecture</div>}
                     </div>
-                    {/* High Contrast Mockup Container */}
-                    <div style={{ height: isMobile ? 300 : 500, background: '#ffffff', position: 'relative', overflow: 'hidden' }}>
-                        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#e0e0e0 1px, transparent 1px)', backgroundSize: '20px 20px', opacity: 0.5 }}></div>
-
-                        {/* Left Sidebar Mockup */}
-                        {!isMobile && (
-                            <div style={{ position: 'absolute', top: 20, bottom: 20, left: 20, width: 60, background: '#fff', borderRadius: 8, border: '1px solid #dadce0', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 15, gap: 20, zIndex: 10 }}>
-                                <div style={{ width: 32, height: 32, background: '#e8f0fe', borderRadius: 8, border: '1px solid #d2e3fc' }}></div>
-                                <div style={{ width: 24, height: 24, background: '#f1f3f4', borderRadius: 4 }}></div>
-                                <div style={{ width: 24, height: 24, background: '#f1f3f4', borderRadius: 4 }}></div>
-                                <div style={{ width: 24, height: 24, background: '#f1f3f4', borderRadius: 4 }}></div>
-                            </div>
-                        )}
-
-                        {/* Node 1 */}
-                        <div style={{ position: 'absolute', top: isMobile ? 40 : 80, left: isMobile ? 40 : 140, width: isMobile ? 160 : 200, height: isMobile ? 100 : 120, background: '#fff', border: '2px solid #4285f4', borderRadius: 8, padding: 20, boxShadow: '0 4px 15px rgba(66,133,244,0.15)', zIndex: 5 }}>
-                            <div style={{ width: '80%', height: 12, background: '#e0e0e0', borderRadius: 4, marginBottom: 15 }}></div>
-                            <div style={{ width: '100%', height: 8, background: '#f0f0f0', borderRadius: 4, marginBottom: 8 }}></div>
-                            <div style={{ width: '100%', height: 8, background: '#f0f0f0', borderRadius: 4, marginBottom: 8 }}></div>
-                        </div>
-
-                        {/* Connecting Arrow */}
-                        <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}>
-                            <path d={isMobile ? "M 200 90 L 250 150" : "M 340 140 C 400 140, 420 200, 480 200"} stroke="#9aa0a6" strokeWidth="3" fill="none" />
-                        </svg>
-
-                        {/* Node 2 (AI Summary) */}
-                        <div style={{ position: 'absolute', top: isMobile ? 160 : 160, left: isMobile ? 100 : 480, width: isMobile ? 200 : 240, height: 140, background: '#fff', border: '1px solid #dadce0', borderRadius: 8, padding: 0, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', zIndex: 6, overflow: 'hidden' }}>
-                            <div style={{ background: '#f8f9fa', padding: '10px 15px', borderBottom: '1px solid #f1f3f4', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ width: 12, height: 12, background: 'linear-gradient(135deg, #4285f4, #ea4335)', borderRadius: '50%' }}></div>
-                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#5f6368' }}>AI Summary</div>
-                            </div>
-                            <div style={{ padding: 15 }}>
-                                <div style={{ width: '90%', height: 8, background: '#f1f3f4', borderRadius: 4, marginBottom: 10 }}></div>
-                                <div style={{ width: '60%', height: 8, background: '#f1f3f4', borderRadius: 4 }}></div>
-                            </div>
-                        </div>
-
-                        {/* Floating AI Pill */}
-                        <div style={{ position: 'absolute', bottom: isMobile ? 20 : 40, right: isMobile ? 20 : 40, background: '#34a853', color: 'white', padding: isMobile ? '8px 16px' : '12px 24px', borderRadius: 30, fontSize: isMobile ? '0.9rem' : '1rem', fontWeight: 600, boxShadow: '0 8px 24px rgba(52,168,83,0.3)', zIndex: 20 }}>
-                            ✨ @ai Analyze
-                        </div>
-                    </div>
+                    {/* Interactive Animated Demo */}
+                    <AnimatedDemoCanvas isMobile={isMobile} />
                 </motion.div>
             </section>
 
@@ -296,6 +256,136 @@ function FAQItem({ question, answer }) {
                     {answer}
                 </div>
             )}
+        </div>
+    )
+}
+
+function UserCountBadge() {
+    const [count, setCount] = useState(null)
+
+    React.useEffect(() => {
+        const fetchCount = async () => {
+            const { doc, onSnapshot } = await import('firebase/firestore')
+            const { db } = await import('../firebase')
+            const unsub = onSnapshot(doc(db, 'system', 'stats'), (doc) => {
+                if (doc.exists()) setCount(doc.data().userCount)
+            })
+            return unsub
+        }
+        let unsub
+        fetchCount().then(u => unsub = u)
+        return () => unsub && unsub()
+    }, [])
+
+    if (!count) return null
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{
+                margin: '0 auto 20px auto',
+                display: 'flex',
+                justifyContent: 'center',
+                width: 'fit-content'
+            }}
+        >
+            <div style={{
+                background: 'rgba(52, 168, 83, 0.1)',
+                color: '#2d7d3d',
+                padding: '6px 14px',
+                borderRadius: 20,
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                border: '1px solid rgba(52, 168, 83, 0.2)'
+            }}>
+                <div style={{ display: 'flex', marginLeft: -5 }}>
+                    {[1, 2, 3].map(i => (
+                        <div key={i} style={{ width: 20, height: 20, borderRadius: '50%', background: '#ccc', border: '2px solid white', marginLeft: -4, overflow: 'hidden' }}>
+                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`} width="100%" height="100%" />
+                        </div>
+                    ))}
+                </div>
+                Trusted by {count.toLocaleString()}+ users
+            </div>
+        </motion.div>
+    )
+}
+
+function AnimatedDemoCanvas({ isMobile }) {
+    return (
+        <div style={{ height: isMobile ? 300 : 500, background: '#ffffff', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#e0e0e0 1px, transparent 1px)', backgroundSize: '20px 20px', opacity: 0.5 }}></div>
+
+            {/* Simulated Cursor 1 */}
+            <motion.div
+                initial={{ x: 100, y: 100 }}
+                animate={{ x: [100, 400, 400, 100], y: [100, 100, 300, 100] }}
+                transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+                style={{ position: 'absolute', zIndex: 50, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}
+            >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19135L11.4841 12.3673H5.65376Z" fill="#EA4335" stroke="white" strokeWidth="1" />
+                </svg>
+                <div style={{ background: '#EA4335', padding: '2px 6px', borderRadius: 4, color: 'white', fontSize: '10px', marginLeft: 4 }}>Sarah</div>
+            </motion.div>
+
+            {/* Simulated Cursor 2 */}
+            <motion.div
+                initial={{ x: 600, y: 300 }}
+                animate={{ x: [600, 200, 200, 600], y: [300, 300, 150, 300] }}
+                transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                style={{ position: 'absolute', zIndex: 50, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}
+            >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19135L11.4841 12.3673H5.65376Z" fill="#4285F4" stroke="white" strokeWidth="1" />
+                </svg>
+                <div style={{ background: '#4285F4', padding: '2px 6px', borderRadius: 4, color: 'white', fontSize: '10px', marginLeft: 4 }}>Mike</div>
+            </motion.div>
+
+            {/* Node 1: Architecture Box */}
+            <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                style={{ position: 'absolute', top: isMobile ? 40 : 100, left: isMobile ? 40 : 150, width: 220, background: 'white', border: '1px solid #ddd', borderRadius: 8, padding: 15, boxShadow: '0 4px 10px rgba(0,0,0,0.05)', zIndex: 10 }}
+            >
+                <div style={{ fontWeight: 'bold', marginBottom: 10, color: '#333', display: 'flex', alignItems: 'center', gap: 5 }}><FiGrid /> Frontend App</div>
+                <div style={{ fontSize: '0.8rem', color: '#666' }}>React + Vite + Firebase</div>
+            </motion.div>
+
+            {/* Animated Connection */}
+            <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 5 }}>
+                <motion.path
+                    d={isMobile ? "M 150 120 L 150 200" : "M 370 140 C 450 140, 500 140, 550 180"}
+                    stroke="#ccc" strokeWidth="2" fill="none" strokeDasharray="5,5"
+                    initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.5, delay: 0.5 }}
+                />
+            </svg>
+
+            {/* Node 2: Database */}
+            <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.8 }}
+                style={{ position: 'absolute', top: isMobile ? 180 : 160, left: isMobile ? 40 : 550, width: 200, background: 'white', border: '1px solid #ddd', borderRadius: 8, padding: 15, boxShadow: '0 4px 10px rgba(0,0,0,0.05)', zIndex: 10 }}
+            >
+                <div style={{ fontWeight: 'bold', marginBottom: 10, color: '#333', display: 'flex', alignItems: 'center', gap: 5 }}><FiCpu /> Scalable DB</div>
+                <div style={{ fontSize: '0.8rem', color: '#666' }}>Firestore + Cloud Functions</div>
+            </motion.div>
+
+            {/* Chat Bubble Simulation */}
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: [0, 1, 1, 0], y: [10, 0, 0, -10] }}
+                transition={{ duration: 4, repeat: Infinity, repeatDelay: 3, delay: 2 }}
+                style={{ position: 'absolute', top: isMobile ? 240 : 130, left: isMobile ? 180 : 400, background: '#333', color: 'white', padding: '6px 12px', borderRadius: 12, fontSize: '0.8rem', zIndex: 20 }}
+            >
+                Looks good! 👍
+            </motion.div>
         </div>
     )
 }
