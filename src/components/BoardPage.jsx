@@ -792,6 +792,13 @@ export default function BoardPage({ user }) {
     const [tempTitle, setTempTitle] = useState('')
     const saveTitle = async () => { setIsEditingTitle(false); if (tempTitle && tempTitle !== boardTitle) { try { await updateDoc(doc(db, 'boards', boardId), { title: tempTitle }) } catch (e) { console.error(e) } } }
 
+    const updateThumbnail = async () => {
+        // Placeholder: Real implementation requires exporting Whiteboard canvas to image
+        console.log("Thumbnail update requested (Not implemented yet)")
+        // Typically we would use html2canvas or similar on the whiteboard container
+        // and upload to Firebase Storage or save as base64 in Firestore (not recommended for large images).
+    }
+
     useEffect(() => {
         const h = () => setTabMenu(null)
         window.addEventListener('click', h)
