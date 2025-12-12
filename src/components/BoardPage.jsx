@@ -13,7 +13,10 @@ import { signOut } from 'firebase/auth'
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { useMediaQuery } from '../hooks/useMediaQuery'
 
+import { useSettings } from '../App'
+
 export default function BoardPage({ user }) {
+    const { theme, t } = useSettings()
     const { boardId } = useParams()
     const navigate = useNavigate()
     const [nodes, setNodes] = useState([])
