@@ -80,7 +80,7 @@ export default function ShareModal({ boardId, isOpen, onClose, user }) {
                 <p style={{ color: theme?.text || '#666', lineHeight: '1.5', fontSize: '0.9rem', opacity: 0.8 }}>{t('inviteDesc')}</p>
                 <div style={{ background: theme?.bg || '#f5f5f5', padding: 10, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                     <span style={{ fontSize: '0.8rem', color: theme?.text || '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>{window.location.href}</span>
-                    <button onClick={copyLink} style={{ border: 'none', background: copied ? '#4caf50' : (theme?.cardBg || 'white'), color: copied ? 'white' : (theme?.text || '#333'), padding: '5px 10px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', border: `1px solid ${theme?.border}` }}>{copied ? t('copied') : t('copyLink')}</button>
+                    <button onClick={copyLink} style={{ background: copied ? '#4caf50' : (theme?.cardBg || 'white'), color: copied ? 'white' : (theme?.text || '#333'), padding: '5px 10px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', border: `1px solid ${theme?.border}` }}>{copied ? t('copied') : t('copyLink')}</button>
                 </div>
                 <div style={{ borderBottom: `1px solid ${theme?.border || '#eee'}`, marginBottom: 20 }}></div>
                 <form onSubmit={handleInvite} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
