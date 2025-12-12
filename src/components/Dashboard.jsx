@@ -40,13 +40,14 @@ export default function Dashboard({ user }) {
     const [contextMenu, setContextMenu] = useState(null) // { x, y, boardId }
 
     // QueryMemo to prevent re-creation loop
+    // Dependency on user.email (string) is safer than user (object)
     const boardsQuery = useMemo(() => {
         if (!user || !user.email) return null
         return query(
             collection(db, 'boards'),
             where('allowedEmails', 'array-contains', user.email)
         )
-    }, [user])
+    }, [user?.email])
 
     useEffect(() => {
         if (!boardsQuery) return
@@ -58,17 +59,8 @@ export default function Dashboard({ user }) {
             // Do NOT set state here to avoid loops during error storms
         })
 
-        // Sync User to Firestore (debounced or one-off)
-        // We do this here for simplicity, but ideally should be in context
-        setDoc(doc(db, 'users', user.uid), {
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            lastLogin: new Date().toISOString()
-        }, { merge: true }).catch(err => console.error("User Sync Error", err))
-
         return () => unsubscribe()
-    }, [boardsQuery, user.uid, user.email, user.displayName, user.photoURL])
+    }, [boardsQuery])
 
     useEffect(() => {
         const handleClickOutside = () => setContextMenu(null)

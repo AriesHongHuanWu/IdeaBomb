@@ -171,7 +171,7 @@ export default function TodoView({ user }) {
             collection(db, 'task_lists'),
             where('allowedEmails', 'array-contains', user.email)
         )
-    }, [user])
+    }, [user?.email])
 
     useEffect(() => {
         if (!listQuery) return
@@ -202,7 +202,7 @@ export default function TodoView({ user }) {
             collection(db, 'task_lists', listIdToQuery, 'tasks'),
             orderBy('createdAt', 'asc')
         )
-    }, [user, activeView, taskLists])
+    }, [user?.uid, activeView, taskLists])
 
     useEffect(() => {
         if (!tasksQuery) {
