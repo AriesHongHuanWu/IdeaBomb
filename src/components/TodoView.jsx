@@ -1,34 +1,57 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiCheck, FiPlus, FiCalendar, FiClock, FiTag, FiTrash2, FiMoreHorizontal, FiCheckCircle, FiCircle, FiX } from 'react-icons/fi'
+import {
+    FiCheck, FiPlus, FiCalendar, FiClock, FiTag, FiTrash2, FiMoreHorizontal,
+    FiCheckCircle, FiCircle, FiX, FiInbox, FiSun, FiCalendar as FiUpcoming,
+    FiFlag, FiMenu, FiChevronRight, FiChevronDown
+} from 'react-icons/fi'
 import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, orderBy, serverTimestamp, setDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
+// --- Components ---
+
+const PriorityFlag = ({ priority, selected, onClick }) => {
+    const colors = {
+        1: '#d1453b', // Red
+        2: '#eb8909', // Orange
+        3: '#246fe0', // Blue
+        4: '#808080'  // Grey
+    }
+    return (
+        <div
+            onClick={onClick}
+            style={{
+                color: colors[priority],
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                padding: '4px 8px', borderRadius: 4,
+                background: selected ? 'rgba(0,0,0,0.05)' : 'transparent',
+                border: selected ? '1px solid rgba(0,0,0,0.1)' : '1px solid transparent'
+            }}
+            title={`Priority ${priority}`}
+        >
+            <FiFlag fill={selected ? colors[priority] : 'none'} />
+            {selected && <span style={{ fontSize: '0.8rem' }}>P{priority}</span>}
+        </div>
+    )
+}
+
 export default function TodoView({ user, isOpen, onClose }) {
     const [todos, setTodos] = useState([])
-    const [filter, setFilter] = useState('all') // all, today, upcoming
+    const [activeView, setActiveView] = useState('inbox') // inbox, today, upcoming
     const [newTodo, setNewTodo] = useState('')
-    const [dueDate, setDueDate] = useState('')
+    const [newTodoDate, setNewTodoDate] = useState('')
+    const [newTodoPriority, setNewTodoPriority] = useState(4) // 4 = normal
     const [isAIProcessing, setIsAIProcessing] = useState(false)
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
 
-    // Sync Todos (Global for user for now, or could be per board if we pass boardId)
-    // User requested "Sync with others", implying shared todos.
-    // For now, let's make it User-Centric but stored in 'todos' root collection
-    // with 'allowedEmails' or 'members' array for sharing.
-    // Simpler Phase 2: Personal Todo list first? 
-    // User said: "Sync with others". So it's a Shared Project.
-    // Let's create a "projects" concept or just use "boards" as projects?
-    // User said: "Project max 10 people". 
-    // Let's stick to "Personal" + "Shared" filter.
-
+    // --- Data Sync ---
     useEffect(() => {
         if (!user) return
-        // Query todos where user is owner OR allowed (if we add sharing later)
         const q = query(
             collection(db, 'todos'),
             where('members', 'array-contains', user.email),
-            orderBy('createdAt', 'desc')
+            orderBy('createdAt', 'desc') // Basic ordering for now
         )
         const unsub = onSnapshot(q, (snap) => {
             setTodos(snap.docs.map(d => ({ id: d.id, ...d.data() })))
@@ -36,6 +59,25 @@ export default function TodoView({ user, isOpen, onClose }) {
         return unsub
     }, [user])
 
+    // --- Filtering Logic ---
+    const getFilteredTodos = () => {
+        const today = new Date().toISOString().split('T')[0]
+
+        return todos.filter(t => {
+            if (activeView === 'inbox') return true
+            if (activeView === 'today') return t.dueDate === today
+            if (activeView === 'upcoming') return t.dueDate && t.dueDate > today
+            return true
+        }).sort((a, b) => {
+            // Sort by Priority (asc, 1 is high) then Date
+            if ((a.priority || 4) !== (b.priority || 4)) return (a.priority || 4) - (b.priority || 4)
+            return 0
+        })
+    }
+
+    const filteredTodos = getFilteredTodos()
+
+    // --- Actions ---
     const handleAdd = async (e) => {
         e.preventDefault()
         if (!newTodo.trim()) return
@@ -44,18 +86,20 @@ export default function TodoView({ user, isOpen, onClose }) {
                 text: newTodo,
                 completed: false,
                 createdAt: serverTimestamp(),
-                members: [user.email], // Shared logic foundation
+                members: [user.email],
                 ownerId: user.uid,
-                ownerId: user.uid,
-                dueDate: dueDate || null,
+                dueDate: newTodoDate || null,
+                priority: newTodoPriority, // 1, 2, 3, 4
                 labels: []
             })
             setNewTodo('')
-            setDueDate('')
+            setNewTodoDate('')
+            setNewTodoPriority(4)
         } catch (err) { console.error(err) }
     }
 
     const toggleComplete = async (todo) => {
+        // Optimistic update could go here
         await updateDoc(doc(db, 'todos', todo.id), { completed: !todo.completed })
     }
 
@@ -63,9 +107,13 @@ export default function TodoView({ user, isOpen, onClose }) {
         await deleteDoc(doc(db, 'todos', id))
     }
 
+    const updatePriority = async (id, p) => {
+        await updateDoc(doc(db, 'todos', id), { priority: p })
+    }
+
+    // --- AI Conversion ---
     const convertToWhiteboard = async () => {
         if (todos.length === 0) return alert("No tasks to convert!")
-
         setIsAIProcessing(true)
         try {
             const apiKey = import.meta.env.VITE_GEMINI_API_KEY
@@ -74,44 +122,32 @@ export default function TodoView({ user, isOpen, onClose }) {
             const genAI = new GoogleGenerativeAI(apiKey)
             const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash-lite" })
 
-            const taskList = todos.map(t => `- ${t.text} (Completed: ${t.completed})`).join('\n')
+            const taskList = todos.map(t => `- [P${t.priority || 4}] ${t.text} (Due: ${t.dueDate || 'None'})`).join('\n')
 
             const prompt = `
-                You are an expert Project Manager. Transform this list of tasks into a structured Whiteboard layout.
+                Act as a Project Manager using Kanban.
+                Convert these tasks into a Whiteboard JSON structure.
                 
                 Tasks:
                 ${taskList}
                 
-                Goal: Group these tasks into logical categories (e.g., 'To Do', 'In Progress', 'Done', or by topic like 'Marketing', 'Dev').
+                Group high priority (P1, P2) separately from normal tasks.
                 
-                Return ONLY a valid JSON object with this structure:
+                Return JSON structure for nodes:
                 {
-                    "title": "Generated Project Board",
-                    "nodes": [
-                        { "id": "uuid", "type": "label", "text": "Category Name", "x": 0, "y": 0, "color": "#e0e0e0" },
-                        { "id": "uuid", "type": "note", "text": "Task Content", "x": 0, "y": 100, "color": "#fff740" }
-                    ]
+                    "title": "Kanban Board",
+                    "nodes": [ ... ]
                 }
-                
-                Layout Rules:
-                1. Place Category Labels horizontally (Spacing: 400px).
-                2. Place Task Notes vertically below their Category Label (Spacing: 120px).
-                3. Use valid UUIDs for IDs.
-                4. Label color should be light gray #f5f5f5.
-                5. Note color: #fff740 for pending, #b9f6ca for completed.
+                Use valid UUIDs.
             `
 
             const result = await model.generateContent(prompt)
-            const response = await result.response
-            const text = response.text()
-
-            // Clean Markdown code blocks if present
+            const text = (await result.response).text()
             const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim()
             const data = JSON.parse(jsonStr)
 
-            // Create Board
             const boardRef = await addDoc(collection(db, 'boards'), {
-                title: data.title || "AI Project Board",
+                title: data.title || "Todoist Import",
                 createdBy: user.uid,
                 ownerId: user.uid,
                 ownerEmail: user.email,
@@ -119,35 +155,29 @@ export default function TodoView({ user, isOpen, onClose }) {
                 allowedEmails: [user.email],
                 members: [user.uid],
                 elements: [],
-                folder: 'AI Generated'
+                folder: 'Imports'
             })
 
-            // Batch Create Nodes
             const batchPromises = data.nodes.map(node =>
                 setDoc(doc(db, `boards/${boardRef.id}/nodes`, node.id), {
-                    type: node.type, // 'label' or 'note'
-                    content: node.text,
-                    x: node.x,
-                    y: node.y,
-                    color: node.color,
+                    type: node.type || 'note',
+                    content: node.text || node.content,
+                    x: node.x || 0,
+                    y: node.y || 0,
+                    color: node.color || '#fff',
                     createdBy: user.uid,
                     createdAt: serverTimestamp(),
-                    width: node.type === 'label' ? 300 : 200,
-                    height: node.type === 'label' ? 50 : 200,
-                    // Add Label-specific or Note-specific defaults
-                    ...(node.type === 'label' ? { fontSize: 24, align: 'center' } : { fontSize: 16 })
+                    width: 200, height: 200
                 })
             )
 
             await Promise.all(batchPromises)
-
-            setIsAIProcessing(false)
-            alert("Board Created! Redirecting...")
             window.location.href = `/board/${boardRef.id}`
 
         } catch (error) {
             console.error("AI Error:", error)
             alert("AI Generation Failed: " + error.message)
+        } finally {
             setIsAIProcessing(false)
         }
     }
@@ -156,101 +186,184 @@ export default function TodoView({ user, isOpen, onClose }) {
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    initial={{ x: 400, opacity: 0 }}
+                    initial={{ x: '100%', opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: 400, opacity: 0 }}
+                    exit={{ x: '100%', opacity: 0 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                     style={{
-                        position: 'fixed', top: 70, right: 0, bottom: 0, width: 400,
+                        position: 'fixed', top: 70, right: 0, bottom: 0,
+                        width: '100%', maxWidth: 700, // Wider for fuller experience
                         background: 'white', borderLeft: '1px solid #ddd',
-                        boxShadow: '-5px 0 20px rgba(0,0,0,0.05)',
-                        zIndex: 900, display: 'flex', flexDirection: 'column'
+                        boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
+                        zIndex: 900, display: 'flex'
                     }}
                 >
-                    <div style={{ padding: 20, borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h2 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <span style={{ color: '#db4c3f' }}>Done</span>Tick
-                        </h2>
-                        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><FiX size={20} /></button>
+                    {/* --- Sidebar (Navigation) --- */}
+                    <div style={{
+                        width: 200, background: '#fafafa', borderRight: '1px solid #eee',
+                        padding: '20px 0', display: isMobile ? 'none' : 'flex', flexDirection: 'column'
+                    }}>
+                        <div style={{ padding: '0 20px 20px', fontWeight: 'bold', fontSize: '1.1rem', color: '#db4c3f', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <FiCheckCircle /> IdeaBomb
+                        </div>
+
+                        <div
+                            onClick={() => setActiveView('inbox')}
+                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'inbox' ? '#fff' : 'transparent', fontWeight: activeView === 'inbox' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'inbox' ? '#333' : '#666' }}
+                        >
+                            <FiInbox color="#246fe0" /> Inbox
+                            <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: '#aaa' }}>{todos.length}</span>
+                        </div>
+                        <div
+                            onClick={() => setActiveView('today')}
+                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'today' ? '#fff' : 'transparent', fontWeight: activeView === 'today' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'inbox' ? '#333' : '#666' }}
+                        >
+                            <FiSun color="#058527" /> Today
+                        </div>
+                        <div
+                            onClick={() => setActiveView('upcoming')}
+                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'upcoming' ? '#fff' : 'transparent', fontWeight: activeView === 'upcoming' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'inbox' ? '#333' : '#666' }}
+                        >
+                            <FiUpcoming color="#692fc2" /> Upcoming
+                        </div>
+
+                        <div style={{ marginTop: 'auto', padding: 20 }}>
+                            <button
+                                onClick={convertToWhiteboard}
+                                disabled={isAIProcessing}
+                                style={{
+                                    width: '100%', padding: '10px', borderRadius: 8, border: 'none',
+                                    background: '#f0f0f0', color: '#333', fontSize: '0.8rem',
+                                    cursor: 'pointer', fontWeight: 600
+                                }}
+                            >
+                                {isAIProcessing ? '✨ Processing...' : '✨ To Whiteboard'}
+                            </button>
+                        </div>
                     </div>
 
-                    <div style={{ padding: 20, flex: 1, overflowY: 'auto' }}>
-                        <form onSubmit={handleAdd} style={{ marginBottom: 20, display: 'flex', gap: 10 }}>
-                            <div style={{ position: 'relative', flex: 1 }}>
+                    {/* --- Main Content --- */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+
+                        {/* Header */}
+                        <div style={{ padding: '15px 20px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>
+                                {activeView === 'inbox' && 'Inbox'}
+                                {activeView === 'today' && 'Today'}
+                                {activeView === 'upcoming' && 'Upcoming'}
+                            </h2>
+                            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 5 }}><FiX size={20} color="#666" /></button>
+                        </div>
+
+                        {/* Task List */}
+                        <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+
+                            {filteredTodos.map(todo => (
+                                <div
+                                    key={todo.id}
+                                    style={{
+                                        display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 15, position: 'relative',
+                                        padding: '10px 0', borderBottom: '1px solid #f5f5f5'
+                                    }}
+                                >
+                                    {/* Checkbox with Priority Color */}
+                                    <div
+                                        onClick={() => toggleComplete(todo)}
+                                        style={{
+                                            cursor: 'pointer', marginTop: 3,
+                                            width: 18, height: 18, borderRadius: '50%',
+                                            border: `2px solid ${todo.priority === 1 ? '#d1453b' : todo.priority === 2 ? '#eb8909' : todo.priority === 3 ? '#246fe0' : '#ccc'}`,
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            background: todo.completed ? '#f0f0f0' : 'transparent'
+                                        }}
+                                    >
+                                        {todo.completed && <FiCheck size={12} color="#aaa" />}
+                                    </div>
+
+                                    {/* Task Content */}
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{
+                                            textDecoration: todo.completed ? 'line-through' : 'none',
+                                            color: todo.completed ? '#aaa' : '#202020',
+                                            fontSize: '0.95rem', lineHeight: '1.5'
+                                        }}>
+                                            {todo.text}
+                                        </div>
+                                        {todo.dueDate && (
+                                            <div style={{ fontSize: '0.75rem', color: '#d1453b', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                <FiCalendar size={10} /> {todo.dueDate}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div style={{ display: 'flex', gap: 5, opacity: 0.5 }}>
+                                        <div style={{ fontSize: '0.7rem', color: '#999', marginTop: 5 }}>P{todo.priority || 4}</div>
+                                        <button onClick={() => deleteTodo(todo.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#999' }}>
+                                            <FiTrash2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {/* Standard "Add Task" Row */}
+                            <form onSubmit={handleAdd} style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, border: '1px solid #ddd', borderRadius: 10, padding: 10 }}>
                                 <input
                                     value={newTodo}
                                     onChange={e => setNewTodo(e.target.value)}
                                     placeholder="Add a task..."
                                     style={{
-                                        width: '100%', padding: '12px 12px 12px 15px',
-                                        borderRadius: 8, border: '1px solid #ddd',
-                                        fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box'
+                                        border: 'none', outline: 'none', fontSize: '1rem', fontWeight: 500
                                     }}
+                                    autoFocus
                                 />
-                            </div>
-                            <input
-                                type="date"
-                                value={dueDate}
-                                onChange={e => setDueDate(e.target.value)}
-                                style={{
-                                    padding: '12px', borderRadius: 8, border: '1px solid #ddd',
-                                    outline: 'none', fontFamily: 'inherit', color: '#666'
-                                }}
-                            />
-                            <button type="submit" style={{ border: 'none', background: '#db4c3f', color: 'white', borderRadius: 8, padding: '0 15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <FiPlus size={20} />
-                            </button>
-                        </form>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        {/* Date Picker Trigger (Simple native for now) */}
+                                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                                            <input
+                                                type="date"
+                                                value={newTodoDate}
+                                                onChange={e => setNewTodoDate(e.target.value)}
+                                                style={{
+                                                    position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer'
+                                                }}
+                                            />
+                                            <button type="button" style={{
+                                                display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', borderRadius: 4,
+                                                border: '1px solid #ccc', background: 'white', color: newTodoDate ? '#d1453b' : '#666', fontSize: '0.8rem', pointerEvents: 'none'
+                                            }}>
+                                                <FiCalendar /> {newTodoDate || 'Due date'}
+                                            </button>
+                                        </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            {todos.map(todo => (
-                                <motion.div
-                                    key={todo.id}
-                                    layout
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: 10,
-                                        padding: 10, borderRadius: 8,
-                                        background: todo.completed ? '#f9f9f9' : 'white',
-                                        border: '1px solid transparent',
-                                        boxShadow: todo.completed ? 'none' : '0 2px 5px rgba(0,0,0,0.02)',
-                                        opacity: todo.completed ? 0.6 : 1
-                                    }}
-                                    whileHover={{ border: '1px solid #eee' }}
-                                >
-                                    <div onClick={() => toggleComplete(todo)} style={{ cursor: 'pointer', color: todo.completed ? '#aaa' : '#666' }}>
-                                        {todo.completed ? <FiCheckCircle size={18} /> : <FiCircle size={18} />}
+                                        {/* Priority Selector */}
+                                        <div style={{ display: 'flex', gap: 2 }}>
+                                            {[1, 2, 3, 4].map(p => (
+                                                <PriorityFlag
+                                                    key={p}
+                                                    priority={p}
+                                                    selected={newTodoPriority === p}
+                                                    onClick={() => setNewTodoPriority(p)}
+                                                />
+                                            ))}
+                                        </div>
                                     </div>
-                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{ textDecoration: todo.completed ? 'line-through' : 'none', color: '#333' }}>
-                                            {todo.text}
-                                        </span>
-                                        {todo.dueDate && (
-                                            <span style={{ fontSize: '0.75rem', color: '#db4c3f', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                                                <FiCalendar size={10} /> {todo.dueDate}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <button onClick={() => deleteTodo(todo.id)} style={{ border: 'none', background: 'none', color: '#ccc', cursor: 'pointer' }}>
-                                        <FiTrash2 />
+                                    <button
+                                        type="submit"
+                                        disabled={!newTodo}
+                                        style={{
+                                            background: newTodo ? '#db4c3f' : '#f0f0f0',
+                                            color: newTodo ? 'white' : '#aaa',
+                                            border: 'none', padding: '6px 12px', borderRadius: 6, fontWeight: 'bold', cursor: newTodo ? 'pointer' : 'default'
+                                        }}
+                                    >
+                                        Add Task
                                     </button>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </div>
+                                </div>
+                            </form>
 
-                    <div style={{ padding: 20, borderTop: '1px solid #eee', background: '#f8f9fa' }}>
-                        <button
-                            onClick={convertToWhiteboard}
-                            disabled={isAIProcessing}
-                            style={{
-                                width: '100%', padding: 12, borderRadius: 8, border: 'none',
-                                background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white',
-                                fontWeight: 600, cursor: 'pointer', opacity: isAIProcessing ? 0.7 : 1,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
-                            }}
-                        >
-                            {isAIProcessing ? 'Analyzing...' : 'AI: Convert to Whiteboard'}
-                        </button>
+                        </div>
                     </div>
                 </motion.div>
             )}
