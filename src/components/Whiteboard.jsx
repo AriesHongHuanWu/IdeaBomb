@@ -1495,7 +1495,7 @@ const ConnectionLayer = ({ nodes, edges, onDeleteEdge, mode, tempEdge, dragOverr
 }
 
 // --- Draggable Node (Resizable + Handles) ---
-const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onResize, onResizeEnd, onDragEnd, magnetMode, canvasSize }) => {
+const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, onUpdateData, onDelete, onConnectStart, onEdgeStart, onDrag, onResize, onResizeEnd, onDragEnd, magnetMode, canvasSize, theme }) => {
     const x = useMotionValue(node.x); const y = useMotionValue(node.y);
     const [isHovered, setIsHovered] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
@@ -2067,7 +2067,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                     const override = dragOverrides[node.id]
                     const effectiveNode = override ? { ...node, ...override } : node
                     return (
-                        <DraggableNode key={node.id} magnetMode={magnetMode} canvasSize={canvasSize} node={effectiveNode} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id}
+                        <DraggableNode key={node.id} magnetMode={magnetMode} canvasSize={canvasSize} node={effectiveNode} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id} theme={theme}
                             onDrag={(id, x, y) => {
                                 if (magnetMode) {
                                     const SNAP_DIST = 10
