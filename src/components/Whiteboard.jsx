@@ -299,7 +299,7 @@ const QuoteNode = ({ node, onUpdate }) => {
 const CodeNode = ({ node, onUpdate }) => {
     const { rad, p, gap, fsBody, icon, mb } = getScale(node.w, node.h)
     return (
-        <div style={{ width: '100%', height: '100%', background: '#282c34', borderRadius: rad, padding: p, color: '#abb2bf', fontFamily: 'monospace', fontSize: '1rem', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ width: '100%', height: '100%', background: '#282c34', borderRadius: rad, padding: p, boxSizing: 'border-box', color: '#abb2bf', fontFamily: 'monospace', fontSize: '1rem', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', gap: gap, marginBottom: mb, flexShrink: 0 }}>
                 <div style={{ width: icon * 0.6, height: icon * 0.6, borderRadius: '50%', background: '#ff5f56' }} />
                 <div style={{ width: icon * 0.6, height: icon * 0.6, borderRadius: '50%', background: '#ffbd2e' }} />
@@ -433,13 +433,13 @@ const NotifyNode = ({ node, onUpdate }) => {
     // Check permission on mount
     useEffect(() => {
         if ("Notification" in window && Notification.permission === "default") {
-            Notification.requestPermission();
+            try { Notification.requestPermission(); } catch (e) { }
         }
     }, [])
 
     const scheduleNotification = () => {
         if (!("Notification" in window)) {
-            alert("This browser does not support desktop notification");
+            console.warn("This browser does not support desktop notification");
             return;
         }
 
@@ -490,7 +490,8 @@ const NotifyNode = ({ node, onUpdate }) => {
             width: '100%', height: '100%',
             background: 'white',
             borderRadius: 16, display: 'flex', flexDirection: 'column',
-            padding: 16, color: '#333', boxShadow: '0 4px 20px rgba(0,0,0,0.06)'
+            padding: 16, color: '#333', boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+            boxSizing: 'border-box'
         }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, color: '#6366f1' }}>
@@ -512,15 +513,21 @@ const NotifyNode = ({ node, onUpdate }) => {
                 }}
             />
 
-            <div style={{ display: 'flex', gap: 8 }}>
-                <div style={{ position: 'relative', flex: 1 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{
+                    position: 'relative', flex: 1, background: '#f9fafb',
+                    border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden',
+                    display: 'flex', alignItems: 'center', padding: '0 8px', height: 40
+                }}>
+                    <FiClock color="#999" size={16} />
                     <input
                         type="datetime-local"
                         value={node.scheduledTime || ''}
                         onChange={e => onUpdate(node.id, { scheduledTime: e.target.value })}
                         style={{
-                            width: '100%', padding: '8px', borderRadius: 8, border: '1px solid #e5e7eb',
-                            fontSize: '0.8rem', cursor: 'pointer', background: 'white', color: '#333', outline: 'none'
+                            width: '100%', height: '100%', border: 'none', background: 'transparent',
+                            fontSize: '0.8rem', cursor: 'pointer', color: '#333', outline: 'none',
+                            fontFamily: 'inherit', marginLeft: 8
                         }}
                         onPointerDown={e => e.stopPropagation()}
                     />
@@ -528,7 +535,7 @@ const NotifyNode = ({ node, onUpdate }) => {
 
                 <button onClick={scheduleNotification} onPointerDown={e => e.stopPropagation()} title="Test Notification" style={{
                     background: '#6366f1', color: 'white', border: 'none',
-                    width: 36, borderRadius: 8, fontWeight: 'bold',
+                    width: 40, height: 40, borderRadius: 8, fontWeight: 'bold',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     boxShadow: '0 2px 5px rgba(99, 102, 241, 0.3)'
                 }}>
@@ -634,16 +641,20 @@ const PollNode = ({ node, onUpdate }) => {
     const options = node.options || [{ id: 1, text: 'Yes', votes: 0 }, { id: 2, text: 'No', votes: 0 }]
     const totalVotes = options.reduce((acc, curr) => acc + curr.votes, 0) || 1
     const { rad, p, gap, fsHead, icon, mb, fsBody } = getScale(node.w)
+    const [msg, setMsg] = useState(null)
 
     const vote = (optId) => {
         const hasVoted = localStorage.getItem(`poll_${node.id}`)
         if (hasVoted) {
-            alert("You have already voted!")
+            setMsg("Already voted!")
+            setTimeout(() => setMsg(null), 2000)
             return
         }
         localStorage.setItem(`poll_${node.id}`, 'true')
         const newOpts = options.map(o => o.id === optId ? { ...o, votes: o.votes + 1 } : o)
         onUpdate(node.id, { options: newOpts })
+        setMsg("Voted!")
+        setTimeout(() => setMsg(null), 2000)
     }
 
     const addOption = () => {
@@ -655,8 +666,13 @@ const PollNode = ({ node, onUpdate }) => {
     }
 
     return (
-        <div style={{ padding: p, background: 'white', borderRadius: rad, height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: mb, color: '#333', display: 'flex', alignItems: 'center', gap: gap, fontSize: fsHead }}><FiBarChart2 color="#007bff" size={icon} /> Poll</div>
+        <div style={{ padding: p, background: 'white', borderRadius: rad, height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: mb, color: '#333', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: gap, fontSize: fsHead }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: gap }}>
+                    <FiBarChart2 color="#007bff" size={icon} /> Poll
+                </div>
+                {msg && <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} style={{ fontSize: '0.7rem', color: msg.includes('Already') ? 'red' : 'green', background: msg.includes('Already') ? '#fff1f0' : '#f6ffed', padding: '2px 8px', borderRadius: 4, fontWeight: 'normal' }}>{msg}</motion.div>}
+            </div>
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: gap }}>
                 {options.map(opt => {
                     const percent = Math.round((opt.votes / totalVotes) * 100)
@@ -990,26 +1006,26 @@ const CalendarNode = ({ node, onUpdate }) => {
                         type="date"
                         value={date}
                         onChange={e => setDate(e.target.value)}
-                        style={{ flex: 2, padding: '6px 10px', borderRadius: 8, border: '1px solid #eee', fontSize: '0.8rem', background: '#f9f9f9', outline: 'none' }}
+                        style={{ flex: 2, padding: '8px 12px', borderRadius: 8, border: '1px solid #e5e7eb', fontSize: '0.9rem', background: '#f9f9f9', outline: 'none', fontFamily: 'inherit', color: '#333', cursor: 'pointer' }}
                         required
                     />
                     <input
                         type="time"
                         value={time}
                         onChange={e => setTime(e.target.value)}
-                        style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: '1px solid #eee', fontSize: '0.8rem', background: '#f9f9f9', outline: 'none' }}
+                        style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid #e5e7eb', fontSize: '0.9rem', background: '#f9f9f9', outline: 'none', fontFamily: 'inherit', color: '#333', cursor: 'pointer' }}
                         required
                     />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', background: '#f5f5f5', borderRadius: 8, padding: '0 4px 0 12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', background: '#f5f5f5', borderRadius: 8, padding: '0 4px 0 12px', border: '1px solid #e5e7eb' }}>
                     <input
                         value={text}
                         onChange={e => setText(e.target.value)}
                         placeholder="Add event..."
-                        style={{ flex: 1, padding: '10px 0', background: 'transparent', border: 'none', outline: 'none', fontSize: '0.9rem' }}
+                        style={{ flex: 1, padding: '10px 0', background: 'transparent', border: 'none', outline: 'none', fontSize: '0.9rem', color: '#333' }}
                         onPointerDown={e => e.stopPropagation()}
                     />
-                    <button type="submit" style={{ background: '#764ba2', color: 'white', border: 'none', borderRadius: 6, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <button type="submit" style={{ background: '#764ba2', color: 'white', border: 'none', borderRadius: 6, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '4px 0' }}>
                         <FiPlus />
                     </button>
                 </div>
