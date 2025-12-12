@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { v4 as uuidv4 } from 'uuid'
+import html2canvas from 'html2canvas'
 import Whiteboard from './Whiteboard'
 import ChatInterface from './ChatInterface'
 import ShareModal from './ShareModal'
@@ -793,10 +794,26 @@ export default function BoardPage({ user }) {
     const saveTitle = async () => { setIsEditingTitle(false); if (tempTitle && tempTitle !== boardTitle) { try { await updateDoc(doc(db, 'boards', boardId), { title: tempTitle }) } catch (e) { console.error(e) } } }
 
     const updateThumbnail = async () => {
-        // Placeholder: Real implementation requires exporting Whiteboard canvas to image
-        console.log("Thumbnail update requested (Not implemented yet)")
-        // Typically we would use html2canvas or similar on the whiteboard container
-        // and upload to Firebase Storage or save as base64 in Firestore (not recommended for large images).
+        try {
+            const container = document.getElementById('whiteboard-container')
+            if (!container) return
+
+            // Capture at lower scale for performance and smaller size
+            const canvas = await html2canvas(container, {
+                scale: 0.2, // 20% resolution
+                useCORS: true, // Allow cross-origin images if any
+                logging: false
+            })
+
+            const thumbnail = canvas.toDataURL('image/jpeg', 0.6) // Compress JPEG
+
+            // Save to Firestore (Base64 is okay for small thumbnails < 1MB)
+            // Ideally use Storage, but this is faster for MVP
+            await updateDoc(doc(db, 'boards', boardId), { thumbnail })
+            console.log("Thumbnail updated")
+        } catch (e) {
+            console.error("Thumbnail failed:", e)
+        }
     }
 
     useEffect(() => {
@@ -942,7 +959,7 @@ export default function BoardPage({ user }) {
                 </div>
             )}
 
-            <div style={{ width: '100%', height: '100%' }}>
+            <div id="whiteboard-container" style={{ width: '100%', height: '100%' }}>
                 <Whiteboard
                     nodes={nodes.filter(n => (n.page || 'Page 1') === activePage)}
                     edges={edges.filter(e => (e.page || 'Page 1') === activePage)}
