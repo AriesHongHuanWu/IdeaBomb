@@ -136,9 +136,11 @@ export default function TodoView({ user, isOpen, onClose }) {
                 Return JSON structure for nodes:
                 {
                     "title": "Kanban Board",
-                    "nodes": [ ... ]
+                    "nodes": [
+                        { "id": "uuid", "content": "Task Text", "type": "note", "x": 0, "y": 0, "color": "#fff" }
+                    ]
                 }
-                Use valid UUIDs.
+                Use valid UUIDs. Ensure every node has 'content'.
             `
 
             const result = await model.generateContent(prompt)
@@ -161,7 +163,9 @@ export default function TodoView({ user, isOpen, onClose }) {
             const batchPromises = data.nodes.map(node =>
                 setDoc(doc(db, `boards/${boardRef.id}/nodes`, node.id), {
                     type: node.type || 'note',
-                    content: node.text || node.content,
+                    type: node.type || 'note',
+                    content: node.content || node.text || "Untitled Task",
+                    x: node.x || 0,
                     x: node.x || 0,
                     y: node.y || 0,
                     color: node.color || '#fff',
@@ -237,7 +241,7 @@ export default function TodoView({ user, isOpen, onClose }) {
                                     cursor: 'pointer', fontWeight: 600
                                 }}
                             >
-                                {isAIProcessing ? '✨ Processing...' : '✨ To Whiteboard'}
+                                {isAIProcessing ? '✨ Processing...' : '✨ AI Projectify'}
                             </button>
                         </div>
                     </div>
@@ -319,48 +323,42 @@ export default function TodoView({ user, isOpen, onClose }) {
                                 />
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div style={{ display: 'flex', gap: 8 }}>
-                                        {/* Date Picker Trigger (Simple native for now) */}
-                                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                                             <input
                                                 type="date"
                                                 value={newTodoDate}
                                                 onChange={e => setNewTodoDate(e.target.value)}
                                                 style={{
-                                                    position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer'
+                                                    border: '1px solid #ccc', borderRadius: 4, padding: '4px 8px',
+                                                    fontSize: '0.8rem', color: '#666', outline: 'none',
+                                                    fontFamily: 'inherit'
                                                 }}
                                             />
-                                            <button type="button" style={{
-                                                display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', borderRadius: 4,
-                                                border: '1px solid #ccc', background: 'white', color: newTodoDate ? '#d1453b' : '#666', fontSize: '0.8rem', pointerEvents: 'none'
-                                            }}>
-                                                <FiCalendar /> {newTodoDate || 'Due date'}
-                                            </button>
-                                        </div>
 
-                                        {/* Priority Selector */}
-                                        <div style={{ display: 'flex', gap: 2 }}>
-                                            {[1, 2, 3, 4].map(p => (
-                                                <PriorityFlag
-                                                    key={p}
-                                                    priority={p}
-                                                    selected={newTodoPriority === p}
-                                                    onClick={() => setNewTodoPriority(p)}
-                                                />
-                                            ))}
+                                            {/* Priority Selector */}
+                                            <div style={{ display: 'flex', gap: 2 }}>
+                                                {[1, 2, 3, 4].map(p => (
+                                                    <PriorityFlag
+                                                        key={p}
+                                                        priority={p}
+                                                        selected={newTodoPriority === p}
+                                                        onClick={() => setNewTodoPriority(p)}
+                                                    />
+                                                ))}
+                                            </div>
                                         </div>
+                                        <button
+                                            type="submit"
+                                            disabled={!newTodo}
+                                            style={{
+                                                background: newTodo ? '#db4c3f' : '#f0f0f0',
+                                                color: newTodo ? 'white' : '#aaa',
+                                                border: 'none', padding: '6px 12px', borderRadius: 6, fontWeight: 'bold', cursor: newTodo ? 'pointer' : 'default'
+                                            }}
+                                        >
+                                            Add Task
+                                        </button>
                                     </div>
-                                    <button
-                                        type="submit"
-                                        disabled={!newTodo}
-                                        style={{
-                                            background: newTodo ? '#db4c3f' : '#f0f0f0',
-                                            color: newTodo ? 'white' : '#aaa',
-                                            border: 'none', padding: '6px 12px', borderRadius: 6, fontWeight: 'bold', cursor: newTodo ? 'pointer' : 'default'
-                                        }}
-                                    >
-                                        Add Task
-                                    </button>
-                                </div>
                             </form>
 
                         </div>
