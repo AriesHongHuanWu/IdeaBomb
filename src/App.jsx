@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Login from './components/Login'
 import Dashboard from './components/Dashboard'
+import TasksPage from './components/TasksPage'
 import BoardPage from './components/BoardPage'
 import AdminPage from './components/AdminPage'
 import LogoLoader from './components/LogoLoader'
@@ -49,6 +50,7 @@ function App() {
 
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={<PageTransition>{user ? <Dashboard user={user} /> : <Navigate to="/login" />}</PageTransition>} />
+                <Route path="/tasks" element={<PageTransition>{user ? <TasksPage user={user} /> : <Navigate to="/login" />}</PageTransition>} />
                 <Route path="/board/:boardId" element={<PageTransition>{user ? <BoardPage user={user} /> : <Navigate to="/login" />}</PageTransition>} />
                 <Route path="/admin" element={<PageTransition>{user ? <AdminPage user={user} /> : <Navigate to="/login" />}</PageTransition>} />
 

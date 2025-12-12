@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../firebase'
 import { signOut } from 'firebase/auth'
 import { collection, addDoc, query, where, onSnapshot, setDoc } from 'firebase/firestore'
-import { FiPlus, FiLogOut, FiLayout, FiHome, FiFolder, FiUsers, FiGrid, FiShare2, FiClock, FiMoreVertical, FiEdit2, FiTrash2, FiMove, FiShield, FiGlobe } from 'react-icons/fi'
+import { FiPlus, FiLogOut, FiLayout, FiHome, FiFolder, FiUsers, FiGrid, FiShare2, FiClock, FiMoreVertical, FiEdit2, FiTrash2, FiMove, FiShield, FiGlobe, FiCheckSquare } from 'react-icons/fi'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { updateDoc, doc, deleteDoc } from 'firebase/firestore'
 
@@ -201,7 +201,9 @@ export default function Dashboard({ user }) {
                         <NavItem icon={<FiShield />} label="Admin Console" active={false} onClick={() => navigate('/admin')} isMobile={isMobile} />
                     )}
 
-                    <div style={{ margin: '20px 0', borderTop: '1px solid #eee' }}></div>
+                    <div style={{ margin: '10px 0', borderTop: '1px solid #eee' }}></div>
+                    <NavItem icon={<FiCheckSquare />} label="Tasks" active={false} onClick={() => navigate('/tasks')} isMobile={isMobile} />
+                    <div style={{ margin: '10px 0', borderTop: '1px solid #eee' }}></div>
 
                     {!isMobile && (
                         <div style={{ padding: '0 20px', marginBottom: 10, fontSize: '0.8rem', fontWeight: 'bold', color: '#5f6368' }}>

@@ -1585,7 +1585,7 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
 }
 
 
-export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge, cursors, onCursorMove, onAIRequest, onSelectionChange, canvasSize = { w: 3000, h: 2000 }, onUpdateCanvasSize }) {
+export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpdateNodePosition, onUpdateNodeData, onDeleteNode, onBatchDelete, onBatchUpdate, onCopy, onPaste, onMoveToPage, onAddEdge, onDeleteEdge, cursors, onCursorMove, onAIRequest, onSelectionChange, canvasSize = { w: 3000, h: 2000 }, onUpdateCanvasSize, readOnly = false }) {
     const [scale, setScale] = useState(1); const [offset, setOffset] = useState({ x: 0, y: 0 })
     // Removed local canvasSize state
     const [showCanvasSetup, setShowCanvasSetup] = useState(false)
@@ -1770,6 +1770,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     const [contextMenu, setContextMenu] = useState(null) // {x, y, type, targetId}
 
     const handleNodeContextMenu = (e, id) => {
+        if (readOnly) return
         e.preventDefault()
         e.stopPropagation()
         setContextMenu({ x: e.clientX, y: e.clientY, type: 'node', targetId: id })
@@ -1779,6 +1780,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     }
 
     const handleBgContextMenu = (e) => {
+        if (readOnly) return
         e.preventDefault()
         setContextMenu({ x: e.clientX, y: e.clientY, type: 'bg' })
     }
@@ -1908,6 +1910,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                     const effectiveNode = override ? { ...node, ...override } : node
                     return (
                         <DraggableNode key={node.id} magnetMode={magnetMode} canvasSize={canvasSize} node={effectiveNode} scale={scale} isSelected={selectedIds.includes(node.id) || connectStartId === node.id}
+                            isReadOnly={readOnly}
                             onDrag={(id, x, y) => {
                                 if (magnetMode) {
                                     const SNAP_DIST = 10
@@ -2112,19 +2115,21 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
                 )}
             </AnimatePresence>
 
-            <motion.div className="glass-panel" style={{ position: 'absolute', bottom: useMediaQuery('(max-width: 768px)') ? 85 : 30, left: '50%', x: '-50%', padding: '12px 24px', display: 'flex', gap: 20, borderRadius: 24, zIndex: 100, pointerEvents: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.1)', maxWidth: '90vw', overflowX: 'auto' }} initial={{ y: 100 }} animate={{ y: 0 }}>
-                <ToolBtn icon={<FiType />} label="Note" onClick={() => addCenteredNode('Note')} />
-                <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => addCenteredNode('Todo')} />
-                <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => addCenteredNode('Calendar')} />
-                <ToolBtn icon={<FiImage />} label="Image" onClick={() => addCenteredNode('Image')} />
-                <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
-                <ToolBtn icon={<FiTarget />} label="Magnet" active={magnetMode} onClick={() => setMagnetMode(!magnetMode)} />
-                <ToolBtn icon={<FiGrid />} label="Toolbox" active={toolboxOpen} onClick={() => setToolboxOpen(!toolboxOpen)} />
-                <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
-                <ToolBtn icon={<FiMaximize2 />} label="Canvas Size" onClick={() => setShowCanvasSetup(true)} />
-                <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
-                <ToolBtn icon={<FiLayout />} label="Auto Arrange" onClick={autoArrange} />
-            </motion.div>
+            {!readOnly && (
+                <motion.div className="glass-panel" style={{ position: 'absolute', bottom: useMediaQuery('(max-width: 768px)') ? 85 : 30, left: '50%', x: '-50%', padding: '12px 24px', display: 'flex', gap: 20, borderRadius: 24, zIndex: 100, pointerEvents: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.1)', maxWidth: '90vw', overflowX: 'auto' }} initial={{ y: 100 }} animate={{ y: 0 }}>
+                    <ToolBtn icon={<FiType />} label="Note" onClick={() => addCenteredNode('Note')} />
+                    <ToolBtn icon={<FiCheckSquare />} label="Todo" onClick={() => addCenteredNode('Todo')} />
+                    <ToolBtn icon={<FiCalendar />} label="Calendar" onClick={() => addCenteredNode('Calendar')} />
+                    <ToolBtn icon={<FiImage />} label="Image" onClick={() => addCenteredNode('Image')} />
+                    <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
+                    <ToolBtn icon={<FiTarget />} label="Magnet" active={magnetMode} onClick={() => setMagnetMode(!magnetMode)} />
+                    <ToolBtn icon={<FiGrid />} label="Toolbox" active={toolboxOpen} onClick={() => setToolboxOpen(!toolboxOpen)} />
+                    <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
+                    <ToolBtn icon={<FiMaximize2 />} label="Canvas Size" onClick={() => setShowCanvasSetup(true)} />
+                    <div style={{ width: 1, height: 40, background: '#e0e0e0', margin: '0 5px' }}></div>
+                    <ToolBtn icon={<FiLayout />} label="Auto Arrange" onClick={autoArrange} />
+                </motion.div>
+            )}
 
             {/* Canvas Size Modal */}
             <AnimatePresence>
