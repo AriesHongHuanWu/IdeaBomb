@@ -32,8 +32,10 @@ export const translations = {
         },
 
         // LandingPage
+
         features: 'Features', howItWorks: 'How It Works', pricing: 'Pricing',
         dashboard: 'Dashboard', signIn: 'Sign In',
+        geminiBanner: '✨ Now with Gemini AI Integration',
         heroTitle: 'Think Bigger.\nCollaborate Smarter.',
         heroDesc: 'The infinite canvas for engineering teams. Brainstorm, plan, and build with the power of Google\'s Gemini AI.',
         ctaStart: 'Start Whiteboarding Free', ctaDemo: 'View Demo',
@@ -96,8 +98,10 @@ export const translations = {
         },
 
         // LandingPage
+
         features: '功能介紹', howItWorks: '如何運作', pricing: '價格方案',
         dashboard: '控制台', signIn: '登入',
+        geminiBanner: '✨ 現已整合 Gemini AI',
         heroTitle: '思考無邊界。\n協作更智慧。',
         heroDesc: '專為工程團隊打造的無限白板。藉助 Google Gemini AI 的力量進行腦力激盪、規劃與構建。',
         ctaStart: '免費開始使用', ctaDemo: '觀看演示',

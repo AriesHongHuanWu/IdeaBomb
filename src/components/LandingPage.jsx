@@ -44,7 +44,7 @@ export default function LandingPage({ user }) {
                 <div style={{ position: 'absolute', top: 50, right: '20%', width: 300, height: 300, background: 'radial-gradient(circle, rgba(52, 168, 83, 0.08) 0%, rgba(255, 255, 255, 0) 70%)', filter: 'blur(50px)', zIndex: -1, pointerEvents: 'none' }}></div>
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
                     <div style={{ background: '#e8f0fe', color: '#1967d2', padding: '6px 16px', borderRadius: 20, fontSize: '0.9rem', fontWeight: 600, display: 'inline-block', marginBottom: 20 }}>
-                        ✨ Now with Gemini AI Integration
+                        {t('geminiBanner')}
                     </div>
                     <UserCountBadge theme={theme} />
                     <h1 style={{ fontSize: isMobile ? '2.5rem' : '4.5rem', fontWeight: 800, lineHeight: 1.1, marginBottom: 20, color: theme.text, letterSpacing: '-0.02em', background: 'linear-gradient(to right, #1a73e8, #8ab4f8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', whiteSpace: 'pre-wrap' }}>
@@ -234,7 +234,7 @@ export default function LandingPage({ user }) {
                                     {settings.theme === 'light' ? <FiMoon /> : <FiSun />} {settings.theme === 'light' ? 'Dark' : 'Light'}
                                 </button>
                                 <button
-                                    onClick={() => setSettings(prev => ({ ...prev, lang: prev.lang === 'en' ? 'zh' : 'en' }))}
+                                    onClick={() => setSettings(prev => ({ ...prev, lang: prev.lang === 'en' ? 'zh-TW' : 'en' }))}
                                     style={{
                                         background: theme.cardBg, color: theme.text, border: `1px solid ${theme.border}`,
                                         padding: '8px 12px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
