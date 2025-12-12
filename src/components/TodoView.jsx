@@ -125,22 +125,28 @@ export default function TodoView({ user, isOpen, onClose }) {
             const taskList = todos.map(t => `- [P${t.priority || 4}] ${t.text} (Due: ${t.dueDate || 'None'})`).join('\n')
 
             const prompt = `
-                Act as a Project Manager using Kanban.
-                Convert these tasks into a Whiteboard JSON structure.
+                Act as a Project Manager using Kanban methodology.
+                Organize these tasks into a structured project board.
                 
                 Tasks:
                 ${taskList}
                 
-                Group high priority (P1, P2) separately from normal tasks.
+                Goal: Group tasks into logical Columns (e.g., "To Do", "In Progress", "Backlog", or by Topic).
+                Sort them by Priority (P1 highest) within columns.
                 
-                Return JSON structure for nodes:
+                Return validated JSON strictly matching this structure:
                 {
-                    "title": "Kanban Board",
-                    "nodes": [
-                        { "id": "uuid", "content": "Task Text", "type": "note", "x": 0, "y": 0, "color": "#fff" }
+                    "title": "Smart Project Board",
+                    "columns": [
+                        {
+                            "title": "Column Name",
+                            "color": "#e0e0e0", 
+                            "tasks": [
+                                { "content": "Task Content", "priority": 1 }
+                            ]
+                        }
                     ]
                 }
-                Use valid UUIDs. Ensure every node has 'content'.
             `
 
             const result = await model.generateContent(prompt)
@@ -148,8 +154,59 @@ export default function TodoView({ user, isOpen, onClose }) {
             const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim()
             const data = JSON.parse(jsonStr)
 
+            // --- Programmatic Layout Calculation ---
+            // Instead of trusting AI for geometry, we build the layout ourselves.
+            const nodes = []
+
+            // Generate UUID helper
+            const uuid = () => crypto.randomUUID()
+
+            const COL_WIDTH = 300
+            const COL_GAP = 50
+            const START_X = 100
+            const START_Y = 100
+
+            // Priority Colors
+            const P_COLORS = { 1: '#ffcdf3', 2: '#ffe7b3', 3: '#d4e5ff', 4: '#f0f0f0' }
+
+                ; (data.columns || []).forEach((col, colIdx) => {
+                    const colX = START_X + colIdx * (COL_WIDTH + COL_GAP)
+                    let currentY = START_Y
+
+                    // 1. Create Column Header Node
+                    nodes.push({
+                        id: uuid(),
+                        type: 'note', // Using Note as header for visual consistency
+                        content: `### ${col.title}`,
+                        x: colX,
+                        y: currentY - 60,
+                        width: COL_WIDTH,
+                        height: 50,
+                        color: '#ffffff', // White header
+                        fontSize: 20,
+                        textAlign: 'center',
+                        locked: true // Optional concept
+                    })
+
+                        // 2. Create Task Nodes
+                        ; (col.tasks || []).forEach((task) => {
+                            nodes.push({
+                                id: uuid(),
+                                type: 'note',
+                                content: task.content,
+                                x: colX,
+                                y: currentY,
+                                width: COL_WIDTH,
+                                height: 150, // Standard height
+                                color: P_COLORS[task.priority] || '#fff9c4', // Fallback yellow
+                                fontSize: 14
+                            })
+                            currentY += 170 // Height + Gap
+                        })
+                })
+
             const boardRef = await addDoc(collection(db, 'boards'), {
-                title: data.title || "Todoist Import",
+                title: data.title || "AI Kanban Board",
                 createdBy: user.uid,
                 ownerId: user.uid,
                 ownerEmail: user.email,
@@ -157,21 +214,14 @@ export default function TodoView({ user, isOpen, onClose }) {
                 allowedEmails: [user.email],
                 members: [user.uid],
                 elements: [],
-                folder: 'Imports'
+                folder: 'AI Generated'
             })
 
-            const batchPromises = data.nodes.map(node =>
+            const batchPromises = nodes.map(node =>
                 setDoc(doc(db, `boards/${boardRef.id}/nodes`, node.id), {
-                    type: node.type || 'note',
-                    type: node.type || 'note',
-                    content: node.content || node.text || "Untitled Task",
-                    x: node.x || 0,
-                    x: node.x || 0,
-                    y: node.y || 0,
-                    color: node.color || '#fff',
+                    ...node,
                     createdBy: user.uid,
-                    createdAt: serverTimestamp(),
-                    width: 200, height: 200
+                    createdAt: serverTimestamp()
                 })
             )
 
