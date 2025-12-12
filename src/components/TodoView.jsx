@@ -72,7 +72,7 @@ export default function TodoView({ user, isOpen, onClose }) {
             if (!apiKey) throw new Error("API Key missing")
 
             const genAI = new GoogleGenerativeAI(apiKey)
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+            const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash-lite" })
 
             const taskList = todos.map(t => `- ${t.text} (Completed: ${t.completed})`).join('\n')
 

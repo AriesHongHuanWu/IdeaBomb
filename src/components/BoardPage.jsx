@@ -190,7 +190,7 @@ export default function BoardPage({ user }) {
         if (!node) return
         try {
             const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
-            const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash-lite" })
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
             const prompt = `Improve the following text for a whiteboard note (make it clearer/better): "${node.content}"\nReturn ONLY the improved text.`
             const result = await model.generateContent(prompt)
             const text = result.response.text().trim()
