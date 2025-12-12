@@ -45,9 +45,24 @@ service cloud.firestore {
       allow read: if request.auth != null;
     }
 
+    // Todos (New Feature)
+    match /todos/{todoId} {
+      // Helper to check member access
+      function isMember(data) {
+        return "members" in data && data.members is list && request.auth.token.email in data.members;
+      }
+      
+      allow get: if request.auth != null && isMember(resource.data);
+      allow list: if request.auth != null && request.auth.token.email != null && request.auth.token.email in resource.data.members;
+      allow create: if request.auth != null && "members" in request.resource.data && request.auth.token.email in request.resource.data.members;
+      allow update, delete: if request.auth != null && isMember(resource.data);
+    }
+
     match /boards/{boardId} {
       // 1. Board Document Rules
-      allow read: if request.auth != null && hasAccess(resource.data);
+      // Split get and list to ensure query validation passes simply
+      allow get: if request.auth != null && hasAccess(resource.data);
+      allow list: if request.auth != null && request.auth.token.email != null && request.auth.token.email in resource.data.allowedEmails;
       allow create: if request.auth != null && isValidBoardWrite();
       allow update: if request.auth != null && hasAccess(resource.data) && !isViewer(resource.data);
       allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
