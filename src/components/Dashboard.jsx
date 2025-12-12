@@ -136,6 +136,7 @@ export default function Dashboard({ user }) {
                     type: 'confirm',
                     title: 'Delete Board?',
                     message: 'Are you sure you want to delete this board? This action cannot be undone.',
+                    board: board, // crucial for handleAction id access
                     onConfirm: async () => {
                         await deleteDoc(boardRef)
                         setModalConfig(null)
