@@ -14,7 +14,7 @@ service cloud.firestore {
     // Check if user has access to the board (Owner or Collaborator)
     // For evaluating existing documents (resource.data)
     function hasAccess(data) {
-      return (request.auth.uid == data.createdBy) || 
+      return (request.auth.uid == data.createdBy) || (request.auth.uid == data.ownerId) ||
              (data.allowedEmails is list && request.auth.token.email != null && request.auth.token.email in data.allowedEmails);
     }
 
@@ -27,7 +27,7 @@ service cloud.firestore {
 
     // Check if user has WRITE access (Owner or Editor)
     function canWrite(data) {
-      return (request.auth.uid == data.createdBy) || 
+      return (request.auth.uid == data.createdBy) || (request.auth.uid == data.ownerId) ||
              (hasAccess(data) && getRole(data) == 'editor');
     }
     

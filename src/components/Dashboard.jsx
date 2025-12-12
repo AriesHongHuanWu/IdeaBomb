@@ -199,6 +199,7 @@ export default function Dashboard({ user }) {
                     <NavItem icon={<FiShare2 />} label="Shared with me" active={activeView === 'shared'} onClick={() => { setActiveView('shared'); setSelectedFolder(null) }} isMobile={isMobile} />
                     <NavItem icon={<FiCheckSquare />} label="TODO" active={activeView === 'todo'} onClick={() => { setActiveView('todo'); setSelectedFolder(null) }} isMobile={isMobile} />
 
+                    {/* Admin Link */}
                     {['aries0d0f@gmail.com', 'aries.wu@ideabomb.com', 'arieswu001@gmail.com'].includes(user?.email?.toLowerCase()) && (
                         <NavItem icon={<FiShield />} label="Admin Console" active={false} onClick={() => navigate('/admin')} isMobile={isMobile} />
                     )}
