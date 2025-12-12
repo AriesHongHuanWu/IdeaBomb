@@ -7,6 +7,7 @@ import { collection, addDoc, query, where, onSnapshot, setDoc } from 'firebase/f
 import { FiPlus, FiLogOut, FiLayout, FiHome, FiFolder, FiUsers, FiGrid, FiShare2, FiClock, FiMoreVertical, FiEdit2, FiTrash2, FiMove, FiShield, FiGlobe, FiCheckSquare } from 'react-icons/fi'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { updateDoc, doc, deleteDoc } from 'firebase/firestore'
+import TodoView from './TodoView'
 
 const NavItem = ({ icon, label, active, onClick, isMobile }) => (
     <div
@@ -196,13 +197,12 @@ export default function Dashboard({ user }) {
                     <NavItem icon={<FiGrid />} label="All Boards" active={activeView === 'all'} onClick={() => { setActiveView('all'); setSelectedFolder(null) }} isMobile={isMobile} />
                     <NavItem icon={<FiLayout />} label="My Boards" active={activeView === 'created'} onClick={() => { setActiveView('created'); setSelectedFolder(null) }} isMobile={isMobile} />
                     <NavItem icon={<FiShare2 />} label="Shared with me" active={activeView === 'shared'} onClick={() => { setActiveView('shared'); setSelectedFolder(null) }} isMobile={isMobile} />
+                    <NavItem icon={<FiCheckSquare />} label="TODO" active={activeView === 'todo'} onClick={() => { setActiveView('todo'); setSelectedFolder(null) }} isMobile={isMobile} />
 
                     {['aries0d0f@gmail.com', 'aries.wu@ideabomb.com', 'arieswu001@gmail.com'].includes(user?.email?.toLowerCase()) && (
                         <NavItem icon={<FiShield />} label="Admin Console" active={false} onClick={() => navigate('/admin')} isMobile={isMobile} />
                     )}
 
-                    <div style={{ margin: '10px 0', borderTop: '1px solid #eee' }}></div>
-                    <NavItem icon={<FiCheckSquare />} label="Tasks" active={false} onClick={() => navigate('/tasks')} isMobile={isMobile} />
                     <div style={{ margin: '10px 0', borderTop: '1px solid #eee' }}></div>
 
                     {!isMobile && (
@@ -224,103 +224,112 @@ export default function Dashboard({ user }) {
                 </div>
 
                 {/* Content Area */}
-                <div style={{ flex: 1, padding: isMobile ? '20px' : 40 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 }}>
-                        <h1 style={{ fontSize: '1.8rem', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-                            {activeView === 'folder' ? <><FiFolder /> {selectedFolder}</> :
-                                activeView === 'shared' ? <><FiShare2 /> Shared with me</> :
-                                    activeView === 'created' ? <><FiLayout /> My Boards</> :
-                                        <><FiGrid /> All Boards</>}
-                        </h1>
-                        <button
-                            onClick={createBoard}
-                            style={{
-                                padding: '10px 20px', background: '#1a73e8', color: 'white', border: 'none',
-                                borderRadius: 4, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                                boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
-                            }}
-                        >
-                            <FiPlus /> New Board
-                        </button>
-                    </div>
+                <div style={{ flex: 1, padding: isMobile ? '20px' : 40, height: '100%', overflow: 'hidden' }}>
 
-                    {filteredBoards.length === 0 ? (
-                        <div style={{ textAlign: 'center', marginTop: 80, color: '#5f6368' }}>
-                            <div style={{ fontSize: '3rem', marginBottom: 20, opacity: 0.2 }}><FiLayout /></div>
-                            <p>No boards found in this view.</p>
+                    {activeView === 'todo' ? (
+                        <div style={{ height: '100%' }}>
+                            <TodoView user={user} />
                         </div>
                     ) : (
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                            gap: 20
-                        }}>
-                            {filteredBoards.map(board => (
-                                <motion.div
-                                    key={board.id}
-                                    layoutId={board.id}
-                                    whileHover={{ y: -5, boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}
-                                    onClick={() => navigate(`/board/${board.id}`)}
+                        <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 }}>
+                                <h1 style={{ fontSize: '1.8rem', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    {activeView === 'folder' ? <><FiFolder /> {selectedFolder}</> :
+                                        activeView === 'shared' ? <><FiShare2 /> Shared with me</> :
+                                            activeView === 'created' ? <><FiLayout /> My Boards</> :
+                                                <><FiGrid /> All Boards</>}
+                                </h1>
+                                <button
+                                    onClick={createBoard}
                                     style={{
-                                        background: 'white', borderRadius: 8, border: '1px solid #dadce0',
-                                        overflow: 'hidden', cursor: 'pointer', transition: 'box-shadow 0.2s',
-                                        position: 'relative'
+                                        padding: '10px 20px', background: '#1a73e8', color: 'white', border: 'none',
+                                        borderRadius: 4, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                                        boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
                                     }}
                                 >
-                                    {/* Preview Area */}
-                                    <div style={{ height: 140, background: '#f8f9fa', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #eee', position: 'relative' }}>
-                                        {board.thumbnail ? (
-                                            <img src={board.thumbnail} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        ) : (
-                                            <div style={{ opacity: 0.1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                                <FiLayout style={{ fontSize: '3rem' }} />
-                                            </div>
-                                        )}
-                                        {/* Folder Badge */}
-                                        {board.folder && (
-                                            <div style={{
-                                                position: 'absolute', top: 10, left: 10,
-                                                background: 'rgba(0,0,0,0.05)', padding: '2px 8px', borderRadius: 12,
-                                                fontSize: '0.75rem', color: '#5f6368', display: 'flex', alignItems: 'center', gap: 4
-                                            }}>
-                                                <FiFolder size={12} /> {board.folder}
-                                            </div>
-                                        )}
-                                    </div>
+                                    <FiPlus /> New Board
+                                </button>
+                            </div>
 
-                                    {/* Info Area */}
-                                    <div style={{ padding: 15 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                            <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', color: '#202124', fontWeight: 500 }}>
-                                                {board.title || 'Untitled Board'}
-                                            </h3>
-                                            <div
-                                                onClick={(e) => openContextMenu(e, board)}
-                                                style={{ cursor: 'pointer', padding: 6, borderRadius: '50%', color: '#5f6368', marginRight: -5 }}
-                                                onMouseEnter={e => e.target.style.background = 'rgba(0,0,0,0.05)'}
-                                                onMouseLeave={e => e.target.style.background = 'transparent'}
-                                            >
-                                                <FiMoreVertical />
+                            {filteredBoards.length === 0 ? (
+                                <div style={{ textAlign: 'center', marginTop: 80, color: '#5f6368' }}>
+                                    <div style={{ fontSize: '3rem', marginBottom: 20, opacity: 0.2 }}><FiLayout /></div>
+                                    <p>No boards found in this view.</p>
+                                </div>
+                            ) : (
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                                    gap: 20
+                                }}>
+                                    {filteredBoards.map(board => (
+                                        <motion.div
+                                            key={board.id}
+                                            layoutId={board.id}
+                                            whileHover={{ y: -5, boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}
+                                            onClick={() => navigate(`/board/${board.id}`)}
+                                            style={{
+                                                background: 'white', borderRadius: 8, border: '1px solid #dadce0',
+                                                overflow: 'hidden', cursor: 'pointer', transition: 'box-shadow 0.2s',
+                                                position: 'relative'
+                                            }}
+                                        >
+                                            {/* Preview Area */}
+                                            <div style={{ height: 140, background: '#f8f9fa', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #eee', position: 'relative' }}>
+                                                {board.thumbnail ? (
+                                                    <img src={board.thumbnail} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <div style={{ opacity: 0.1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                        <FiLayout style={{ fontSize: '3rem' }} />
+                                                    </div>
+                                                )}
+                                                {/* Folder Badge */}
+                                                {board.folder && (
+                                                    <div style={{
+                                                        position: 'absolute', top: 10, left: 10,
+                                                        background: 'rgba(0,0,0,0.05)', padding: '2px 8px', borderRadius: 12,
+                                                        fontSize: '0.75rem', color: '#5f6368', display: 'flex', alignItems: 'center', gap: 4
+                                                    }}>
+                                                        <FiFolder size={12} /> {board.folder}
+                                                    </div>
+                                                )}
                                             </div>
-                                        </div>
 
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 15, marginTop: 10, fontSize: '0.8rem', color: '#5f6368' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} title="Collaborators">
-                                                <FiUsers /> {board.allowedEmails?.length || 1}
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} title="Last Active">
-                                                <FiClock /> {formatDate(board.createdAt)}
-                                            </div>
-                                        </div>
+                                            {/* Info Area */}
+                                            <div style={{ padding: 15 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                    <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', color: '#202124', fontWeight: 500 }}>
+                                                        {board.title || 'Untitled Board'}
+                                                    </h3>
+                                                    <div
+                                                        onClick={(e) => openContextMenu(e, board)}
+                                                        style={{ cursor: 'pointer', padding: 6, borderRadius: '50%', color: '#5f6368', marginRight: -5 }}
+                                                        onMouseEnter={e => e.target.style.background = 'rgba(0,0,0,0.05)'}
+                                                        onMouseLeave={e => e.target.style.background = 'transparent'}
+                                                    >
+                                                        <FiMoreVertical />
+                                                    </div>
+                                                </div>
 
-                                        {(board.createdBy !== user.uid && board.ownerEmail !== user.email) && (
-                                            <div style={{ marginTop: 8, fontSize: '0.75rem', color: '#1a73e8', background: '#e8f0fe', display: 'inline-block', padding: '2px 6px', borderRadius: 4 }}>
-                                                Shared by {board.ownerEmail}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 15, marginTop: 10, fontSize: '0.8rem', color: '#5f6368' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} title="Collaborators">
+                                                        <FiUsers /> {board.allowedEmails?.length || 1}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} title="Last Active">
+                                                        <FiClock /> {formatDate(board.createdAt)}
+                                                    </div>
+                                                </div>
+
+                                                {(board.createdBy !== user.uid && board.ownerEmail !== user.email) && (
+                                                    <div style={{ marginTop: 8, fontSize: '0.75rem', color: '#1a73e8', background: '#e8f0fe', display: 'inline-block', padding: '2px 6px', borderRadius: 4 }}>
+                                                        Shared by {board.ownerEmail}
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            ))}
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
