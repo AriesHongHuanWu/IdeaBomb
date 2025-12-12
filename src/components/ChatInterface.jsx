@@ -255,7 +255,7 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                 console.error("AI Error:", error)
                 let errorMsg = "Sorry, I had trouble processing that request."
                 if (error.message.includes('429') || error.message.includes('Quota')) {
-                    errorMsg = "Updates are paused temporarily (Rate Limit). Please try again in 10-20 seconds."
+                    errorMsg = t('rateLimit')
                 }
                 await addDoc(collection(db, 'boards', boardId, 'messages'), {
                     role: 'model', content: errorMsg, createdAt: serverTimestamp(), sender: 'IdeaBomb AI', isAI: true
@@ -288,7 +288,7 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                         <div style={{ padding: '15px 20px', borderBottom: `1px solid ${theme?.border || '#eee'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: theme?.cardBg || 'rgba(255,255,255,0.5)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#52c41a', boxShadow: '0 0 10px #52c41a' }}></div>
-                                <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>AI Consultant</span>
+                                <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{t('aiConsultant')}</span>
                             </div>
                             <button onClick={() => setIsOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: theme?.text || '#999' }}>
                                 <FiX size={16} />
@@ -297,7 +297,7 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
 
                         <div style={{ flex: 1, padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
                             <div style={{ background: theme?.bg || 'rgba(0,0,0,0.05)', padding: '10px 15px', borderRadius: '15px 15px 15px 0', alignSelf: 'flex-start', maxWidth: '85%', fontSize: '0.9rem', lineHeight: 1.5, color: theme?.text || '#444' }}>
-                                I am your Whiteboard Assistant. Try saying "Create a marketing plan"!
+                                {t('welcomeMessage')}
                             </div>
                             {messages.map((msg, i) => {
                                 const isMe = msg.uid === user?.uid
@@ -320,7 +320,7 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                                     </motion.div>
                                 )
                             })}
-                            {isLoading && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ alignSelf: 'flex-start', background: '#f0f0f0', padding: '8px 12px', borderRadius: 12, fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>Thinking...</motion.div>}
+                            {isLoading && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ alignSelf: 'flex-start', background: '#f0f0f0', padding: '8px 12px', borderRadius: 12, fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>{t('thinking')}</motion.div>}
                             <div ref={messagesEndRef} />
                         </div>
 
@@ -330,7 +330,7 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                                     value={input}
                                     onChange={e => setInput(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && handleSend()}
-                                    placeholder={isListening ? "Listening..." : "Ask AI to create..."}
+                                    placeholder={isListening ? t('listening') : t('askAI')}
                                     style={{ width: '100%', padding: '12px 40px 12px 15px', borderRadius: 24, border: `1px solid ${theme?.border || '#ddd'}`, outline: 'none', background: theme?.bg || 'white', color: theme?.text || '#333', boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.02)', fontSize: '0.95rem' }}
                                 />
                                 <button

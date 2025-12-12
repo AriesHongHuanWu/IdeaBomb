@@ -877,19 +877,19 @@ export default function BoardPage({ user }) {
                             <button onClick={(e) => { e.stopPropagation(); setTabMenu({ x: window.innerWidth - 140, y: 70, type: 'top-menu' }) }} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: theme.text }}><FiMenu /></button>
                             {tabMenu?.type === 'top-menu' && (
                                 <div style={{ position: 'fixed', top: 60, right: 20, background: theme.cardBg, borderRadius: 12, boxShadow: '0 5px 20px rgba(0,0,0,0.15)', padding: 10, zIndex: 999, display: 'flex', flexDirection: 'column', gap: 8, border: `1px solid ${theme.border}`, color: theme.text }}>
-                                    <button onClick={() => { setIsShareOpen(true); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: theme.activeBg, color: theme.activeText, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiUserPlus /> {t('invite') || 'Invite'}</button>
-                                    <button onClick={() => document.getElementById('json-upload-top').click()} style={{ padding: '8px 12px', border: 'none', background: 'rgba(0,0,0,0.05)', color: theme.text, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiUpload /> Import</button>
-                                    <button onClick={() => { exportBoard(); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: 'rgba(0,0,0,0.05)', color: theme.text, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiDownload /> Export</button>
-                                    <button onClick={() => { setIsIncognito(!isIncognito); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: 'transparent', color: theme.text, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>{isIncognito ? <><FiEyeOff /> Show Me</> : <><FiEye /> Hide Me</>}</button>
+                                    <button onClick={() => { setIsShareOpen(true); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: theme.activeBg, color: theme.activeText, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiUserPlus /> {t('invite')}</button>
+                                    <button onClick={() => document.getElementById('json-upload-top').click()} style={{ padding: '8px 12px', border: 'none', background: 'rgba(0,0,0,0.05)', color: theme.text, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiUpload /> {t('import')}</button>
+                                    <button onClick={() => { exportBoard(); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: 'rgba(0,0,0,0.05)', color: theme.text, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiDownload /> {t('export')}</button>
+                                    <button onClick={() => { setIsIncognito(!isIncognito); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: 'transparent', color: theme.text, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>{isIncognito ? <><FiEyeOff /> {t('showMe')}</> : <><FiEye /> {t('hideMe')}</>}</button>
                                     <button onClick={async () => { await signOut(auth); navigate('/login') }} style={{ padding: '8px 12px', border: 'none', background: '#fff1f0', color: 'red', borderRadius: 8, width: '100%' }}>{t('signOut')}</button>
                                 </div>
                             )}
                         </div>
                     ) : (
                         <>
-                            <button onClick={() => setIsIncognito(!isIncognito)} title={isIncognito ? "Show my cursor" : "Hide my cursor"} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: isIncognito ? theme.text : theme.activeText }}>{isIncognito ? <FiEyeOff /> : <FiEye />}</button>
-                            <button onClick={() => document.getElementById('json-upload-top').click()} style={{ background: 'rgba(0,0,0,0.05)', color: theme.text, border: `1px solid ${theme.border}`, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiUpload /> Import</button>
-                            <button onClick={exportBoard} style={{ background: 'rgba(0,0,0,0.05)', color: theme.text, border: `1px solid ${theme.border}`, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiDownload /> Export</button>
+                            <button onClick={() => setIsIncognito(!isIncognito)} title={isIncognito ? t('showMe') : t('hideMe')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: isIncognito ? theme.text : theme.activeText }}>{isIncognito ? <FiEyeOff /> : <FiEye />}</button>
+                            <button onClick={() => document.getElementById('json-upload-top').click()} style={{ background: 'rgba(0,0,0,0.05)', color: theme.text, border: `1px solid ${theme.border}`, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiUpload /> {t('import')}</button>
+                            <button onClick={exportBoard} style={{ background: 'rgba(0,0,0,0.05)', color: theme.text, border: `1px solid ${theme.border}`, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontWeight: 'bold' }}><FiDownload /> {t('export')}</button>
                             <button onClick={async () => { await signOut(auth); navigate('/login') }} style={{ background: '#ff4d4f', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20, cursor: 'pointer' }}>{t('signOut')}</button>
                         </>
                     )}
@@ -901,19 +901,19 @@ export default function BoardPage({ user }) {
             {/* Persistent AI Review Banner */}
             {nodes.some(n => n.aiStatus === 'suggested') && (
                 <div style={{ position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#222', color: 'white', padding: '12px 24px', borderRadius: 50, display: 'flex', gap: 15, alignItems: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
-                    <span style={{ fontWeight: 'bold' }}>AI Suggestions Pending Review</span>
+                    <span style={{ fontWeight: 'bold' }}>{t('aiPending')}</span>
                     <div style={{ display: 'flex', gap: 8 }}>
                         <button
                             onClick={() => batchUpdateNodes(nodes.filter(n => n.aiStatus === 'suggested').map(n => ({ id: n.id, data: { aiStatus: 'accepted' } })))}
                             style={{ background: '#52c41a', border: 'none', color: 'white', padding: '6px 16px', borderRadius: 20, cursor: 'pointer', fontWeight: 'bold' }}
                         >
-                            Accept All
+                            {t('acceptAll')}
                         </button>
                         <button
                             onClick={() => handleBatchDelete(nodes.filter(n => n.aiStatus === 'suggested').map(n => n.id))}
                             style={{ background: '#ff4d4f', border: 'none', color: 'white', padding: '6px 16px', borderRadius: 20, cursor: 'pointer', fontWeight: 'bold' }}
                         >
-                            Discard All
+                            {t('discardAll')}
                         </button>
                     </div>
                 </div>
@@ -954,7 +954,7 @@ export default function BoardPage({ user }) {
                             </button>
                         )
                     ))}
-                    <button onClick={addNewPage} style={{ padding: '8px 12px', borderRadius: 10, border: '1px dashed rgba(255,255,255,0.5)', background: 'transparent', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>+ New Page</button>
+                    <button onClick={addNewPage} style={{ padding: '8px 12px', borderRadius: 10, border: '1px dashed rgba(255,255,255,0.5)', background: 'transparent', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>+ {t('newPage')}</button>
                 </div>
             </div>
 
@@ -962,8 +962,8 @@ export default function BoardPage({ user }) {
             {tabMenu && (
                 <div style={{ position: 'fixed', top: tabMenu.y - 100, left: tabMenu.x, background: theme.cardBg, color: theme.text, borderRadius: 8, boxShadow: '0 5px 15px rgba(0,0,0,0.2)', zIndex: 1000, overflow: 'hidden', minWidth: 120 }}>
                     <div style={{ padding: '8px 12px', borderBottom: `1px solid ${theme.border}`, fontWeight: 'bold', fontSize: '0.9rem' }}>{tabMenu.page}</div>
-                    <button onClick={() => { setEditingPage(tabMenu.page); setEditName(tabMenu.page); setTabMenu(null) }} style={{ display: 'block', width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', color: theme.text, textAlign: 'left', cursor: 'pointer' }} onMouseEnter={e => e.target.style.background = theme.activeBg} onMouseLeave={e => e.target.style.background = 'transparent'}>{t('rename') || 'Rename'}</button>
-                    <button onClick={() => { deletePage(tabMenu.page); setTabMenu(null) }} style={{ display: 'block', width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', color: 'red' }} onMouseEnter={e => e.target.style.background = '#fff1f0'} onMouseLeave={e => e.target.style.background = 'transparent'}>{t('delete') || 'Delete'}</button>
+                    <button onClick={() => { setEditingPage(tabMenu.page); setEditName(tabMenu.page); setTabMenu(null) }} style={{ display: 'block', width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', color: theme.text, textAlign: 'left', cursor: 'pointer' }} onMouseEnter={e => e.target.style.background = theme.activeBg} onMouseLeave={e => e.target.style.background = 'transparent'}>{t('rename')}</button>
+                    <button onClick={() => { deletePage(tabMenu.page); setTabMenu(null) }} style={{ display: 'block', width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', color: 'red' }} onMouseEnter={e => e.target.style.background = '#fff1f0'} onMouseLeave={e => e.target.style.background = 'transparent'}>{t('delete')}</button>
                 </div>
             )}
 

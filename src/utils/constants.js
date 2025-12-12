@@ -28,7 +28,30 @@ export const translations = {
         toolbar: {
             select: 'Select', rectangle: 'Rectangle', circle: 'Circle',
             arrow: 'Arrow', text: 'Text', image: 'Image',
-            sticky: 'Sticky Note', draw: 'Draw', erase: 'Eraser'
+            sticky: 'Sticky Note', draw: 'Draw', erase: 'Eraser',
+            timer: 'Timer', counter: 'Counter', sticker: 'Sticker',
+            progress: 'Progress', rating: 'Rating', shape: 'Shape',
+            avatar: 'Avatar', kanban: 'Kanban', clock: 'Clock', code: 'Code',
+            calendar: 'Calendar', youtube: 'YouTube', link: 'Link',
+            quote: 'Quote', pomodoro: 'Pomodoro',
+            invite: 'Invite', inviteDesc: 'Invite collaborators by email (must use Google Login).',
+            copyLink: 'Copy Link', copied: 'Copied!',
+            import: 'Import', export: 'Export',
+            hideMe: 'Hide Me', showMe: 'Show Me',
+            accessDenied: 'Access Denied',
+            aiConsultant: 'AI Consultant',
+            welcomeMessage: 'I am your Whiteboard Assistant. Try saying "Create a marketing plan"!',
+            thinking: 'Thinking...',
+            askAI: 'Ask AI to create...',
+            listening: 'Listening...',
+            rateLimit: 'Updates are paused temporarily (Rate Limit). Please try again in 10-20 seconds.',
+            aiPending: 'AI Suggestions Pending Review',
+            acceptAll: 'Accept All', discardAll: 'Discard All',
+            newPage: 'New Page', rename: 'Rename', delete: 'Delete',
+            locked: 'Locked', unlocked: 'Unlocked',
+            bringFront: 'Bring to Front', sendBack: 'Send to Back',
+            copy: 'Copy', duplicate: 'Duplicate',
+            width: 'Width', height: 'Height', apply: 'Apply'
         },
 
         // LandingPage
@@ -91,17 +114,33 @@ export const translations = {
         // BoardPage
         share: '分享', canvasSize: '畫布尺寸', help: '說明',
         width: '寬度', height: '高度', apply: '套用',
-        toolbar: {
-            select: '選擇', rectangle: '矩形', circle: '圓形',
-            arrow: '箭頭', text: '文字', image: '圖片',
-            sticky: '便利貼', draw: '繪圖', erase: '橡皮擦'
-        },
-
-        // LandingPage
-
-        features: '功能介紹', howItWorks: '如何運作', pricing: '價格方案',
-        dashboard: '控制台', signIn: '登入',
-        geminiBanner: '✨ 現已整合 Gemini AI',
+        arrow: '箭頭', text: '文字', image: '圖片',
+        sticky: '便利貼', draw: '繪圖', erase: '橡皮擦',
+        timer: '計時器', counter: '計數器', sticker: '貼紙',
+        progress: '進度條', rating: '評分', shape: '形狀',
+        avatar: '頭像', kanban: '看板', clock: '時鐘', code: '程式碼',
+        calendar: '日曆', youtube: 'YouTube', link: '連結',
+        quote: '名言', pomodoro: '番茄鐘',
+        invite: '邀請成員', inviteDesc: '透過電子郵件邀請協作成員（必須使用 Google 登入）。',
+        copyLink: '複製連結', copied: '已複製！',
+        import: '匯入', export: '匯出',
+        hideMe: '隱藏游標', showMe: '顯示游標',
+        accessDenied: '存取被拒',
+        aiConsultant: 'AI 顧問',
+        welcomeMessage: '我是您的白板助理。試著說「建立一個行銷計畫」！',
+        thinking: '思考中...',
+        askAI: '要求 AI 建立...',
+        listening: '聆聽中...',
+        rateLimit: '更新暫時暫停（速率限制）。請在 10-20 秒後再試。',
+        aiPending: 'AI 建議待審核',
+        acceptAll: '接受全部', discardAll: '捨棄全部',
+        newPage: '新頁面', rename: '重新命名', delete: '刪除',
+        locked: '鎖定', unlocked: '解鎖',
+        bringFront: '移到最上層', sendBack: '移到最下層',
+        copy: '複製', duplicate: '複製',
+        // The following keys already exist above, but are included in the instruction's snippet.
+        // They are kept here to match the instruction's intent of adding them in this block.
+        width: '寬度', height: '高度', apply: '套用',
         heroTitle: '思考無邊界。\n協作更智慧。',
         heroDesc: '專為工程團隊打造的無限白板。藉助 Google Gemini AI 的力量進行腦力激盪、規劃與構建。',
         ctaStart: '免費開始使用', ctaDemo: '觀看演示',

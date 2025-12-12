@@ -252,7 +252,7 @@ export default function Dashboard({ user }) {
                         />
                     ))}
 
-                    <div style={{ marginTop: 'auto' }}>
+                    <div style={{ marginTop: 20 }}>
                         <NavItem
                             icon={<FiSettings />}
                             label={t('settings')}
