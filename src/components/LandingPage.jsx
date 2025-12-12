@@ -317,7 +317,7 @@ function UserCountBadge() {
 
 function AnimatedDemoCanvas({ isMobile }) {
     return (
-        <div style={{ height: isMobile ? 300 : 500, background: '#ffffff', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ height: isMobile ? 300 : 500, background: '#ffffff', position: 'relative', overflow: 'hidden', fontFamily: '"Google Sans", "Inter", sans-serif' }}>
             <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#e0e0e0 1px, transparent 1px)', backgroundSize: '20px 20px', opacity: 0.5 }}></div>
 
             {/* Simulated Cursor 1 */}
@@ -327,10 +327,10 @@ function AnimatedDemoCanvas({ isMobile }) {
                 transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
                 style={{ position: 'absolute', zIndex: 50, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}
             >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>
                     <path d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19135L11.4841 12.3673H5.65376Z" fill="#EA4335" stroke="white" strokeWidth="1" />
                 </svg>
-                <div style={{ background: '#EA4335', padding: '2px 6px', borderRadius: 4, color: 'white', fontSize: '10px', marginLeft: 4 }}>Sarah</div>
+                <div style={{ background: '#EA4335', padding: '2px 8px', borderRadius: 4, color: 'white', fontSize: '10px', marginLeft: 4, fontWeight: 600 }}>Sarah</div>
             </motion.div>
 
             {/* Simulated Cursor 2 */}
@@ -340,41 +340,81 @@ function AnimatedDemoCanvas({ isMobile }) {
                 transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
                 style={{ position: 'absolute', zIndex: 50, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}
             >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>
                     <path d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19135L11.4841 12.3673H5.65376Z" fill="#4285F4" stroke="white" strokeWidth="1" />
                 </svg>
-                <div style={{ background: '#4285F4', padding: '2px 6px', borderRadius: 4, color: 'white', fontSize: '10px', marginLeft: 4 }}>Mike</div>
+                <div style={{ background: '#4285F4', padding: '2px 8px', borderRadius: 4, color: 'white', fontSize: '10px', marginLeft: 4, fontWeight: 600 }}>Mike</div>
             </motion.div>
 
-            {/* Node 1: Architecture Box */}
+            {/* Node 1: App Service (Whiteboard Style) */}
             <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                style={{ position: 'absolute', top: isMobile ? 40 : 100, left: isMobile ? 40 : 150, width: 220, background: 'white', border: '1px solid #ddd', borderRadius: 8, padding: 15, boxShadow: '0 4px 10px rgba(0,0,0,0.05)', zIndex: 10 }}
+                style={{
+                    position: 'absolute', top: isMobile ? 40 : 100, left: isMobile ? 40 : 150, width: 220,
+                    background: 'white', border: '1px solid #eee', borderRadius: 12, padding: 16,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)', zIndex: 10,
+                    display: 'flex', flexDirection: 'column', gap: 8
+                }}
             >
-                <div style={{ fontWeight: 'bold', marginBottom: 10, color: '#333', display: 'flex', alignItems: 'center', gap: 5 }}><FiGrid /> Frontend App</div>
-                <div style={{ fontSize: '0.8rem', color: '#666' }}>React + Vite + Firebase</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#1a73e8', fontWeight: 700, fontSize: '1rem' }}>
+                    <FiGrid /> Client App
+                </div>
+                <div style={{ fontSize: '0.9rem', color: '#5f6368', lineHeight: 1.4 }}>
+                    React Frontend<br />
+                    <span style={{ fontSize: '0.8rem', background: '#e8f0fe', color: '#1a73e8', padding: '2px 6px', borderRadius: 4 }}>v2.0.0</span>
+                </div>
             </motion.div>
 
-            {/* Animated Connection */}
+            {/* Animated Connection (Curved) */}
             <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 5 }}>
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#ccc" />
+                    </marker>
+                </defs>
                 <motion.path
                     d={isMobile ? "M 150 120 L 150 200" : "M 370 140 C 450 140, 500 140, 550 180"}
-                    stroke="#ccc" strokeWidth="2" fill="none" strokeDasharray="5,5"
+                    stroke="#ccc" strokeWidth="2" fill="none"
                     initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.5, delay: 0.5 }}
+                    markerEnd="url(#arrowhead)"
                 />
             </svg>
 
-            {/* Node 2: Database */}
+            {/* Node 2: Database (Whiteboard Style) */}
             <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.8 }}
-                style={{ position: 'absolute', top: isMobile ? 180 : 160, left: isMobile ? 40 : 550, width: 200, background: 'white', border: '1px solid #ddd', borderRadius: 8, padding: 15, boxShadow: '0 4px 10px rgba(0,0,0,0.05)', zIndex: 10 }}
+                style={{
+                    position: 'absolute', top: isMobile ? 180 : 160, left: isMobile ? 40 : 550, width: 200,
+                    background: 'white', border: '1px solid #eee', borderRadius: 12, padding: 16,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)', zIndex: 10
+                }}
             >
-                <div style={{ fontWeight: 'bold', marginBottom: 10, color: '#333', display: 'flex', alignItems: 'center', gap: 5 }}><FiCpu /> Scalable DB</div>
-                <div style={{ fontSize: '0.8rem', color: '#666' }}>Firestore + Cloud Functions</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ea4335', fontWeight: 700, fontSize: '1rem', marginBottom: 8 }}>
+                    <FiCpu /> Data Store
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.75rem', border: '1px solid #eee', padding: '4px 8px', borderRadius: 12, color: '#555' }}>Users</span>
+                    <span style={{ fontSize: '0.75rem', border: '1px solid #eee', padding: '4px 8px', borderRadius: 12, color: '#555' }}>Boards</span>
+                </div>
+            </motion.div>
+
+            {/* Sticky Note (Yellow) */}
+            <motion.div
+                initial={{ opacity: 0, rotate: -5 }} animate={{ opacity: 1, rotate: 0 }}
+                transition={{ delay: 1.5, duration: 0.4 }}
+                style={{
+                    position: 'absolute', top: isMobile ? 260 : 80, left: isMobile ? 200 : 700,
+                    width: 140, height: 140, background: '#fff9c4', borderRadius: 4,
+                    boxShadow: '2px 4px 8px rgba(0,0,0,0.1)', padding: 15,
+                    fontFamily: '"Kalam", cursive', fontSize: '1.1rem', color: '#333',
+                    transform: 'rotate(-2deg)', zIndex: 15
+                }}
+            >
+                Don't forget to cache the API results! 🚀
             </motion.div>
 
             {/* Chat Bubble Simulation */}
@@ -382,9 +422,13 @@ function AnimatedDemoCanvas({ isMobile }) {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: [0, 1, 1, 0], y: [10, 0, 0, -10] }}
                 transition={{ duration: 4, repeat: Infinity, repeatDelay: 3, delay: 2 }}
-                style={{ position: 'absolute', top: isMobile ? 240 : 130, left: isMobile ? 180 : 400, background: '#333', color: 'white', padding: '6px 12px', borderRadius: 12, fontSize: '0.8rem', zIndex: 20 }}
+                style={{
+                    position: 'absolute', top: isMobile ? 240 : 130, left: isMobile ? 180 : 400,
+                    background: '#202124', color: 'white', padding: '8px 16px', borderRadius: 20,
+                    fontSize: '0.85rem', zIndex: 20, boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                }}
             >
-                Looks good! 👍
+                Architecture looks solid! 👍
             </motion.div>
         </div>
     )
