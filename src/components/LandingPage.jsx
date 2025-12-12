@@ -7,7 +7,7 @@ import { useMediaQuery } from '../hooks/useMediaQuery'
 
 export default function LandingPage({ user }) {
     const navigate = useNavigate()
-    const { theme, setSettings, settings } = useSettings()
+    const { theme, setSettings, settings, t } = useSettings()
     const isMobile = useMediaQuery('(max-width: 768px)')
 
     React.useEffect(() => {
@@ -25,13 +25,13 @@ export default function LandingPage({ user }) {
                 <nav style={{ display: 'flex', gap: isMobile ? 15 : 30, alignItems: 'center' }}>
                     {!isMobile && (
                         <>
-                            <a href="#features" style={{ textDecoration: 'none', color: theme.text, fontWeight: 500, opacity: 0.8 }}>Features</a>
-                            <a href="#tutorial" style={{ textDecoration: 'none', color: theme.text, fontWeight: 500, opacity: 0.8 }}>How It Works</a>
-                            <a href="#pricing" style={{ textDecoration: 'none', color: theme.text, fontWeight: 500, opacity: 0.8 }}>Pricing</a>
+                            <a href="#features" style={{ textDecoration: 'none', color: theme.text, fontWeight: 500, opacity: 0.8 }}>{t('features')}</a>
+                            <a href="#tutorial" style={{ textDecoration: 'none', color: theme.text, fontWeight: 500, opacity: 0.8 }}>{t('howItWorks')}</a>
+                            <a href="#pricing" style={{ textDecoration: 'none', color: theme.text, fontWeight: 500, opacity: 0.8 }}>{t('pricing')}</a>
                         </>
                     )}
                     <button onClick={() => navigate(user ? '/dashboard' : '/login')} style={{ padding: '8px 20px', background: '#1a73e8', border: 'none', borderRadius: 4, color: 'white', fontWeight: 600, cursor: 'pointer' }}>
-                        {user ? 'Dashboard' : 'Sign In'}
+                        {user ? t('dashboard') : t('signIn')}
                     </button>
                 </nav>
             </header>
@@ -47,18 +47,18 @@ export default function LandingPage({ user }) {
                         ✨ Now with Gemini AI Integration
                     </div>
                     <UserCountBadge theme={theme} />
-                    <h1 style={{ fontSize: isMobile ? '2.5rem' : '4.5rem', fontWeight: 800, lineHeight: 1.1, marginBottom: 20, color: theme.text, letterSpacing: '-0.02em', background: 'linear-gradient(to right, #1a73e8, #8ab4f8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                        Think Bigger.<br /> Collaborate Smarter.
+                    <h1 style={{ fontSize: isMobile ? '2.5rem' : '4.5rem', fontWeight: 800, lineHeight: 1.1, marginBottom: 20, color: theme.text, letterSpacing: '-0.02em', background: 'linear-gradient(to right, #1a73e8, #8ab4f8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', whiteSpace: 'pre-wrap' }}>
+                        {t('heroTitle')}
                     </h1>
                     <p style={{ fontSize: isMobile ? '1.1rem' : '1.3rem', color: theme.text, opacity: 0.7, marginBottom: 40, maxWidth: 600, margin: '0 auto 40px auto', lineHeight: 1.6 }}>
-                        The infinite canvas for engineering teams. Brainstorm, plan, and build with the power of Google's Gemini AI.
+                        {t('heroDesc')}
                     </p>
                     <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexDirection: isMobile ? 'column' : 'row' }}>
                         <button onClick={() => navigate(user ? '/dashboard' : '/login')} style={{ padding: '15px 40px', fontSize: '1.1rem', background: '#1a73e8', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, boxShadow: '0 10px 25px rgba(26, 115, 232, 0.3)' }}>
-                            Start Whiteboarding Free
+                            {t('ctaStart')}
                         </button>
                         <button style={{ padding: '15px 40px', fontSize: '1.1rem', background: theme.cardBg, color: theme.text, border: `1px solid ${theme.border}`, borderRadius: 8, cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center' }}>
-                            View Demo <FiArrowRight />
+                            {t('ctaDemo')} <FiArrowRight />
                         </button>
                     </div>
                 </motion.div>
@@ -80,13 +80,13 @@ export default function LandingPage({ user }) {
             <section id="features" style={{ padding: isMobile ? '60px 20px' : '80px 20px', background: theme.bg }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: 60 }}>
-                        <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: '#202124', marginBottom: 20 }}>Why choose IdeaBomb?</h2>
-                        <p style={{ fontSize: '1.2rem', color: '#5f6368' }}>Bank-grade security meets consumer-grade simplicity.</p>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: '#202124', marginBottom: 20 }}>{t('whyChoose')}</h2>
+                        <p style={{ fontSize: '1.2rem', color: '#5f6368' }}>{t('whyDesc')}</p>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: 40 }}>
-                        <FeatureCard icon={<FiGrid size={40} color="#1a73e8" />} title="Infinite Canvas" desc="Break free from page limits. Organize thoughts, flowcharts, and plans on an endless whiteboard." theme={theme} />
-                        <FeatureCard icon={<FiCpu size={40} color="#ea4335" />} title="Gemini AI Integration" desc="Use @ai to summarize discussions, generate content, and organize your board automatically." theme={theme} />
-                        <FeatureCard icon={<FiMessageSquare size={40} color="#34a853" />} title="Real-time Collaboration" desc="Chat, comment, and co-edit with your team instantly. See cursors and updates live." theme={theme} />
+                        <FeatureCard icon={<FiGrid size={40} color="#1a73e8" />} title={t('infiniteCanvas')} desc={t('infiniteDesc')} theme={theme} />
+                        <FeatureCard icon={<FiCpu size={40} color="#ea4335" />} title={t('aiIntegration')} desc={t('aiDesc')} theme={theme} />
+                        <FeatureCard icon={<FiMessageSquare size={40} color="#34a853" />} title={t('realTime')} desc={t('realTimeDesc')} theme={theme} />
                     </div>
                 </div>
             </section>
@@ -95,13 +95,13 @@ export default function LandingPage({ user }) {
             <section id="tutorial" style={{ padding: isMobile ? '60px 20px' : '80px 20px', background: `${theme.bg} linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.03) 100%)` }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>
                     <div style={{ textAlign: 'center', marginBottom: 60 }}>
-                        <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: theme.text, marginBottom: 20 }}>How It Works</h2>
-                        <p style={{ fontSize: '1.2rem', color: theme.text, opacity: 0.7 }}>Get started in seconds. Master it in minutes.</p>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: theme.text, marginBottom: 20 }}>{t('hiwTitle')}</h2>
+                        <p style={{ fontSize: '1.2rem', color: theme.text, opacity: 0.7 }}>{t('hiwDesc')}</p>
                     </div>
                     <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'center', gap: 40, marginTop: 40, alignItems: 'center' }}>
-                        <TutorialStep number="1" title="Sign Up & Create" desc="Log in with your Google account and create your first unlimited whiteboard." theme={theme} />
-                        <TutorialStep number="2" title="Invite Your Team" desc="Share the link or invite via email to collaborate in real-time." theme={theme} />
-                        <TutorialStep number="3" title="Unleash AI" desc="Type @ai in the chat or context menu to brainstorm, summarize, and create content." theme={theme} />
+                        <TutorialStep number="1" title={t('step1')} desc={t('step1Desc')} theme={theme} />
+                        <TutorialStep number="2" title={t('step2')} desc={t('step2Desc')} theme={theme} />
+                        <TutorialStep number="3" title={t('step3')} desc={t('step3Desc')} theme={theme} />
                     </div>
                 </div>
             </section>
@@ -110,21 +110,21 @@ export default function LandingPage({ user }) {
             <section id="solutions" style={{ padding: isMobile ? '60px 20px' : '80px 20px', background: theme.activeBg }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: 60 }}>
-                        <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: theme.text, marginBottom: 20 }}>Tailored Solutions</h2>
-                        <p style={{ fontSize: '1.2rem', color: theme.text, opacity: 0.7 }}>Empowering teams across every industry.</p>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: theme.text, marginBottom: 20 }}>{t('solutions')}</h2>
+                        <p style={{ fontSize: '1.2rem', color: theme.text, opacity: 0.7 }}>{t('solutionsDesc')}</p>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: 30 }}>
                         <div style={{ background: theme.cardBg, padding: 30, borderRadius: 12, border: `1px solid ${theme.border}` }}>
-                            <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 10, color: theme.text }}>Designers</h4>
-                            <p style={{ color: theme.text, opacity: 0.7 }}>Wireframe, prototype, and gather feedback in one shared space.</p>
+                            <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 10, color: theme.text }}>{t('designers')}</h4>
+                            <p style={{ color: theme.text, opacity: 0.7 }}>{t('designersDesc')}</p>
                         </div>
                         <div style={{ background: theme.cardBg, padding: 30, borderRadius: 12, border: `1px solid ${theme.border}` }}>
-                            <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 10, color: theme.text }}>Engineers</h4>
-                            <p style={{ color: theme.text, opacity: 0.7 }}>Map out architectures, flowcharts, and system designs collaboratively.</p>
+                            <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 10, color: theme.text }}>{t('engineers')}</h4>
+                            <p style={{ color: theme.text, opacity: 0.7 }}>{t('engineersDesc')}</p>
                         </div>
                         <div style={{ background: theme.cardBg, padding: 30, borderRadius: 12, border: `1px solid ${theme.border}` }}>
-                            <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 10, color: theme.text }}>Managers</h4>
-                            <p style={{ color: theme.text, opacity: 0.7 }}>Track projects, organize sprints, and align team goals seamlessly.</p>
+                            <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 10, color: theme.text }}>{t('managers')}</h4>
+                            <p style={{ color: theme.text, opacity: 0.7 }}>{t('managersDesc')}</p>
                         </div>
                     </div>
                 </div>
@@ -133,40 +133,40 @@ export default function LandingPage({ user }) {
             {/* Pricing Section */}
             <section id="pricing" style={{ padding: isMobile ? '60px 20px' : '80px 20px', background: theme.bg }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>
-                    <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: theme.text, marginBottom: 20 }}>Simple, Transparent Pricing</h2>
+                    <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: theme.text, marginBottom: 20 }}>{t('pricingTitle')}</h2>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: 30, flexWrap: 'wrap', marginTop: 50, flexDirection: isMobile ? 'column' : 'row', alignItems: 'center' }}>
                         {/* Free Tier */}
                         <div style={{ width: isMobile ? '100%' : 300, background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: 24, textAlign: 'left', display: 'flex', flexDirection: 'column', transition: 'box-shadow 0.2s' }} onMouseEnter={e => e.currentTarget.style.boxShadow = '0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)'} onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
-                            <h3 style={{ fontSize: '1.25rem', fontWeight: 500, color: theme.text, marginBottom: 8 }}>Starter</h3>
-                            <div style={{ fontSize: '2.5rem', fontWeight: 400, color: theme.text, marginBottom: 8 }}>$0 <span style={{ fontSize: '1rem', color: theme.text, opacity: 0.7 }}>/ month</span></div>
-                            <div style={{ fontSize: '0.875rem', color: '#1a73e8', fontWeight: 500, marginBottom: 24 }}>All features free during Beta</div>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 500, color: theme.text, marginBottom: 8 }}>{t('starter')}</h3>
+                            <div style={{ fontSize: '2.5rem', fontWeight: 400, color: theme.text, marginBottom: 8 }}>{t('free')} <span style={{ fontSize: '1rem', color: theme.text, opacity: 0.7 }}>{t('month')}</span></div>
+                            <div style={{ fontSize: '0.875rem', color: '#1a73e8', fontWeight: 500, marginBottom: 24 }}>{t('freeFeat')}</div>
 
                             {user ? (
-                                <button disabled style={{ width: '100%', padding: '10px 24px', background: theme.activeBg, border: 'none', color: theme.text, borderRadius: 4, fontWeight: 500, cursor: 'default', marginBottom: 32 }}>Current Plan</button>
+                                <button disabled style={{ width: '100%', padding: '10px 24px', background: theme.activeBg, border: 'none', color: theme.text, borderRadius: 4, fontWeight: 500, cursor: 'default', marginBottom: 32 }}>{t('currentPlan')}</button>
                             ) : (
-                                <button onClick={() => navigate('/login')} style={{ width: '100%', padding: '10px 24px', background: '#1a73e8', border: 'none', color: 'white', borderRadius: 4, fontWeight: 500, cursor: 'pointer', marginBottom: 32 }}>Get Started</button>
+                                <button onClick={() => navigate('/login')} style={{ width: '100%', padding: '10px 24px', background: '#1a73e8', border: 'none', color: 'white', borderRadius: 4, fontWeight: 500, cursor: 'pointer', marginBottom: 32 }}>{t('getStarted')}</button>
                             )}
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, color: theme.text, opacity: 0.8, fontSize: '0.9rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: '#1a73e8', marginRight: 12 }} /> Unlimited Boards</div>
-                                <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: '#1a73e8', marginRight: 12 }} /> Real-time Collaboration</div>
-                                <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: '#1a73e8', marginRight: 12 }} /> Basic AI (Flash-Lite)</div>
+                                <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: '#1a73e8', marginRight: 12 }} /> {t('unlimitedBoards')}</div>
+                                <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: '#1a73e8', marginRight: 12 }} /> {t('realTime')}</div>
+                                <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: '#1a73e8', marginRight: 12 }} /> {t('basicAI')}</div>
                             </div>
                         </div>
 
                         {/* Pro Tier (Coming Soon) */}
                         <div style={{ width: isMobile ? '100%' : 300, background: theme.activeBg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: 24, textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: 500, color: theme.text, opacity: 0.7 }}>Pro</h3>
-                                <span style={{ background: theme.cardBg, color: theme.text, opacity: 0.8, fontSize: '0.75rem', padding: '2px 8px', borderRadius: 4, fontWeight: 500, letterSpacing: '0.5px' }}>COMING SOON</span>
+                                <h3 style={{ fontSize: '1.25rem', fontWeight: 500, color: theme.text, opacity: 0.7 }}>{t('pro')}</h3>
+                                <span style={{ background: theme.cardBg, color: theme.text, opacity: 0.8, fontSize: '0.75rem', padding: '2px 8px', borderRadius: 4, fontWeight: 500, letterSpacing: '0.5px' }}>{t('comingSoon')}</span>
                             </div>
-                            <div style={{ fontSize: '2.5rem', fontWeight: 400, color: theme.text, opacity: 0.7, marginBottom: 8 }}>$2 <span style={{ fontSize: '1rem', color: theme.text, opacity: 0.7 }}>/ month</span></div>
-                            <div style={{ fontSize: '0.875rem', color: theme.text, opacity: 0.7, marginBottom: 24 }}>For power users</div>
+                            <div style={{ fontSize: '2.5rem', fontWeight: 400, color: theme.text, opacity: 0.7, marginBottom: 8 }}>{t('proPrice')} <span style={{ fontSize: '1rem', color: theme.text, opacity: 0.7 }}>{t('month')}</span></div>
+                            <div style={{ fontSize: '0.875rem', color: theme.text, opacity: 0.7, marginBottom: 24 }}>{t('proDesc')}</div>
 
-                            <button disabled style={{ width: '100%', padding: '10px 24px', background: theme.border, border: 'none', color: '#9aa0a6', borderRadius: 4, fontWeight: 500, cursor: 'not-allowed', marginBottom: 32 }}>Join Waitlist</button>
+                            <button disabled style={{ width: '100%', padding: '10px 24px', background: theme.border, border: 'none', color: '#9aa0a6', borderRadius: 4, fontWeight: 500, cursor: 'not-allowed', marginBottom: 32 }}>{t('waitlist')}</button>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, color: theme.text, opacity: 0.7, fontSize: '0.9rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: theme.border, marginRight: 12 }} /> Everything in Starter</div>
+                                <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: theme.border, marginRight: 12 }} /> {t('freeFeat')}</div>
                                 <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: '#5f6368', marginRight: 12 }} /> Advanced AI Models</div>
                                 <div style={{ display: 'flex', alignItems: 'center' }}><FiCheck style={{ color: '#5f6368', marginRight: 12 }} /> Unlimited History</div>
                             </div>
@@ -179,13 +179,13 @@ export default function LandingPage({ user }) {
             <section id="faq" style={{ padding: isMobile ? '60px 20px' : '80px 20px', background: theme.bg }}>
                 <div style={{ maxWidth: 800, margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: 60 }}>
-                        <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: theme.text, marginBottom: 20 }}>Frequently Asked Questions</h2>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: 600, color: theme.text, marginBottom: 20 }}>{t('faq')}</h2>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                        <FAQItem question="Is IdeaBomb really free?" answer="Yes! The Starter plan is completely free and includes unlimited boards and real-time collaboration." theme={theme} />
-                        <FAQItem question="How does the AI integration work?" answer="Simply type @ai in any text note or chat message. Gemini will analyze your board context and provide intelligent suggestions, summaries, or content." theme={theme} />
-                        <FAQItem question="Can I invite my entire team?" answer="Absolutely. There are no limits on the number of collaborators you can invite to a board, even on the free plan." theme={theme} />
-                        <FAQItem question="Is my data secure?" answer="We use enterprise-grade encryption and secure Google authenticaton to ensure your ideas stay safe." theme={theme} />
+                        <FAQItem question={t('q1')} answer={t('a1')} theme={theme} />
+                        <FAQItem question={t('q2')} answer={t('a2')} theme={theme} />
+                        <FAQItem question={t('q3')} answer={t('a3')} theme={theme} />
+                        <FAQItem question={t('q4')} answer={t('a4')} theme={theme} />
                     </div>
                 </div>
             </section>
@@ -197,23 +197,23 @@ export default function LandingPage({ user }) {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 'bold', fontSize: '1.2rem', color: theme.text, marginBottom: 20 }}>
                             <img src="/logo.svg" alt="IdeaBomb" style={{ height: 24, opacity: 0.7 }} /> IdeaBomb
                         </div>
-                        <div style={{ color: theme.text, opacity: 0.7, fontSize: '0.9rem' }}>© 2025 IdeaBomb Inc. All rights reserved.</div>
-                        <div style={{ color: theme.text, opacity: 0.6, fontSize: '0.8rem', marginTop: 10, fontWeight: 500 }}>Created by AWBest Studio</div>
+                        <div style={{ color: theme.text, opacity: 0.7, fontSize: '0.9rem' }}>© 2025 IdeaBomb Inc. {t('rights')}</div>
+                        <div style={{ color: theme.text, opacity: 0.6, fontSize: '0.8rem', marginTop: 10, fontWeight: 500 }}>{t('createdBy')}</div>
                         <div style={{ marginTop: 15, display: 'flex', gap: 15 }}>
-                            <span onClick={() => navigate('/terms')} style={{ color: theme.text, opacity: 0.7, fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.textDecoration = 'underline'} onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>Terms of Service</span>
-                            <span onClick={() => navigate('/privacy')} style={{ color: theme.text, opacity: 0.7, fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.textDecoration = 'underline'} onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>Privacy Policy</span>
+                            <span onClick={() => navigate('/terms')} style={{ color: theme.text, opacity: 0.7, fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.textDecoration = 'underline'} onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>{t('terms')}</span>
+                            <span onClick={() => navigate('/privacy')} style={{ color: theme.text, opacity: 0.7, fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.textDecoration = 'underline'} onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>{t('privacy')}</span>
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: 60, flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            <span style={{ fontWeight: 600, color: theme.text }}>Product</span>
-                            <a href="#" style={{ textDecoration: 'none', color: theme.text, opacity: 0.7, fontSize: '0.9rem' }}>Overview</a>
-                            <span onClick={() => navigate('/guide')} style={{ color: theme.text, opacity: 0.7, fontSize: '0.9rem', cursor: 'pointer' }} onMouseEnter={(e) => e.target.style.textDecoration = 'underline'} onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>User Guide</span>
-                            <a href="#solutions" style={{ textDecoration: 'none', color: theme.text, opacity: 0.7, fontSize: '0.9rem' }}>Solutions</a>
-                            <a href="#pricing" style={{ textDecoration: 'none', color: theme.text, opacity: 0.7, fontSize: '0.9rem' }}>Pricing</a>
+                            <span style={{ fontWeight: 600, color: theme.text }}>{t('product')}</span>
+                            <a href="#" style={{ textDecoration: 'none', color: theme.text, opacity: 0.7, fontSize: '0.9rem' }}>{t('overview')}</a>
+                            <span onClick={() => navigate('/guide')} style={{ color: theme.text, opacity: 0.7, fontSize: '0.9rem', cursor: 'pointer' }} onMouseEnter={(e) => e.target.style.textDecoration = 'underline'} onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>{t('userGuide')}</span>
+                            <a href="#solutions" style={{ textDecoration: 'none', color: theme.text, opacity: 0.7, fontSize: '0.9rem' }}>{t('solutions')}</a>
+                            <a href="#pricing" style={{ textDecoration: 'none', color: theme.text, opacity: 0.7, fontSize: '0.9rem' }}>{t('pricing')}</a>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            <span style={{ fontWeight: 600, color: theme.text }}>Contact</span>
+                            <span style={{ fontWeight: 600, color: theme.text }}>{t('contact')}</span>
                             <div style={{ color: theme.text, opacity: 0.7, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 8 }}>
                                 Email: <a href="mailto:arieswu001@gmail.com" style={{ color: '#1a73e8', textDecoration: 'none' }}>arieswu001@gmail.com</a>
                             </div>
@@ -221,7 +221,7 @@ export default function LandingPage({ user }) {
 
                         {/* Settings Column */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            <span style={{ fontWeight: 600, color: theme.text }}>Settings</span>
+                            <span style={{ fontWeight: 600, color: theme.text }}>{t('settings')}</span>
                             <div style={{ display: 'flex', gap: 10 }}>
                                 <button
                                     onClick={() => setSettings(prev => ({ ...prev, theme: prev.theme === 'light' ? 'dark' : 'light' }))}
@@ -294,6 +294,7 @@ function FAQItem({ question, answer, theme }) {
 }
 
 function UserCountBadge({ theme }) {
+    const { t } = useSettings()
     const [count, setCount] = useState(null)
 
     React.useEffect(() => {
@@ -348,7 +349,7 @@ function UserCountBadge({ theme }) {
                         </div>
                     ))}
                 </div>
-                Trusted by {count.toLocaleString()}+ users
+                {t('trustedBy')} {count.toLocaleString()}+ {t('users')}
             </div>
         </motion.div>
     )
