@@ -9,29 +9,36 @@ service cloud.firestore {
       return text is string && text.size() <= max;
     }
     
-    // Check if user has access to the board (Owner or Collaborator)
-    // For evaluating existing documents (resource.data)
-    // Check if user has access to the board (Owner or Collaborator)
-    // For evaluating existing documents (resource.data)
+    // Check if user has access - NULL SAFE version
     function hasAccess(data) {
-      return (request.auth.uid == data.createdBy) || (request.auth.uid == data.ownerId) ||
-             (data.allowedEmails is list && request.auth.token.email != null && request.auth.token.email in data.allowedEmails);
+      // Check if user is owner (createdBy or ownerId)
+      let isOwner = (data.keys().hasAny(['createdBy']) && request.auth.uid == data.createdBy) ||
+                    (data.keys().hasAny(['ownerId']) && request.auth.uid == data.ownerId);
+      
+      // Check if user is in allowedEmails
+      let isCollaborator = data.keys().hasAny(['allowedEmails']) && 
+                           data.allowedEmails is list && 
+                           request.auth.token.email != null && 
+                           request.auth.token.email in data.allowedEmails;
+      
+      return isOwner || isCollaborator;
     }
 
     // Check Role (Default to 'editor' for legacy or missing role)
     function getRole(data) {
-      return (data.roles is map && request.auth.token.email in data.roles) 
+      return (data.keys().hasAny(['roles']) && data.roles is map && request.auth.token.email in data.roles) 
              ? data.roles[request.auth.token.email] 
              : 'editor';
     }
 
     // Check if user has WRITE access (Owner or Editor)
     function canWrite(data) {
-      return (request.auth.uid == data.createdBy) || (request.auth.uid == data.ownerId) ||
-             (hasAccess(data) && getRole(data) == 'editor');
+      let isOwner = (data.keys().hasAny(['createdBy']) && request.auth.uid == data.createdBy) ||
+                    (data.keys().hasAny(['ownerId']) && request.auth.uid == data.ownerId);
+      return isOwner || (hasAccess(data) && getRole(data) == 'editor');
     }
     
-    // Check if user is trying to WRITE valid board data (Owner must be self)
+    // Check if user is trying to WRITE valid board data
     function isValidBoardWrite() {
       return request.resource.data.createdBy == request.auth.uid;
     }
@@ -53,60 +60,44 @@ service cloud.firestore {
     }
 
     match /boards/{boardId} {
-      // 1. Board Document Rules
       allow read: if request.auth != null && hasAccess(resource.data);
       allow create: if request.auth != null && isValidBoardWrite();
-      // Only Editors can update board metadata (title, folder, etc.) - Exception: presence/cursors might touch this? No, they are subcollections.
-      // Actually, 'allowedEmails' update requires write access. Viewers shouldn't invite people.
       allow update: if request.auth != null && canWrite(resource.data); 
-      allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+      allow delete: if request.auth != null && canWrite(resource.data);
       
-      // Shared Function for Subcollections
       function getBoardData() {
         return get(/databases/$(database)/documents/boards/$(boardId)).data;
       }
       
-      // 2. Nodes
       match /nodes/{nodeId} {
         allow read: if request.auth != null && hasAccess(getBoardData());
-        // Writes restricted to Editors/Owners
-        allow delete: if request.auth != null && canWrite(getBoardData());
-        allow create, update: if request.auth != null && canWrite(getBoardData())
-          && (!("content" in request.resource.data) || validString(request.resource.data.content, 20000))
-          && (!("label" in request.resource.data) || validString(request.resource.data.label, 500))
-          && (!("items" in request.resource.data) || request.resource.data.items.size() < 200)
-          && (!("x" in request.resource.data) || request.resource.data.x is number)
-          && (!("y" in request.resource.data) || request.resource.data.y is number);
+        allow write: if request.auth != null && canWrite(getBoardData());
       }
       
-      // 3. Edges
       match /edges/{edgeId} {
         allow read: if request.auth != null && hasAccess(getBoardData());
         allow write: if request.auth != null && canWrite(getBoardData());
       }
       
-      // 4. Cursors (Ephemeral)
       match /cursors/{cursorId} {
         allow read, write: if request.auth != null && hasAccess(getBoardData());
       }
 
-      // 5. Presence
       match /presence/{userId} {
         allow read, write: if request.auth != null && hasAccess(getBoardData());
       }
 
-      // 6. Chat Messages
       match /messages/{msgId} {
         allow read, write: if request.auth != null && hasAccess(getBoardData());
       }
     }
     
-    // --- Task Lists (New Feature) ---
+    // --- Task Lists ---
     match /task_lists/{listId} {
       allow read: if request.auth != null && hasAccess(resource.data);
       allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
       allow update: if request.auth != null && canWrite(resource.data);
-      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow delete: if request.auth != null && canWrite(resource.data);
       
       match /tasks/{taskId} {
          function getListData() {
