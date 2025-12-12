@@ -437,6 +437,25 @@ const NotifyNode = ({ node, onUpdate }) => {
         }
     }, [])
 
+    const [permission, setPermission] = useState(Notification.permission)
+
+    const playSound = () => {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)()
+            const osc = ctx.createOscillator()
+            const gain = ctx.createGain()
+            osc.connect(gain)
+            gain.connect(ctx.destination)
+            osc.type = 'sine'
+            osc.frequency.setValueAtTime(500, ctx.currentTime)
+            osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1)
+            gain.gain.setValueAtTime(0.1, ctx.currentTime)
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5)
+            osc.start()
+            osc.stop(ctx.currentTime + 0.5)
+        } catch (e) { }
+    }
+
     const scheduleNotification = () => {
         if (!("Notification" in window)) {
             console.warn("This browser does not support desktop notification");
@@ -444,14 +463,12 @@ const NotifyNode = ({ node, onUpdate }) => {
         }
 
         if (Notification.permission === "granted") {
-            new Notification("🔔 " + (node.text || "Reminder"), { body: "Your reminder from IdeaBomb" });
-            // Clear schedule if it was a scheduled firing
-            if (node.scheduledTime && new Date(node.scheduledTime) <= new Date()) {
-                onUpdate(node.id, { scheduledTime: '' })
-            }
+            new Notification("🔔 " + (node.text || "Reminder"), { body: "Your reminder from IdeaBomb", requireInteraction: true });
+            playSound()
         } else if (Notification.permission !== "denied") {
-            Notification.requestPermission().then(permission => {
-                if (permission === "granted") scheduleNotification();
+            Notification.requestPermission().then(p => {
+                setPermission(p)
+                if (p === "granted") scheduleNotification();
             });
         }
     }
@@ -498,6 +515,8 @@ const NotifyNode = ({ node, onUpdate }) => {
                     <FiBell /> <span>Notifier</span>
                 </div>
                 {timeLeft && <span style={{ fontSize: '0.8rem', background: '#f3f4f6', color: '#6366f1', padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>in {timeLeft}</span>}
+                {permission === 'default' && <button onClick={() => Notification.requestPermission().then(setPermission)} style={{ fontSize: '0.7rem', padding: '2px 6px', background: '#ff9800', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Enable</button>}
+                {permission === 'denied' && <span style={{ fontSize: '0.7rem', color: 'red' }}>Blocked</span>}
             </div>
 
             <textarea
