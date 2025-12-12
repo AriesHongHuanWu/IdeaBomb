@@ -43,7 +43,7 @@ const InternalSidebar = ({ activeView, setActiveView, lists, onAddList, onRename
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto' }}>
-                {lists.map(list => (
+                {lists.filter(list => list.title !== 'Inbox').map(list => (
                     <div key={list.id} style={{ position: 'relative' }}
                         onMouseEnter={() => setHoveredList(list.id)}
                         onMouseLeave={() => { setHoveredList(null); if (menuOpenId !== list.id) setMenuOpenId(null); }}>
