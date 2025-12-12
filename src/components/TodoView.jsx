@@ -309,143 +309,123 @@ export default function TodoView({ user }) {
 
             {/* Content */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                {/* Header */}
-                <div style={{
-                    height: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px',
-                    borderBottom: '1px solid #f0f0f0'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        {isMobile && <FiMenu onClick={() => setSidebarOpen(!sidebarOpen)} />}
-                        <h3 style={{ margin: 0, fontSize: '1rem', color: '#333' }}>
-                            {activeList ? activeList.title : activeView.charAt(0).toUpperCase() + activeView.slice(1)}
-                        </h3>
-                    </div>
-                    {activeList && (
-                        <button
-                            onClick={() => setIsShareOpen(true)}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: 6,
-                                background: 'transparent', border: '1px solid #ddd',
-                                padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem'
-                            }}
-                        >
-                            <FiShare2 /> Share
-                        </button>
-                    )}
-                    {tasks.some(t => t.isCompleted) && (
-                        <button onClick={handleClearCompleted} style={{ marginLeft: 10, fontSize: '0.75rem', color: '#666', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
-                            Clear completed
-                        </button>
-                    )}
+                <div style={{ textAlign: 'center', color: '#ccc', marginTop: 40 }}>
+                    <FiCheck style={{ fontSize: '3rem', marginBottom: 10 }} />
+                    <p>No tasks yet. Enjoy your day!</p>
                 </div>
-
-                {/* Tasks */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-
-                    {/* Empty State */}
-                    {tasks.length === 0 && (
-                        <div style={{ textAlign: 'center', color: '#ccc', marginTop: 40 }}>
-                            <FiCheck style={{ fontSize: '3rem', marginBottom: 10 }} />
-                            <p>No tasks yet. Enjoy your day!</p>
-                        </div>
                     )}
 
-                    <Reorder.Group axis="y" values={tasks} onReorder={setTasks} style={{ listStyle: 'none', padding: 0 }}>
-                        <AnimatePresence initial={false}>
-                            {tasks.map(task => (
-                                <Reorder.Item key={task.id} value={task}
-                                    style={{ background: 'white', position: 'relative', overflow: 'hidden' }}
-                                    whileDrag={{ scale: 1.02, boxShadow: '0 5px 15px rgba(0,0,0,0.1)', borderRadius: 8, zIndex: 50 }}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                >
-                                    <div className="task-row" style={{
-                                        padding: '10px 0', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'flex-start', gap: 12,
-                                        opacity: task.isCompleted ? 0.6 : 1
-                                    }}>
-                                        <div
-                                            onClick={() => toggleComplete(task)}
-                                            style={{
-                                                marginTop: 3, width: 18, height: 18, borderRadius: '50%',
-                                                border: task.isCompleted ? '2px solid #058527' : '2px solid #ccc',
-                                                background: task.isCompleted ? '#058527' : 'transparent',
-                                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                color: 'white', fontSize: '10px', flexShrink: 0
+                <Reorder.Group axis="y" values={tasks} onReorder={setTasks} style={{ listStyle: 'none', padding: 0 }}>
+                    <AnimatePresence initial={false}>
+                        {tasks.map(task => (
+                            <Reorder.Item key={task.id} value={task}
+                                style={{ background: 'white', position: 'relative', overflow: 'hidden' }}
+                                whileDrag={{ scale: 1.02, boxShadow: '0 5px 15px rgba(0,0,0,0.1)', borderRadius: 8, zIndex: 50 }}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, height: 0 }}
+                            >
+                                <div className="task-row" style={{
+                                    padding: '10px 0', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'flex-start', gap: 12,
+                                    opacity: task.isCompleted ? 0.6 : 1
+                                }}>
+                                    <div
+                                        onClick={() => toggleComplete(task)}
+                                        style={{
+                                            marginTop: 3, width: 18, height: 18, borderRadius: '50%',
+                                            border: task.isCompleted ? '2px solid #058527' : '2px solid #ccc',
+                                            background: task.isCompleted ? '#058527' : 'transparent',
+                                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            color: 'white', fontSize: '10px', flexShrink: 0
+                                        }}
+                                    >
+                                        {task.isCompleted && <FiCheck />}
+                                    </div>
+                                    {editingTask && editingTask.id === task.id ? (
+                                        <input
+                                            autoFocus
+                                            value={editingTask.content}
+                                            onChange={e => setEditingTask({ ...editingTask, content: e.target.value })}
+                                            onBlur={() => handleUpdateTask(task.id, editingTask.content)}
+                                            onKeyDown={e => e.key === 'Enter' && handleUpdateTask(task.id, editingTask.content)}
+                                            style={{ flex: 1, fontSize: '0.95rem', padding: '4px', border: '1px solid #1a73e8', borderRadius: 4, outline: 'none' }}
+                                        />
+                                    ) : (
+                                           <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+                                        <input 
+                                            type="date" 
+                                            value={newTaskDueDate} 
+                                            onChange={e => setNewTaskDueDate(e.target.value)} 
+                                            style={{ 
+                                                padding: '6px 10px', borderRadius: 6, border: '1px solid #ddd', 
+                                                fontSize: '0.85rem', fontFamily: 'inherit', color: '#555' 
+                                            }} 
+                                        />
+                                        <select 
+                                            value={newTaskPriority} 
+                                            onChange={e => setNewTaskPriority(Number(e.target.value))} 
+                                            style={{ 
+                                                padding: '6px 10px', borderRadius: 6, border: '1px solid #ddd', 
+                                                fontSize: '0.85rem', fontFamily: 'inherit', color: '#555', background: 'white'
                                             }}
                                         >
-                                            {task.isCompleted && <FiCheck />}
-                                        </div>
-                                        {editingTask && editingTask.id === task.id ? (
-                                            <input
-                                                autoFocus
-                                                value={editingTask.content}
-                                                onChange={e => setEditingTask({ ...editingTask, content: e.target.value })}
-                                                onBlur={() => handleUpdateTask(task.id, editingTask.content)}
-                                                onKeyDown={e => e.key === 'Enter' && handleUpdateTask(task.id, editingTask.content)}
-                                                style={{ flex: 1, fontSize: '0.95rem', padding: '4px', border: '1px solid #1a73e8', borderRadius: 4, outline: 'none' }}
-                                            />
-                                        ) : (
-                                            <span
-                                                onClick={() => setEditingTask({ id: task.id, content: task.content })}
-                                                style={{
-                                                    flex: 1, fontSize: '0.95rem', color: task.isCompleted ? '#aaa' : '#333',
-                                                    textDecoration: task.isCompleted ? 'line-through' : 'none', cursor: 'pointer'
-                                                }}
-                                            >
-                                                {task.content}
-                                            </span>
-                                        )}
-                                        <button onClick={() => deleteTask(task.id)} className="task-actions" style={{ opacity: 0, border: 'none', background: 'none', cursor: 'pointer', color: '#d93025' }}>
-                                            <FiTrash2 />
-                                        </button>
-                                    </div>
-                                </Reorder.Item>
-                            ))}
-                        </AnimatePresence>
-                    </Reorder.Group>
-
-                    {/* Add Input */}
-                    <div style={{ marginTop: 15 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#d93025', cursor: 'pointer' }} onClick={() => setInputFocus(true)}>
-                            <FiPlus /> <span style={{ fontSize: '0.9rem' }}>Add task</span>
-                        </div>
-                        {inputFocus && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: 10, padding: 10, border: '1px solid #ddd', borderRadius: 8 }}>
-                                <input
-                                    autoFocus
-                                    placeholder="What needs to be done?"
-                                    value={newTaskContent}
-                                    onChange={e => setNewTaskContent(e.target.value)}
-                                    onKeyDown={handleAddTask}
-                                    style={{ width: '100%', border: 'none', outline: 'none', fontSize: '0.95rem' }}
-                                />
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10, gap: 10 }}>
-                                    <button onClick={() => setInputFocus(false)} style={{ padding: '6px 12px', background: '#f5f5f5', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Cancel</button>
-                                    <button onClick={handleAddTask} style={{ padding: '6px 12px', background: '#d93025', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Add Task</button>
+                                            <option value={1}>🚩 P1 (High)</option>
+                                            <option value={2}>🏳️ P2 (Medium)</option>
+                                            <option value={3}>🔹 P3 (Low)</option>
+                                            <option value={4}>⚪ P4 (None)</option>
+                                        </select>
+                                   </div> <button onClick={() => deleteTask(task.id)} className="task-actions" style={{ opacity: 0, border: 'none', background: 'none', cursor: 'pointer', color: '#d93025' }}>
+                                        <FiTrash2 />
+                                    </button>
                                 </div>
-                            </motion.div>
-                        )}
-                    </div>
-                    <style>{` .task-row:hover .task-actions { opacity: 1 !important; } `}</style>
-                </div>
-            </div>
+                            </Reorder.Item>
+                        ))}
+                    </AnimatePresence>
+                </Reorder.Group>
 
-            {/* Share Modal */}
-            {activeList && isShareOpen && (
-                <ShareModal
-                    isOpen={isShareOpen}
-                    onClose={() => setIsShareOpen(false)}
-                    boardId={activeList.id} // Re-using board ID prop for List ID
-                    currentUser={user}
-                    currentAllowedEmails={activeList.allowedEmails || []}
-                    isOwner={activeList.ownerId === user.uid}
-                // We need to support "collectionType" prop in ShareModal if it's hardcoded to 'boards'
-                // Assuming ShareModal writes to `boards` collection? 
-                // CRITICAL: ShareModal might be hardcoded to 'boards'. I need to check ShareModal.
-                // For now, I'll assume we might need to modify ShareModal or pass a prop.
-                />
-            )}
+                {/* Add Input */}
+                <div style={{ marginTop: 15 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#d93025', cursor: 'pointer' }} onClick={() => setInputFocus(true)}>
+                        <FiPlus /> <span style={{ fontSize: '0.9rem' }}>Add task</span>
+                    </div>
+                    {inputFocus && (
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: 10, padding: 10, border: '1px solid #ddd', borderRadius: 8 }}>
+                            <input
+                                autoFocus
+                                placeholder="What needs to be done?"
+                                value={newTaskContent}
+                                onChange={e => setNewTaskContent(e.target.value)}
+                                onKeyDown={handleAddTask}
+                                style={{ width: '100%', border: 'none', outline: 'none', fontSize: '0.95rem' }}
+                            />
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10, gap: 10 }}>
+                                <button onClick={() => setInputFocus(false)} style={{ padding: '6px 12px', background: '#f5f5f5', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Cancel</button>
+                                <button onClick={handleAddTask} style={{ padding: '6px 12px', background: '#d93025', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Add Task</button>
+                            </div>
+                        </motion.div>
+                    )}
+                </div>
+                <style>{` .task-row:hover .task-actions { opacity: 1 !important; } `}</style>
+            </div>
         </div>
+
+            {/* Share Modal */ }
+    {
+        activeList && isShareOpen && (
+            <ShareModal
+                isOpen={isShareOpen}
+                onClose={() => setIsShareOpen(false)}
+                boardId={activeList.id} // Re-using board ID prop for List ID
+                currentUser={user}
+                currentAllowedEmails={activeList.allowedEmails || []}
+                isOwner={activeList.ownerId === user.uid}
+            // We need to support "collectionType" prop in ShareModal if it's hardcoded to 'boards'
+            // Assuming ShareModal writes to `boards` collection? 
+            // CRITICAL: ShareModal might be hardcoded to 'boards'. I need to check ShareModal.
+            // For now, I'll assume we might need to modify ShareModal or pass a prop.
+            />
+        )
+    }
+        </div >
     )
 }
