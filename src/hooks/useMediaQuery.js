@@ -1,17 +1,27 @@
 import { useState, useEffect } from 'react'
 
 export function useMediaQuery(query) {
-    const [matches, setMatches] = useState(window.matchMedia(query).matches)
+    const [matches, setMatches] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.matchMedia(query).matches
+        }
+        return false
+    })
 
     useEffect(() => {
+        if (typeof window === 'undefined') return
+
         const media = window.matchMedia(query)
+
+        // Set initial value
         if (media.matches !== matches) {
             setMatches(media.matches)
         }
-        const listener = () => setMatches(media.matches)
+
+        const listener = (e) => setMatches(e.matches)
         media.addEventListener('change', listener)
         return () => media.removeEventListener('change', listener)
-    }, [matches, query])
+    }, [query]) // Removed `matches` from dependencies to prevent infinite loop
 
     return matches
 }
