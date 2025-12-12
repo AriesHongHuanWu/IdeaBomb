@@ -39,25 +39,27 @@ export default function Dashboard({ user }) {
     const [modalConfig, setModalConfig] = useState(null) // { type: 'create_folder' | 'rename_board' | 'move_board', title: string, initialValue: string, onConfirm: (val) => void }
     const [contextMenu, setContextMenu] = useState(null) // { x, y, boardId }
 
-    useEffect(() => {
-        if (!user) return
-        // Query: Boards owner created OR is invited to (allowedEmails contains my email)
-        // To support both efficiently without composite index issues immediately, 
-        // we'll just check 'allowedEmails' array-contains user.email.
-        // (Assuming creating a board adds owner to allowedEmails)
-
-        const q = query(
+    // QueryMemo to prevent re-creation loop
+    const boardsQuery = useMemo(() => {
+        if (!user || !user.email) return null
+        return query(
             collection(db, 'boards'),
             where('allowedEmails', 'array-contains', user.email)
         )
+    }, [user])
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+    useEffect(() => {
+        if (!boardsQuery) return
+
+        const unsubscribe = onSnapshot(boardsQuery, (snapshot) => {
             setBoards(snapshot.docs.map(d => ({ id: d.id, ...d.data() })))
         }, (error) => {
             console.error("Dashboard Query Error:", error)
+            // Do NOT set state here to avoid loops during error storms
         })
 
-        // Sync User to Firestore (for Admin Discovery)
+        // Sync User to Firestore (debounced or one-off)
+        // We do this here for simplicity, but ideally should be in context
         setDoc(doc(db, 'users', user.uid), {
             email: user.email,
             displayName: user.displayName,
@@ -66,7 +68,7 @@ export default function Dashboard({ user }) {
         }, { merge: true }).catch(err => console.error("User Sync Error", err))
 
         return () => unsubscribe()
-    }, [user])
+    }, [boardsQuery, user.uid, user.email, user.displayName, user.photoURL])
 
     useEffect(() => {
         const handleClickOutside = () => setContextMenu(null)

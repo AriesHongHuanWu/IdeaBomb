@@ -165,52 +165,63 @@ export default function TodoView({ user }) {
     }, [modalConfig, modalInput, user, activeView])
 
     // --- Listen to Task Lists ---
-    useEffect(() => {
-        if (!user) return
-
-        const q = query(
+    const listQuery = useMemo(() => {
+        if (!user || !user.email) return null
+        return query(
             collection(db, 'task_lists'),
             where('allowedEmails', 'array-contains', user.email)
         )
+    }, [user])
 
-        const unsub = onSnapshot(q, (snap) => {
+    useEffect(() => {
+        if (!listQuery) return
+
+        const unsub = onSnapshot(listQuery, (snap) => {
             setTaskLists(snap.docs.map(d => ({ id: d.id, ...d.data() })))
         }, (error) => {
             console.error("Task Lists Query Error:", error)
+            // No state update on error
         })
 
         return () => unsub()
-    }, [user])
+    }, [listQuery])
 
     // --- Listen to Tasks ---
-    useEffect(() => {
-        if (!user) return
-
+    const tasksQuery = useMemo(() => {
+        if (!user) return null
         let listIdToQuery = activeView
 
         // For inbox/today views, find the Inbox list
         if (activeView === 'inbox' || activeView === 'today') {
             const inboxList = taskLists.find(l => l.title === 'Inbox' && l.ownerId === user.uid)
-            if (!inboxList) {
-                // No inbox yet, just return without setting tasks (initial state is [])
-                return
-            }
+            if (!inboxList) return null
             listIdToQuery = inboxList.id
         }
 
-        const qTasks = query(
+        return query(
             collection(db, 'task_lists', listIdToQuery, 'tasks'),
             orderBy('createdAt', 'asc')
         )
+    }, [user, activeView, taskLists])
 
-        const unsub = onSnapshot(qTasks, (snap) => {
+    useEffect(() => {
+        if (!tasksQuery) {
+            // Should clear tasks if query is invalid (e.g. no inbox found yet)
+            // But only if we are in a state where we EXPECT tasks
+            if ((activeView === 'inbox' || activeView === 'today') && tasks.length > 0) {
+                setTasks([])
+            }
+            return
+        }
+
+        const unsub = onSnapshot(tasksQuery, (snap) => {
             setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })))
         }, (error) => {
             console.error("Tasks Query Error:", error)
         })
 
         return () => unsub()
-    }, [user, activeView, taskLists])
+    }, [tasksQuery])
 
     // --- Task Actions ---
     const getTargetListId = useCallback(async () => {
