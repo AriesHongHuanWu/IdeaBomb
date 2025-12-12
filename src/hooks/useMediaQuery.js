@@ -1,21 +1,17 @@
-import { useSyncExternalStore } from 'react'
+import { useState, useEffect } from 'react'
 
 export function useMediaQuery(query) {
-    const subscribe = (callback) => {
-        const matchMedia = window.matchMedia(query)
-        matchMedia.addEventListener('change', callback)
-        return () => {
-            matchMedia.removeEventListener('change', callback)
+    const [matches, setMatches] = useState(window.matchMedia(query).matches)
+
+    useEffect(() => {
+        const media = window.matchMedia(query)
+        if (media.matches !== matches) {
+            setMatches(media.matches)
         }
-    }
+        const listener = () => setMatches(media.matches)
+        media.addEventListener('change', listener)
+        return () => media.removeEventListener('change', listener)
+    }, [matches, query])
 
-    const getSnapshot = () => {
-        return window.matchMedia(query).matches
-    }
-
-    const getServerSnapshot = () => {
-        return false // Safe default for SSR
-    }
-
-    return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+    return matches
 }

@@ -4,103 +4,90 @@ service cloud.firestore {
     
     // --- Helper Functions ---
     
+    // Validates string length
     function validString(text, max) {
       return text is string && text.size() <= max;
     }
     
-    function isOwner(data) {
-      return ('createdBy' in data && data.createdBy == request.auth.uid) ||
-             ('ownerId' in data && data.ownerId == request.auth.uid);
-    }
-    
-    function isCollaborator(data) {
-      return 'allowedEmails' in data && 
-             data.allowedEmails is list && 
-             request.auth.token.email != null && 
-             request.auth.token.email in data.allowedEmails;
-    }
-
+    // Check if user has access to the board (Owner or Collaborator)
+    // For evaluating existing documents (resource.data)
     function hasAccess(data) {
-      return isOwner(data) || isCollaborator(data);
-    }
-
-    function getRole(data) {
-      return ('roles' in data && data.roles is map && request.auth.token.email in data.roles) 
-             ? data.roles[request.auth.token.email] 
-             : 'editor';
-    }
-
-    function canWrite(data) {
-      return isOwner(data) || (hasAccess(data) && getRole(data) == 'editor');
+      return (request.auth.uid == data.createdBy) || 
+             (data.allowedEmails is list && request.auth.token.email != null && request.auth.token.email in data.allowedEmails);
     }
     
+    // Check if user is restricted to Viewer (Read-Only)
+    function isViewer(data) {
+       return data.viewers is list && request.auth.token.email in data.viewers;
+    }
+    
+    // Check if user is trying to WRITE valid board data (Owner must be self)
     function isValidBoardWrite() {
-      // For create, we check request.resource.data
       return request.resource.data.createdBy == request.auth.uid;
     }
 
     // --- Rules ---
 
-    // User Context
+    // User Profiles & Nested Data (AI Usage)
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      
       match /ai_usage/{docId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
     
+    // Global Settings
     match /settings/{settingId} {
       allow read: if request.auth != null;
     }
 
-    // Boards
     match /boards/{boardId} {
+      // 1. Board Document Rules
       allow read: if request.auth != null && hasAccess(resource.data);
       allow create: if request.auth != null && isValidBoardWrite();
-      allow update: if request.auth != null && canWrite(resource.data);
-      allow delete: if request.auth != null && canWrite(resource.data);
+      allow update: if request.auth != null && hasAccess(resource.data) && !isViewer(resource.data);
+      allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
       
-      // Helper to fetch parent board data for subcollections
+      // Shared Function for Subcollections
       function getBoardData() {
         return get(/databases/$(database)/documents/boards/$(boardId)).data;
       }
       
+      // 2. Nodes
       match /nodes/{nodeId} {
         allow read: if request.auth != null && hasAccess(getBoardData());
-        allow write: if request.auth != null && canWrite(getBoardData());
+        allow delete: if request.auth != null && hasAccess(getBoardData()) && !isViewer(getBoardData());
+        allow create, update: if request.auth != null && hasAccess(getBoardData()) && !isViewer(getBoardData())
+          && (!("content" in request.resource.data) || validString(request.resource.data.content, 20000))
+          && (!("label" in request.resource.data) || validString(request.resource.data.label, 500))
+          && (!("items" in request.resource.data) || request.resource.data.items.size() < 200)
+          && (!("x" in request.resource.data) || request.resource.data.x is number)
+          && (!("y" in request.resource.data) || request.resource.data.y is number);
       }
       
+      // 3. Edges
       match /edges/{edgeId} {
         allow read: if request.auth != null && hasAccess(getBoardData());
-        allow write: if request.auth != null && canWrite(getBoardData());
+        allow write: if request.auth != null && hasAccess(getBoardData()) && !isViewer(getBoardData());
       }
       
+      // 4. Cursors (Ephemeral)
       match /cursors/{cursorId} {
-        allow read, write: if request.auth != null && hasAccess(getBoardData());
+        allow read: if request.auth != null && hasAccess(getBoardData());
+        allow write: if request.auth != null && hasAccess(getBoardData()) && !isViewer(getBoardData());
       }
 
+      // 5. Presence
       match /presence/{userId} {
-        allow read, write: if request.auth != null && hasAccess(getBoardData());
+        allow read: if request.auth != null && hasAccess(getBoardData());
+        allow write: if request.auth != null && hasAccess(getBoardData()) && !isViewer(getBoardData());
       }
 
+      // 6. Chat Messages
       match /messages/{msgId} {
-        allow read, write: if request.auth != null && hasAccess(getBoardData());
-      }
-    }
-    
-    // Task Lists
-    match /task_lists/{listId} {
-      allow read: if request.auth != null && hasAccess(resource.data);
-      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
-      allow update: if request.auth != null && canWrite(resource.data);
-      allow delete: if request.auth != null && canWrite(resource.data);
-      
-      match /tasks/{taskId} {
-         function getListData() {
-            return get(/databases/$(database)/documents/task_lists/$(listId)).data;
-         }
-         allow read: if request.auth != null && hasAccess(getListData());
-         allow write: if request.auth != null && canWrite(getListData());
+        allow read: if request.auth != null && hasAccess(getBoardData());
+        allow write: if request.auth != null && hasAccess(getBoardData()) && !isViewer(getBoardData());
       }
     }
   }

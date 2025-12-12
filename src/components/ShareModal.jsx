@@ -1,20 +1,13 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { FiX, FiUserPlus, FiMail } from 'react-icons/fi'
-import { doc, updateDoc, arrayUnion, setDoc } from 'firebase/firestore'
+import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { db } from '../firebase'
 
-export default function ShareModal({ boardId, isOpen, onClose, collectionName = 'boards' }) {
+export default function ShareModal({ boardId, isOpen, onClose }) {
     const [email, setEmail] = useState('')
     const [loading, setLoading] = useState(false)
     const [copied, setCopied] = useState(false)
-
-    const [role, setRole] = useState('editor')
-
-    const roleMap = {
-        'editor': 'Editor',
-        'viewer': 'Viewer'
-    }
 
     const copyLink = () => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000) }
 
@@ -23,21 +16,36 @@ export default function ShareModal({ boardId, isOpen, onClose, collectionName = 
         if (!email.trim() || !boardId) return
         setLoading(true)
         const emailToInvite = email.trim().toLowerCase()
-        const selectedRole = role
-        try {
-            // Use dynamic collection name
-            await setDoc(doc(db, collectionName, boardId), {
-                allowedEmails: arrayUnion(emailToInvite),
-                roles: { [emailToInvite]: selectedRole }
-            }, { merge: true })
+        const role = document.getElementById('role-select').value
 
-            const subject = encodeURIComponent("Invitation: Collaborate on Whiteboard")
-            const body = encodeURIComponent(`Hi,\n\nI've invited you as a ${roleMap[selectedRole]} to my whiteboard. Please log in with this Google Email (${emailToInvite}).\n\nLink: ${window.location.href}\n\nThanks!`)
-            window.location.href = `mailto:${emailToInvite}?subject=${subject}&body=${body}`
-            alert(`Access granted to ${emailToInvite} as ${roleMap[selectedRole]}.`)
-            setEmail('')
-        } catch (error) { console.error("Invite failed", error); alert("Failed to invite: " + error.message) }
-        finally { setLoading(false) }
+        try {
+            const updates = {
+                allowedEmails: arrayUnion(emailToInvite) // Always add to allow list
+            }
+
+            // Manage Role Arrays: Add to one, remove from other to ensure single role
+            if (role === 'editor') {
+                updates.editors = arrayUnion(emailToInvite)
+                updates.viewers = arrayRemove(emailToInvite)
+            } else {
+                updates.viewers = arrayUnion(emailToInvite)
+                updates.editors = arrayRemove(emailToInvite)
+            }
+
+            await updateDoc(doc(db, 'boards', boardId), updates)
+
+            const subject = encodeURIComponent("Invitation: Collaborate on Whiteboard");
+            const body = encodeURIComponent(`Hi,\n\nI've invited you as a ${role.toUpperCase()} to my whiteboard. Login: ${emailToInvite}.\n\nLink: ${window.location.href}\n\nThanks!`);
+            window.location.href = `mailto:${emailToInvite}?subject=${subject}&body=${body}`;
+
+            alert(`Access granted to ${emailToInvite} as ${role}.`);
+            setEmail('');
+        } catch (error) {
+            console.error("Invite failed", error);
+            alert("Failed to invite: " + error.message);
+        } finally {
+            setLoading(false);
+        }
     }
 
     if (!isOpen) return null
@@ -57,18 +65,24 @@ export default function ShareModal({ boardId, isOpen, onClose, collectionName = 
                     <div style={{ display: 'flex', gap: 10 }}>
                         <div style={{ position: 'relative', flex: 1 }}>
                             <FiMail style={{ position: 'absolute', left: 15, top: 14, color: '#888' }} />
-                            <input type="email" placeholder="friend@example.com" value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: 12, border: '1px solid #ddd', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }} required />
+                            <input
+                                type="email"
+                                placeholder="friend@example.com"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: 12, border: '1px solid #ddd', fontSize: '1rem', outline: 'none', boxSizing: 'border-box' }}
+                                required
+                            />
                         </div>
                         <select
-                            value={role}
-                            onChange={e => setRole(e.target.value)}
-                            style={{ padding: '0 15px', borderRadius: 12, border: '1px solid #ddd', background: 'white', cursor: 'pointer', outline: 'none' }}
+                            id="role-select"
+                            style={{ padding: '0 15px', borderRadius: 12, border: '1px solid #ddd', background: 'white', fontSize: '0.9rem', cursor: 'pointer' }}
                         >
                             <option value="editor">Editor</option>
                             <option value="viewer">Viewer</option>
                         </select>
                     </div>
-                    <button type="submit" disabled={loading} style={{ padding: '12px', borderRadius: 12, border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 600, cursor: 'pointer', opacity: loading ? 0.7 : 1 }}>{loading ? 'Granting Access...' : 'Grant Access & Send Email'}</button>
+                    <button type="submit" disabled={loading} style={{ padding: '12px', borderRadius: 12, border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 600, cursor: 'pointer', opacity: loading ? 0.7 : 1 }}>{loading ? 'Granting Access...' : 'Share'}</button>
                     <p style={{ fontSize: '0.8rem', color: '#888', textAlign: 'center', margin: 0 }}>We use your default email app to send the invite link.</p>
                 </form>
             </motion.div>

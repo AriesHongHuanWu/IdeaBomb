@@ -76,35 +76,20 @@ export default function BoardPage({ user }) {
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [history, future])
 
-    const [canEdit, setCanEdit] = useState(false)
-
     // --- Data Sync ---
     useEffect(() => {
         if (!boardId || !user) return
         const unsub = onSnapshot(doc(db, 'boards', boardId), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data()
-                setBoardTitle(data.title);
-
-                const isOwner = data.createdBy === user.uid;
-                // Check Access
-                const isAllowed = isOwner || data.allowedEmails?.some(e => e.toLowerCase() === (user.email || '').toLowerCase());
-
-                if (!isAllowed) {
-                    setHasAccess(false)
-                    setCanEdit(false)
-                } else {
-                    setHasAccess(true)
-                    // Check Role (Default to 'editor' if unassigned but allowed, for backward compat)
-                    const userRole = data.roles?.[user.email] || (isOwner ? 'owner' : 'editor')
-                    setCanEdit(userRole === 'editor' || userRole === 'owner')
-                }
-
+                setBoardTitle(data.title); const isOwner = data.createdBy === user.uid;
+                const isAllowed = data.allowedEmails?.some(e => e.toLowerCase() === (user.email || '').toLowerCase()) || isOwner;
+                if (data.allowedEmails && !isAllowed) { setHasAccess(false) } else { setHasAccess(true) }
                 if (data.pageConfigs) setPageConfigs(data.pageConfigs)
             } else { setBoardTitle('Board Not Found') }
         }, (error) => { if (error.code === 'permission-denied') setHasAccess(false) })
         return unsub
-    }, [boardId, user?.uid, user?.email])
+    }, [boardId, user])
 
     const updateCanvasSize = async (w, h) => {
         if (!boardId || !hasAccess) return
@@ -834,11 +819,6 @@ export default function BoardPage({ user }) {
             >
                 <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 20 }}>
                     <button onClick={async () => { try { updateThumbnail() } catch (e) { console.error(e) }; navigate('/dashboard') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FiHome /></button>
-                    {!canEdit && hasAccess && (
-                        <div style={{ background: '#fef3c7', color: '#d97706', padding: '4px 8px', borderRadius: 4, fontSize: '0.8rem', fontWeight: 600 }}>
-                            View Only
-                        </div>
-                    )}
                     {isEditingTitle ? (
                         <input
                             value={tempTitle}
@@ -977,7 +957,6 @@ export default function BoardPage({ user }) {
                     onCursorMove={handleCursorMove}
                     onAIRequest={handleAIRequest}
                     onSelectionChange={() => { }}
-                    readOnly={!canEdit}
                 />
             </div>
             <ChatInterface boardId={boardId} user={user} onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />
