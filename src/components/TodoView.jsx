@@ -98,6 +98,7 @@ export default function TodoView({ user }) {
     const [activeView, setActiveView] = useState('inbox')
     const [taskLists, setTaskLists] = useState([])
     const [tasks, setTasks] = useState([])
+    const [editingTask, setEditingTask] = useState(null) // { id, content }
     const [newTaskPriority, setNewTaskPriority] = useState(4)
     const [newTaskDueDate, setNewTaskDueDate] = useState('')
 
@@ -250,6 +251,35 @@ export default function TodoView({ user }) {
         } catch (err) { console.error(err) }
     }
 
+    const handleUpdateTask = async (taskId, newContent) => {
+        if (!newContent.trim()) return
+        let listId = activeView
+        if (['inbox', 'today'].includes(activeView)) {
+            const inbox = taskLists.find(l => l.title === 'Inbox' && l.ownerId === user.uid)
+            if (inbox) listId = inbox.id
+        }
+        try {
+            await updateDoc(doc(db, 'task_lists', listId, 'tasks', taskId), { content: newContent })
+            setEditingTask(null)
+        } catch (err) { console.error(err) }
+    }
+
+    const handleClearCompleted = async () => {
+        let listId = activeView
+        if (['inbox', 'today'].includes(activeView)) {
+            const inbox = taskLists.find(l => l.title === 'Inbox' && l.ownerId === user.uid)
+            if (inbox) listId = inbox.id
+        }
+        try {
+            const completed = tasks.filter(t => t.isCompleted)
+            const promises = completed.map(t => deleteDoc(doc(db, 'task_lists', listId, 'tasks', t.id)))
+            await Promise.all(promises)
+        } catch (e) {
+            console.error(e)
+            alert(e.message)
+        }
+    }
+
     const deleteTask = async (taskId) => {
         let listId = activeView
         if (['inbox', 'today'].includes(activeView)) {
@@ -302,6 +332,11 @@ export default function TodoView({ user }) {
                             <FiShare2 /> Share
                         </button>
                     )}
+                    {tasks.some(t => t.isCompleted) && (
+                        <button onClick={handleClearCompleted} style={{ marginLeft: 10, fontSize: '0.75rem', color: '#666', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                            Clear completed
+                        </button>
+                    )}
                 </div>
 
                 {/* Tasks */}
@@ -341,12 +376,26 @@ export default function TodoView({ user }) {
                                         >
                                             {task.isCompleted && <FiCheck />}
                                         </div>
-                                        <span style={{
-                                            flex: 1, fontSize: '0.95rem', color: task.isCompleted ? '#aaa' : '#333',
-                                            textDecoration: task.isCompleted ? 'line-through' : 'none'
-                                        }}>
-                                            {task.content}
-                                        </span>
+                                        {editingTask && editingTask.id === task.id ? (
+                                            <input
+                                                autoFocus
+                                                value={editingTask.content}
+                                                onChange={e => setEditingTask({ ...editingTask, content: e.target.value })}
+                                                onBlur={() => handleUpdateTask(task.id, editingTask.content)}
+                                                onKeyDown={e => e.key === 'Enter' && handleUpdateTask(task.id, editingTask.content)}
+                                                style={{ flex: 1, fontSize: '0.95rem', padding: '4px', border: '1px solid #1a73e8', borderRadius: 4, outline: 'none' }}
+                                            />
+                                        ) : (
+                                            <span
+                                                onClick={() => setEditingTask({ id: task.id, content: task.content })}
+                                                style={{
+                                                    flex: 1, fontSize: '0.95rem', color: task.isCompleted ? '#aaa' : '#333',
+                                                    textDecoration: task.isCompleted ? 'line-through' : 'none', cursor: 'pointer'
+                                                }}
+                                            >
+                                                {task.content}
+                                            </span>
+                                        )}
                                         <button onClick={() => deleteTask(task.id)} className="task-actions" style={{ opacity: 0, border: 'none', background: 'none', cursor: 'pointer', color: '#d93025' }}>
                                             <FiTrash2 />
                                         </button>
