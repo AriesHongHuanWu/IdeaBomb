@@ -866,7 +866,7 @@ export default function BoardPage({ user }) {
 
                     {isMobile ? (
                         <div style={{ position: 'relative' }}>
-                            <button onClick={() => setTabMenu({ x: window.innerWidth - 140, y: 70, type: 'top-menu' })} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}><FiMenu /></button>
+                            <button onClick={(e) => { e.stopPropagation(); setTabMenu({ x: window.innerWidth - 140, y: 70, type: 'top-menu' }) }} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}><FiMenu /></button>
                             {tabMenu?.type === 'top-menu' && (
                                 <div style={{ position: 'fixed', top: 60, right: 20, background: 'white', borderRadius: 12, boxShadow: '0 5px 20px rgba(0,0,0,0.15)', padding: 10, zIndex: 999, display: 'flex', flexDirection: 'column', gap: 8 }}>
                                     <button onClick={() => { setIsShareOpen(true); setTabMenu(null) }} style={{ padding: '8px 12px', border: 'none', background: 'var(--primary)', color: 'white', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}><FiUserPlus /> Invite</button>
