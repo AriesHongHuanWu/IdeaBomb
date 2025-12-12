@@ -104,7 +104,7 @@ export default function BoardPage({ user }) {
             } else { setBoardTitle('Board Not Found') }
         }, (error) => { if (error.code === 'permission-denied') setHasAccess(false) })
         return unsub
-    }, [boardId, user])
+    }, [boardId, user?.uid, user?.email])
 
     const updateCanvasSize = async (w, h) => {
         if (!boardId || !hasAccess) return
