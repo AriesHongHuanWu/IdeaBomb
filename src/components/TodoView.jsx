@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence, Reorder } from 'framer-motion'
-import { FiMenu, FiPlus, FiCheck, FiMoreHorizontal, FiCalendar, FiFlag, FiShare2, FiInbox, FiSun, FiHash, FiTrash2, FiEdit2 } from 'react-icons/fi'
+import { FiMenu, FiPlus, FiCheck, FiMoreHorizontal, FiCalendar, FiFlag, FiShare2, FiInbox, FiSun, FiHash, FiTrash2, FiEdit2, FiGrid } from 'react-icons/fi'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { db } from '../firebase'
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, orderBy, arrayUnion } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, orderBy, arrayUnion, setDoc } from 'firebase/firestore'
 import ShareModal from './ShareModal'
 
 // --- Internal Sidebar Component ---
