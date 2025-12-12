@@ -9,6 +9,7 @@ export default function TodoView({ user, isOpen, onClose }) {
     const [todos, setTodos] = useState([])
     const [filter, setFilter] = useState('all') // all, today, upcoming
     const [newTodo, setNewTodo] = useState('')
+    const [dueDate, setDueDate] = useState('')
     const [isAIProcessing, setIsAIProcessing] = useState(false)
 
     // Sync Todos (Global for user for now, or could be per board if we pass boardId)
@@ -45,10 +46,12 @@ export default function TodoView({ user, isOpen, onClose }) {
                 createdAt: serverTimestamp(),
                 members: [user.email], // Shared logic foundation
                 ownerId: user.uid,
-                dueDate: null,
+                ownerId: user.uid,
+                dueDate: dueDate || null,
                 labels: []
             })
             setNewTodo('')
+            setDueDate('')
         } catch (err) { console.error(err) }
     }
 
