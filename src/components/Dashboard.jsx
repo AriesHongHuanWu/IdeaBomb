@@ -358,7 +358,7 @@ export default function Dashboard({ user }) {
                                 <p style={{ color: '#666', marginBottom: 25, lineHeight: 1.5 }}>{modalConfig.message}</p>
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                                     <button onClick={() => setModalConfig(null)} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'transparent', color: '#666', cursor: 'pointer' }}>Cancel</button>
-                                    <button onClick={() => handleAction(modalConfig.type, modalConfig.board, document.getElementById('modal-input').value)} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#1a73e8', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Confirm</button>
+                                    <button onClick={() => handleAction(modalConfig.type, modalConfig.board, null)} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#1a73e8', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Confirm</button>
                                 </div>
                             </>
                         ) : (
