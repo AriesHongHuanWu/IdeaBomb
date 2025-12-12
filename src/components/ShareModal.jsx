@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { FiX, FiUserPlus, FiMail } from 'react-icons/fi'
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { db } from '../firebase'
+import emailjs from '@emailjs/browser'
 
 export default function ShareModal({ boardId, isOpen, onClose }) {
     const [email, setEmail] = useState('')
@@ -34,16 +35,33 @@ export default function ShareModal({ boardId, isOpen, onClose }) {
 
             await updateDoc(doc(db, 'boards', boardId), updates)
 
-            // Construct Email Logic
-            const subject = encodeURIComponent(`Invitation: Collaborate on Whiteboard`)
-            const body = encodeURIComponent(`Hi,\n\nI've invited you as a ${role.toUpperCase()} to my whiteboard.\n\nBoard Link: ${window.location.href}\n\nPlease log in with: ${emailToInvite}\n\nThanks!`)
+            // --- EmailJS Logic ---
+            // Requirement: User must have IDs. 
+            // We'll use the provided Service ID 'awbestmail'
+            const SERVICE_ID = 'awbestmail'
+            // We need these from the user (or .env)
+            const TEMPLATE_ID = 'YOUR_TEMPLATE_ID' // User must replace this
+            const PUBLIC_KEY = 'YOUR_PUBLIC_KEY'   // User must replace this
 
-            // Open Email Client
-            window.location.href = `mailto:${emailToInvite}?subject=${subject}&body=${body}`
+            if (TEMPLATE_ID === 'YOUR_TEMPLATE_ID' || PUBLIC_KEY === 'YOUR_PUBLIC_KEY') {
+                // Temporary Fallback / Prompt
+                alert("EmailJS Setup Incomplete!\n\nPlease provide Template ID and Public Key in the code or chat.\n\nOpening default mail client as fallback...")
+                const subject = encodeURIComponent("Invitation: Collaborate on Whiteboard")
+                const body = encodeURIComponent(`Hi,\n\nI've invited you as a ${role.toUpperCase()} to my whiteboard.\n\nBoard Link: ${window.location.href}\n\nPlease log in with: ${emailToInvite}\n\nThanks!`)
+                window.location.href = `mailto:${emailToInvite}?subject=${subject}&body=${body}`
+            } else {
+                await emailjs.send(SERVICE_ID, TEMPLATE_ID, {
+                    to_email: emailToInvite,
+                    to_name: emailToInvite.split('@')[0],
+                    role: role,
+                    link: window.location.href,
+                    invite_sender: 'IdeaBoard User'
+                }, PUBLIC_KEY)
 
-            // UI Feedback (Non-blocking)
+                alert(`Official invitation sent to ${emailToInvite}!`)
+            }
+
             setEmail('')
-            alert(`Invite sent to ${emailToInvite}!`) // Keep alert but ensure it runs AFTER mailto check by browser
         } catch (error) {
             console.error("Invite failed", error)
             alert("Failed to invite: " + error.message)
