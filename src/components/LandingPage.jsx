@@ -320,137 +320,127 @@ function UserCountBadge() {
 }
 
 function AnimatedDemoCanvas({ isMobile }) {
+    // 3D Floating Animation for the whole board
     return (
-        <div style={{ height: isMobile ? 350 : 550, background: '#ffffff', position: 'relative', overflow: 'hidden', fontFamily: '"Google Sans", "Inter", sans-serif' }}>
-            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#e0e0e0 1px, transparent 1px)', backgroundSize: '20px 20px', opacity: 0.5 }}></div>
+        <div style={{ height: isMobile ? 400 : 600, background: '#ffffff', position: 'relative', overflow: 'hidden', fontFamily: '"Google Sans", "Inter", sans-serif' }}>
+            {/* Grid Background */}
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#e0e0e0 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.6 }}></div>
 
-            {/* Mock Toolbar - Top Center */}
-            <div style={{ position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', background: 'white', borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', padding: '8px 16px', display: 'flex', gap: 12, alignItems: 'center', zIndex: 100, border: '1px solid #f1f3f4' }}>
-                <div style={{ width: 20, height: 20, border: '2px solid #5f6368', borderRadius: 4 }}></div>
-                <div style={{ width: 20, height: 20, background: '#5f6368', borderRadius: '50%', opacity: 0.2 }}></div>
-                <div style={{ width: 1, height: 20, background: '#eee' }}></div>
-                <div style={{ width: 20, height: 20, border: '2px dashed #5f6368', borderRadius: 4 }}></div>
-                <div style={{ width: 20, height: 20, background: '#ea4335', borderRadius: 4, opacity: 0.2 }}></div>
-            </div>
-
-            {/* Simulated Cursor 1 */}
+            {/* Mock Toolbar - Top Center (Floating) */}
             <motion.div
-                initial={{ x: 100, y: 150 }}
-                animate={{ x: [100, 420, 420, 100], y: [150, 150, 320, 150] }}
-                transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-                style={{ position: 'absolute', zIndex: 50, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}
+                initial={{ y: -50, opacity: 0 }} animate={{ y: 20, opacity: 1 }} transition={{ duration: 0.8, delay: 0.2 }}
+                style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', background: 'white', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.12)', padding: '10px 20px', display: 'flex', gap: 16, alignItems: 'center', zIndex: 100, border: '1px solid rgba(255,255,255,0.8)' }}
             >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>
-                    <path d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19135L11.4841 12.3673H5.65376Z" fill="#EA4335" stroke="white" strokeWidth="1" />
-                </svg>
-                <div style={{ background: '#EA4335', padding: '2px 8px', borderRadius: 4, color: 'white', fontSize: '10px', marginLeft: 4, fontWeight: 600 }}>Sarah</div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ width: 32, height: 32, background: '#f1f3f4', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5f6368' }}><FiGrid /></div>
+                    <div style={{ width: 32, height: 32, background: '#e8f0fe', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1a73e8' }}><FiCpu /></div>
+                    <div style={{ width: 32, height: 32, background: '#fce8e6', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ea4335' }}><FiMessageSquare /></div>
+                </div>
+                <div style={{ width: 1, height: 24, background: '#dadce0' }}></div>
+                <div style={{ display: 'flex', gap: -8 }}>
+                    {[1, 2, 3].map(i => (
+                        <div key={i} style={{ width: 28, height: 28, borderRadius: '50%', background: '#fff', border: '2px solid white', overflow: 'hidden', marginLeft: -8, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                            <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${i + 5}`} width="100%" height="100%" />
+                        </div>
+                    ))}
+                </div>
             </motion.div>
 
-            {/* Simulated Cursor 2 */}
-            <motion.div
-                initial={{ x: 600, y: 350 }}
-                animate={{ x: [600, 220, 220, 600], y: [350, 350, 180, 350] }}
-                transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-                style={{ position: 'absolute', zIndex: 50, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}
-            >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>
-                    <path d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19135L11.4841 12.3673H5.65376Z" fill="#4285F4" stroke="white" strokeWidth="1" />
-                </svg>
-                <div style={{ background: '#4285F4', padding: '2px 8px', borderRadius: 4, color: 'white', fontSize: '10px', marginLeft: 4, fontWeight: 600 }}>Mike</div>
-            </motion.div>
+            {/* Content Group: Research Topic (Market Analysis) */}
 
-            {/* Node 1: Client App (Whiteboard Style) */}
+            {/* 1. Central Topic Node */}
             <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
+                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}
                 style={{
-                    position: 'absolute', top: isMobile ? 60 : 120, left: isMobile ? 40 : 150, width: 240,
-                    background: 'white', border: '1px solid #e0e0e0', borderRadius: 12, padding: 16,
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.05), 0 10px 15px -3px rgba(0,0,0,0.1)', zIndex: 10,
-                    display: 'flex', flexDirection: 'column', gap: 10
+                    position: 'absolute', top: isMobile ? 80 : 150, left: isMobile ? '50%' : 150, transform: isMobile ? 'translateX(-50%)' : 'none',
+                    width: isMobile ? 260 : 280, background: 'white', borderRadius: 16, padding: 20,
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.1)', border: '1px solid #f1f3f4', zIndex: 10
                 }}
             >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#1a73e8', fontWeight: 700, fontSize: '0.95rem' }}>
-                        <FiGrid /> Client App
-                    </div>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#34a853' }}></div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: '1.5rem' }}>🌍</span> Global Trends 2025
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#5f6368', lineHeight: 1.5 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}><FiCheck size={12} /> React Frontend</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><FiCheck size={12} /> Real-time Sync</div>
+                <div style={{ fontSize: '0.9rem', color: '#5f6368', lineHeight: 1.5 }}>
+                    Researching renewable energy adoption rates across Asia and Europe.
+                </div>
+                <div style={{ marginTop: 15, display: 'flex', gap: 8 }}>
+                    <span style={{ fontSize: '0.75rem', background: '#e8f0fe', color: '#1967d2', padding: '4px 10px', borderRadius: 20, fontWeight: 500 }}>#research</span>
+                    <span style={{ fontSize: '0.75rem', background: '#fce8e6', color: '#c5221f', padding: '4px 10px', borderRadius: 20, fontWeight: 500 }}>#urgent</span>
                 </div>
             </motion.div>
 
-            {/* Animated Connection (Curved) */}
-            <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 5 }}>
-                <defs>
-                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="#999" />
-                    </marker>
-                </defs>
+            {/* 2. Youtube Video Embed (Simulated) */}
+            <motion.div
+                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
+                style={{
+                    position: 'absolute', top: isMobile ? 280 : 100, left: isMobile ? 20 : 550,
+                    width: isMobile ? 200 : 320, height: isMobile ? 120 : 180,
+                    background: '#202124', borderRadius: 16, overflow: 'hidden',
+                    boxShadow: '0 15px 40px rgba(0,0,0,0.2)', zIndex: 12,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column'
+                }}
+            >
+                <img src="https://images.unsplash.com/photo-1497436072909-60f360e1d4b0?w=500&auto=format&fit=crop&q=60" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
+                <div style={{ position: 'absolute', width: 48, height: 48, background: 'rgba(255,255,255,0.9)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#ea4335"><path d="M8 5v14l11-7z" /></svg>
+                </div>
+                <div style={{ position: 'absolute', bottom: 10, left: 15, color: 'white', fontWeight: 600, fontSize: '0.9rem', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Market Analysis.mp4</div>
+            </motion.div>
+
+            {/* 3. Image/Moodboard Node */}
+            <motion.div
+                initial={{ opacity: 0, rotate: 5 }} animate={{ opacity: 1, rotate: 3 }} transition={{ duration: 0.6, delay: 0.5 }}
+                style={{
+                    position: 'absolute', top: isMobile ? 380 : 350, left: isMobile ? 150 : 600,
+                    width: 200, padding: 10, background: 'white', borderRadius: 8,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)', transform: 'rotate(3deg)', zIndex: 9
+                }}
+            >
+                <img src="https://images.unsplash.com/photo-1542601906990-24d4c16419d9?w=300&auto=format&fit=crop&q=60" style={{ width: '100%', borderRadius: 4, height: 120, objectFit: 'cover' }} />
+                <div style={{ fontSize: '0.8rem', color: '#5f6368', marginTop: 8, textAlign: 'center', fontFamily: 'cursive' }}>Solar Layout Concept</div>
+            </motion.div>
+
+            {/* 4. Sticky Note Cluster */}
+            <motion.div
+                initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.8, type: 'spring' }}
+                style={{ position: 'absolute', top: 320, left: 200, display: isMobile ? 'none' : 'block' }}
+            >
+                <div style={{ width: 140, height: 140, background: '#fff9c4', boxShadow: '2px 4px 12px rgba(0,0,0,0.1)', padding: 15, fontFamily: '"Kalam", cursive', fontSize: '1rem', rotate: '-5deg' }}>
+                    Don't forget the EU policy changes! 🇪🇺
+                </div>
+            </motion.div>
+            <motion.div
+                initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 1.0, type: 'spring' }}
+                style={{ position: 'absolute', top: 360, left: 360, display: isMobile ? 'none' : 'block' }}
+            >
+                <div style={{ width: 140, height: 140, background: '#e1bee7', boxShadow: '2px 4px 12px rgba(0,0,0,0.1)', padding: 15, fontFamily: '"Kalam", cursive', fontSize: '1rem', rotate: '3deg' }}>
+                    Interview Dr. Smith on Friday 📅
+                </div>
+            </motion.div>
+
+            {/* Cursors */}
+            {/* User 1 */}
+            <motion.div
+                initial={{ x: 600, y: 150 }}
+                animate={{ x: [600, 300, 300, 600], y: [150, 350, 400, 150] }}
+                transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+                style={{ position: 'absolute', zIndex: 50, pointerEvents: 'none' }}
+            >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>
+                    <path d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19135L11.4841 12.3673H5.65376Z" fill="#9333ea" stroke="white" strokeWidth="1" />
+                </svg>
+                <div style={{ background: '#9333ea', padding: '2px 8px', borderRadius: 4, color: 'white', fontSize: '10px', marginLeft: 12, marginTop: 0, fontWeight: 600 }}>Alice (Researcher)</div>
+            </motion.div>
+
+            {/* Animated Connections */}
+            <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}>
                 <motion.path
-                    d={isMobile ? "M 150 160 L 150 220" : "M 390 180 C 450 180, 500 180, 550 220"}
-                    stroke="#999" strokeWidth="2" fill="none" strokeDasharray="6,4"
-                    initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.5, delay: 0.5 }}
-                    markerEnd="url(#arrowhead)"
+                    d={isMobile ? "" : "M 440 200 C 500 200, 520 200, 550 200"}
+                    stroke="#ccc" strokeWidth="3" strokeDasharray="5,5" fill="none"
+                    initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1, delay: 1 }}
                 />
             </svg>
 
-            {/* Node 2: Database (Whiteboard Style) */}
-            <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.8 }}
-                style={{
-                    position: 'absolute', top: isMobile ? 220 : 200, left: isMobile ? 40 : 550, width: 220,
-                    background: 'white', border: '1px solid #e0e0e0', borderRadius: 12, padding: 16,
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.05), 0 10px 15px -3px rgba(0,0,0,0.1)', zIndex: 10
-                }}
-            >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ea4335', fontWeight: 700, fontSize: '0.95rem', marginBottom: 12 }}>
-                    <FiCpu /> Primary DB
-                </div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.75rem', background: '#fce8e6', color: '#c5221f', padding: '4px 10px', borderRadius: 12, fontWeight: 500 }}>Firestore</span>
-                    <span style={{ fontSize: '0.75rem', background: '#f1f3f4', color: '#5f6368', padding: '4px 10px', borderRadius: 12 }}>Auth</span>
-                </div>
-            </motion.div>
-
-            {/* Sticky Note (Yellow) */}
-            <motion.div
-                initial={{ opacity: 0, rotate: -5, scale: 0.9 }}
-                animate={{ opacity: 1, rotate: -2, scale: 1 }}
-                transition={{ delay: 1.5, duration: 0.4 }}
-                style={{
-                    position: 'absolute', top: isMobile ? 300 : 80, left: isMobile ? 200 : 700,
-                    width: 160, height: 160, background: '#fef08a', borderRadius: 2,
-                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
-                    padding: 16,
-                    fontFamily: '"Kalam", cursive', fontSize: '1.2rem', color: '#1f2937',
-                    zIndex: 15,
-                    borderBottomRightRadius: '20px 5px'
-                }}
-            >
-                <div style={{ width: 30, height: 4, background: 'rgba(0,0,0,0.1)', marginBottom: 10 }}></div>
-                Update api caching layer for 2x speed! 🚀
-            </motion.div>
-
-            {/* Chat Bubble Simulation */}
-            <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                animate={{ opacity: [0, 1, 1, 0], y: [10, 0, 0, -10], scale: [0.9, 1, 1, 0.9] }}
-                transition={{ duration: 5, repeat: Infinity, repeatDelay: 4, delay: 2 }}
-                style={{
-                    position: 'absolute', top: isMobile ? 260 : 160, left: isMobile ? 180 : 420,
-                    background: '#202124', color: 'white', padding: '10px 18px', borderRadius: 24,
-                    fontSize: '0.9rem', zIndex: 100, boxShadow: '0 8px 16px rgba(0,0,0,0.15)',
-                    borderBottomLeftRadius: 4
-                }}
-            >
-                Looks solid! 👍
-            </motion.div>
         </div>
     )
 }
