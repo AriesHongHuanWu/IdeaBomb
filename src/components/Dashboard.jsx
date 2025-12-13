@@ -219,7 +219,6 @@ export default function Dashboard({ user }) {
                     <NavItem icon={<FiGrid />} label={t('all')} active={activeView === 'all'} onClick={() => { setActiveView('all'); setSelectedFolder(null) }} isMobile={isMobile} />
                     <NavItem icon={<FiLayout />} label={t('my')} active={activeView === 'created'} onClick={() => { setActiveView('created'); setSelectedFolder(null) }} isMobile={isMobile} />
                     <NavItem icon={<FiShare2 />} label={t('shared')} active={activeView === 'shared'} onClick={() => { setActiveView('shared'); setSelectedFolder(null) }} isMobile={isMobile} />
-                    <NavItem icon={<FiCalendar />} label="Calendar" active={false} onClick={() => navigate('/calendar')} isMobile={isMobile} />
 
                     <NavItem
                         icon={<FiCheckCircle style={{ color: '#db4c3f' }} />}
