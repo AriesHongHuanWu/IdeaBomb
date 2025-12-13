@@ -5,3 +5,6 @@ dist-ssr
 .env
 .env.*.local
 .DS_Store
+
+# Electron Builder Output
+release
