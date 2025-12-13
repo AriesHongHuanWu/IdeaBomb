@@ -1,8 +1,7 @@
 {
     "name": "whiteboard1",
     "private": true,
-    "version": "0.1.0",
-    "main": "electron/main.js",
+    "version": "0.0.0",
     "type": "module",
     "engines": {
         "node": ">=20"
@@ -11,30 +10,7 @@
         "dev": "vite",
         "build": "vite build",
         "lint": "eslint .",
-        "preview": "vite preview",
-        "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-        "package": "vite build && electron-builder"
-    },
-    "build": {
-        "appId": "com.ideabomb.app",
-        "productName": "IdeaBomb",
-        "directories": {
-            "output": "release"
-        },
-        "files": [
-            "dist/**/*",
-            "electron/**/*"
-        ],
-        "win": {
-            "target": "nsis",
-            "icon": "public/favicon.ico"
-        },
-        "nsis": {
-            "oneClick": false,
-            "allowToChangeInstallationDirectory": true,
-            "installerSidebar": "build/installerSidebar.bmp",
-            "installerHeader": "build/installerHeader.bmp"
-        }
+        "preview": "vite preview"
     },
     "dependencies": {
         "@emailjs/browser": "^4.4.1",
