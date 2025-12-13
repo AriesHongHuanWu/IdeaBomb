@@ -183,12 +183,22 @@ export const themeColors = {
         canvasBg: '#f8f9fa', toolbarBg: '#ffffff', toolActive: '#e8f0fe'
     },
     dark: {
-        bg: '#121212', sidebar: '#1e1e1e', text: '#aaaaaa', textPrim: '#e0e0e0',
-        border: '#333333', activeBg: '#2c3e50', activeText: '#4facfe',
-        cardBg: '#1e1e1e', cardHover: '#252525', header: '#1e1e1e',
-        inputBg: '#2d2d2d', modalBg: '#1e1e1e',
-        shadow: 'rgba(0,0,0,0.5)',
+        bg: '#0f172a',          // Slate 900 - Main Background
+        sidebar: '#1e293b',     // Slate 800 - Sidebar/Panels
+        text: '#94a3b8',        // Slate 400 - Secondary Text
+        textPrim: '#f8fafc',    // Slate 50 - Primary Text
+        border: '#334155',      // Slate 700 - Borders
+        activeBg: 'rgba(56, 189, 248, 0.15)', // Light Blue Tint for active states
+        activeText: '#38bdf8',  // Sky 400 - Vibrant Accent
+        cardBg: '#1e293b',      // Slate 800 - Cards
+        cardHover: '#334155',   // Slate 700 - Card Hover
+        header: '#0f172a',      // Slate 900 - Header
+        inputBg: '#020617',     // Slate 950 - Inputs (Darker for depth)
+        modalBg: '#1e293b',     // Slate 800 - Modals
+        shadow: 'rgba(0, 0, 0, 0.4)', // Richer shadow
         // Specifics for Board
-        canvasBg: '#121212', toolbarBg: '#1e1e1e', toolActive: '#333333'
+        canvasBg: '#0f172a',
+        toolbarBg: '#1e293b',
+        toolActive: '#334155'
     }
 }
