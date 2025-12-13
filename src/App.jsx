@@ -7,6 +7,7 @@ import BoardPage from './components/BoardPage'
 import AdminPage from './components/AdminPage'
 import LogoLoader from './components/LogoLoader'
 import PageTransition from './components/PageTransition'
+import CalendarPage from './components/CalendarPage'
 import { auth } from './firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 
@@ -79,6 +80,7 @@ function App() {
                         <Route path="/dashboard" element={<PageTransition>{user ? <Dashboard user={user} /> : <Navigate to="/login" />}</PageTransition>} />
                         <Route path="/board/:boardId" element={<PageTransition>{user ? <BoardPage user={user} /> : <Navigate to="/login" />}</PageTransition>} />
                         <Route path="/admin" element={<PageTransition>{user ? <AdminPage user={user} /> : <Navigate to="/login" />}</PageTransition>} />
+                        <Route path="/calendar" element={<PageTransition>{user ? <CalendarPage /> : <Navigate to="/login" />}</PageTransition>} />
 
                         <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
