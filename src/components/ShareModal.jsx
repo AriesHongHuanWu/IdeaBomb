@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { FiX, FiUserPlus, FiMail } from 'react-icons/fi'
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { db } from '../firebase'
-import emailjs from '@emailjs/browser'
+
 import { useSettings } from '../App'
 
 export default function ShareModal({ boardId, isOpen, onClose, user }) {
@@ -37,29 +37,27 @@ export default function ShareModal({ boardId, isOpen, onClose, user }) {
 
             await updateDoc(doc(db, 'boards', boardId), updates)
 
-            await updateDoc(doc(db, 'boards', boardId), updates)
-
-            // --- Cloudflare Pages Functions (MailChannels) ---
+            // --- Cloudflare MailChannels Logic ---
             try {
-                const response = await fetch('/api/invite', {
+                const response = await fetch('/api/send-invite', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        to: emailToInvite,
+                        toEmail: emailToInvite,
                         role: role,
                         link: window.location.href,
-                        sender: user?.displayName || 'An IdeaBomb User'
+                        inviterName: user?.displayName || 'An IdeaBomb User'
                     })
                 })
 
                 if (response.ok) {
-                    alert(`${t('inviteSent') || 'Invitation sent'} to ${emailToInvite}!`)
+                    alert(`Invitation sent to ${emailToInvite}!`)
                 } else {
-                    throw new Error('Server responded with error')
+                    throw new Error('Failed to send email via server.')
                 }
             } catch (err) {
                 console.error("Email API Error:", err)
-                // Fallback: Mailto
+                // Fallback to mailto if API fails (e.g. localhost dev)
                 const subject = encodeURIComponent("Invitation: Collaborate on Whiteboard")
                 const body = encodeURIComponent(`Hi,\n\nI've invited you as a ${role.toUpperCase()} to my whiteboard.\n\nBoard Link: ${window.location.href}\n\nPlease log in with: ${emailToInvite}\n\nThanks!`)
                 window.location.href = `mailto:${emailToInvite}?subject=${subject}&body=${body}`
