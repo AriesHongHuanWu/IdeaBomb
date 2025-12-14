@@ -25,11 +25,18 @@ export async function onRequestPost({ request }) {
             </div>
         `;
 
+
+        const apiKey = env.MAILCHANNELS_API_KEY;
+        if (!apiKey) {
+            return new Response(JSON.stringify({ error: "Server Configuration Error: Missing EMAIL_API_KEY" }), { status: 500 });
+        }
+
         // MailChannels API Request
         const response = await fetch("https://api.mailchannels.net/tx/v1/send", {
             method: "POST",
             headers: {
                 "content-type": "application/json",
+                "X-Api-Key": apiKey
             },
             body: JSON.stringify({
                 personalizations: [
@@ -38,7 +45,7 @@ export async function onRequestPost({ request }) {
                     },
                 ],
                 from: {
-                    email: "arieswu@awbest.tech", // MUST match your authorized domain
+                    email: "arieswu@awbest.tech",
                     name: "IdeaBomb Invitation",
                 },
                 subject: `Invitation: Collaborate on Whiteboard (${role})`,
