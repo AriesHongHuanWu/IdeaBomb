@@ -1900,23 +1900,29 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
     }
     const handleTouchEnd = () => setPinchDist(null)
 
-    // Native wheel listener to prevent browser zoom
+    // Native wheel listener to prevent browser zoom and implement Zoom-to-Cursor
     useEffect(() => {
         const container = containerRef.current
         if (!container) return
         const onWheel = (e) => {
             if (e.ctrlKey || e.metaKey) {
                 e.preventDefault()
-                const s = e.deltaY > 0 ? 0.9 : 1.1
-                // Calculate min scale to fit the entire canvas
-                const fitScale = Math.min(
-                    window.innerWidth / (canvasSize.w || 3000),
-                    window.innerHeight / (canvasSize.h || 2000)
-                )
-                // Allow zooming out to fit the canvas, or down to 0.1, whichever is smaller
-                const minScale = Math.min(fitScale, 0.1)
 
-                setScale(prev => Math.min(Math.max(prev * s, minScale), 5))
+                const rect = container.getBoundingClientRect()
+                const mouseX = e.clientX - rect.left
+                const mouseY = e.clientY - rect.top
+
+                const s = e.deltaY > 0 ? 0.9 : 1.1
+                const newScale = Math.min(Math.max(scale * s, 0.1), 5) // Clamp 0.1 to 5
+
+                const scaleRatio = newScale / scale
+
+                // Adjust offset to zoom towards mouse pointer
+                setOffset(prev => ({
+                    x: mouseX - (mouseX - prev.x) * scaleRatio,
+                    y: mouseY - (mouseY - prev.y) * scaleRatio
+                }))
+                setScale(newScale)
             } else {
                 e.preventDefault()
                 setOffset(p => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }))
@@ -1924,7 +1930,7 @@ export default function Whiteboard({ nodes, edges = [], pages, onAddNode, onUpda
         }
         container.addEventListener('wheel', onWheel, { passive: false })
         return () => container.removeEventListener('wheel', onWheel)
-    }, [canvasSize])
+    }, [scale]) // Dependency update required for 'scale' closure
 
     // Context Menu State
     const [contextMenu, setContextMenu] = useState(null) // {x, y, type, targetId}
