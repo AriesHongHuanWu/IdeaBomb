@@ -11,9 +11,12 @@ export async function onRequestPost({ request, env }) {
             return new Response("Missing required fields", { status: 400 });
         }
 
-        // Use Environment Variable 'RESEND_API_KEY' if available, otherwise fallback to the provided key (NOT RECOMMENDED for production)
-        // TODO: Move this key to Cloudflare Dashboard > Settings > Environment Variables
-        const API_KEY = env.RESEND_API_KEY || 're_LHcikcPU_DDPKJnK2mQDmiQpELSiNPgct';
+        // Use Environment Variable 'RESEND_API_KEY' set in Cloudflare Dashboard
+        const API_KEY = env.RESEND_API_KEY;
+
+        if (!API_KEY) {
+            return new Response("Missing API Key", { status: 500 });
+        }
 
         const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
