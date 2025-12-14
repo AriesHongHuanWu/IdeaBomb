@@ -1,9 +1,8 @@
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
-import { FiX, FiUserPlus, FiMail } from 'react-icons/fi'
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
+import React, { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { FiX, FiUserPlus, FiMail, FiCheck, FiMoreHorizontal, FiTrash2, FiUser } from 'react-icons/fi'
+import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
-
 import { useSettings } from '../App'
 
 export default function ShareModal({ boardId, isOpen, onClose, user }) {
@@ -11,8 +10,51 @@ export default function ShareModal({ boardId, isOpen, onClose, user }) {
     const [email, setEmail] = useState('')
     const [loading, setLoading] = useState(false)
     const [copied, setCopied] = useState(false)
+    const [collaborators, setCollaborators] = useState([])
+    const [ownerId, setOwnerId] = useState(null)
+    const [showCopiedTooltip, setShowCopiedTooltip] = useState(false)
 
-    const copyLink = () => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000) }
+    // Real-time subscription to board data
+    useEffect(() => {
+        if (!boardId || !isOpen) return
+
+        const unsub = onSnapshot(doc(db, 'boards', boardId), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data()
+                setOwnerId(data.ownerId)
+
+                // Build collaborator list
+                const peeps = []
+
+                // Add Owner if known (assuming owner details are stored or implied)
+                // Since we only have ownerId usually, we might not have email unless stored.
+                // Checking if 'editors' and 'viewers' contain emails.
+
+                // Map existing arrays to objects
+                const editors = data.editors || []
+                const viewers = data.viewers || []
+
+                editors.forEach(e => peeps.push({ email: e, role: 'editor' }))
+                viewers.forEach(e => peeps.push({ email: e, role: 'viewer' }))
+
+                // Deduplicate by email
+                const uniquePeeps = Array.from(new Map(peeps.map(p => [p.email, p])).values())
+                setCollaborators(uniquePeeps)
+            }
+        })
+
+        return () => unsub()
+    }, [boardId, isOpen])
+
+    const copyLink = () => {
+        navigator.clipboard.writeText(window.location.href)
+        setCopied(true)
+        setShowCopiedTooltip(true)
+        setTimeout(() => {
+            setCopied(false)
+            setShowCopiedTooltip(false)
+        }, 2000)
+    }
 
     const handleInvite = async (e) => {
         e.preventDefault()
@@ -23,10 +65,10 @@ export default function ShareModal({ boardId, isOpen, onClose, user }) {
 
         try {
             const updates = {
-                allowedEmails: arrayUnion(emailToInvite) // Always add to allow list
+                allowedEmails: arrayUnion(emailToInvite)
             }
 
-            // Manage Role Arrays: Add to one, remove from other to ensure single role
+            // Update Firestore Permissions
             if (role === 'editor') {
                 updates.editors = arrayUnion(emailToInvite)
                 updates.viewers = arrayRemove(emailToInvite)
@@ -37,78 +79,216 @@ export default function ShareModal({ boardId, isOpen, onClose, user }) {
 
             await updateDoc(doc(db, 'boards', boardId), updates)
 
-            // --- Cloudflare MailChannels Logic ---
-            try {
-                const response = await fetch('/api/send-invite', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        toEmail: emailToInvite,
-                        role: role,
-                        link: window.location.href,
-                        inviterName: user?.displayName || 'An IdeaBomb User'
-                    })
+            // API Call (No Alert)
+            fetch('/api/send-invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    toEmail: emailToInvite,
+                    role: role,
+                    link: window.location.href,
+                    inviterName: user?.displayName || 'An IdeaBomb User'
                 })
-
-                if (response.ok) {
-                    alert(`Invitation sent to ${emailToInvite}!`)
-                } else {
-                    throw new Error('Failed to send email via server.')
-                }
-            } catch (err) {
-                console.error("Email API Error:", err)
-                // Fallback to mailto if API fails (e.g. localhost dev)
-                const subject = encodeURIComponent("Invitation: Collaborate on Whiteboard")
-                const body = encodeURIComponent(`Hi,\n\nI've invited you as a ${role.toUpperCase()} to my whiteboard.\n\nBoard Link: ${window.location.href}\n\nPlease log in with: ${emailToInvite}\n\nThanks!`)
-                window.location.href = `mailto:${emailToInvite}?subject=${subject}&body=${body}`
-            }
+            }).catch(console.error)
 
             setEmail('')
         } catch (error) {
             console.error("Invite failed", error)
-            alert("Failed to invite: " + error.message)
+            alert("Failed: " + error.message)
         } finally {
             setLoading(false)
         }
     }
 
+    const changeRole = async (targetEmail, newRole) => {
+        try {
+            const updates = {}
+            if (newRole === 'remove') {
+                updates.editors = arrayRemove(targetEmail)
+                updates.viewers = arrayRemove(targetEmail)
+                updates.allowedEmails = arrayRemove(targetEmail)
+            } else if (newRole === 'editor') {
+                updates.editors = arrayUnion(targetEmail)
+                updates.viewers = arrayRemove(targetEmail)
+            } else {
+                updates.viewers = arrayUnion(targetEmail)
+                updates.editors = arrayRemove(targetEmail)
+            }
+            await updateDoc(doc(db, 'boards', boardId), updates)
+        } catch (err) {
+            console.error("Failed to update role", err)
+        }
+    }
+
     if (!isOpen) return null
 
+    // Determine current user's permission to manage others
+    // Only owner should manage permissions (usually). 
+    // If ownerId is missing, assume open for all (development) or strictly check user.uid
+    const canManage = user?.uid === ownerId || !ownerId // specific logic depends on requirement
+
     return (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)' }}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ background: theme?.modalBg || 'white', padding: 40, borderRadius: 24, width: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.2)', position: 'relative', color: theme?.text }}>
-                <button onClick={onClose} style={{ position: 'absolute', top: 20, right: 20, border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.2rem', color: theme?.text }}><FiX /></button>
-                <h2 style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 0 }}><FiUserPlus /> {t('invite')}</h2>
-                <p style={{ color: theme?.text || '#666', lineHeight: '1.5', fontSize: '0.9rem', opacity: 0.8 }}>{t('inviteDesc')}</p>
-                <div style={{ background: theme?.bg || '#f5f5f5', padding: 10, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                    <span style={{ fontSize: '0.8rem', color: theme?.text || '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>{window.location.href}</span>
-                    <button onClick={copyLink} style={{ background: copied ? '#4caf50' : (theme?.cardBg || 'white'), color: copied ? 'white' : (theme?.text || '#333'), padding: '5px 10px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', border: `1px solid ${theme?.border}` }}>{copied ? t('copied') : t('copyLink')}</button>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(5px)' }}>
+            <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                style={{
+                    background: theme?.modalBg || 'white',
+                    borderRadius: 16,
+                    width: 500,
+                    maxWidth: '95vw',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                    position: 'relative',
+                    color: theme?.text,
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column'
+                }}>
+
+                {/* Header */}
+                <div style={{ padding: '20px 24px', borderBottom: `1px solid ${theme?.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h2 style={{ margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ background: '#e0f2fe', padding: 8, borderRadius: '50%', color: '#0284c7', display: 'flex' }}><FiUserPlus /></div>
+                        {t('share')} "{t('untitled')}"
+                    </h2>
+                    <button onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: theme?.text, padding: 8, borderRadius: 8 }} hover={{ background: theme?.activeBg }}><FiX size={20} /></button>
                 </div>
-                <div style={{ borderBottom: `1px solid ${theme?.border || '#eee'}`, marginBottom: 20 }}></div>
-                <form onSubmit={handleInvite} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
-                    <div style={{ display: 'flex', gap: 10 }}>
-                        <div style={{ position: 'relative', flex: 1 }}>
-                            <FiMail style={{ position: 'absolute', left: 15, top: 14, color: '#888' }} />
-                            <input
-                                type="email"
-                                placeholder="friend@example.com"
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                                style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: 12, border: `1px solid ${theme?.border || '#ddd'}`, fontSize: '1rem', outline: 'none', boxSizing: 'border-box', background: theme?.bg || 'white', color: theme?.text }}
-                                required
-                            />
+
+                {/* Body */}
+                <div style={{ padding: '24px' }}>
+                    {/* Invite Input */}
+                    <form onSubmit={handleInvite} style={{ marginBottom: 24 }}>
+                        <div style={{ display: 'flex', gap: 12 }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                                <input
+                                    type="email"
+                                    placeholder="Add people, groups, or emails"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px 16px',
+                                        borderRadius: 8,
+                                        border: `1px solid ${theme?.border || '#ccc'}`,
+                                        background: theme?.inputBg || 'white',
+                                        color: theme?.text,
+                                        fontSize: '1rem',
+                                        outline: 'none',
+                                        boxSizing: 'border-box'
+                                    }}
+                                />
+                            </div>
+                            <div style={{ position: 'relative' }}>
+                                <select id="role-select" style={{
+                                    height: '100%',
+                                    padding: '0 36px 0 16px',
+                                    borderRadius: 8,
+                                    border: `1px solid ${theme?.border || '#ccc'}`,
+                                    background: theme?.bg || 'white',
+                                    appearance: 'none',
+                                    cursor: 'pointer',
+                                    color: theme?.text,
+                                    fontWeight: 500
+                                }}>
+                                    <option value="editor">Editor</option>
+                                    <option value="viewer">Viewer</option>
+                                </select>
+                                <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', fontSize: 10 }}>▼</div>
+                            </div>
+                            <button disabled={!email || loading} type="submit" style={{
+                                background: '#3b82f6',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: 8,
+                                padding: '0 20px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                opacity: (!email || loading) ? 0.5 : 1
+                            }}>
+                                {loading ? 'Sending...' : 'Send'}
+                            </button>
                         </div>
-                        <select
-                            id="role-select"
-                            style={{ padding: '0 15px', borderRadius: 12, border: `1px solid ${theme?.border || '#ddd'}`, background: theme?.bg || 'white', fontSize: '0.9rem', cursor: 'pointer', color: theme?.text }}
-                        >
-                            <option value="editor">Editor</option>
-                            <option value="viewer">Viewer</option>
-                        </select>
+                    </form>
+
+                    {/* Collaborators List */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#64748b', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>People with access</h3>
+
+                        {/* Owner Section (Hardcoded/Deduced) */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                    {user?.displayName ? user.displayName[0].toUpperCase() : <FiUser />}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontWeight: 500, fontSize: '0.95rem' }}>{user?.displayName || 'You'} (Owner)</span>
+                                    <span style={{ fontSize: '0.85rem', color: theme?.text, opacity: 0.6 }}>{user?.email}</span>
+                                </div>
+                            </div>
+                            <span style={{ fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>Owner</span>
+                        </div>
+
+                        {/* Collaborators */}
+                        {collaborators.filter(c => c.email !== user?.email).map((collab) => (
+                            <div key={collab.email} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#cbd5e1', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                        {collab.email[0].toUpperCase()}
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontWeight: 500, fontSize: '0.95rem' }}>{collab.email.split('@')[0]}</span>
+                                        <span style={{ fontSize: '0.85rem', color: theme?.text, opacity: 0.6 }}>{collab.email}</span>
+                                    </div>
+                                </div>
+
+                                <div style={{ position: 'relative' }}>
+                                    <select
+                                        value={collab.role}
+                                        onChange={(e) => changeRole(collab.email, e.target.value)}
+                                        style={{
+                                            padding: '6px 24px 6px 10px',
+                                            borderRadius: 6,
+                                            border: 'none',
+                                            background: 'transparent',
+                                            cursor: 'pointer',
+                                            fontSize: '0.9rem',
+                                            color: theme?.text,
+                                            fontWeight: 500,
+                                            textAlign: 'right',
+                                            appearance: 'none'
+                                        }}
+                                        disabled={!canManage}
+                                    >
+                                        <option value="editor">Editor</option>
+                                        <option value="viewer">Viewer</option>
+                                        <option value="remove">Remove Access</option>
+                                    </select>
+                                    {/* Custom caret replacement just for visual flair if needed, but native select is robust */}
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                    <button type="submit" disabled={loading} style={{ padding: '12px', borderRadius: 12, border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 600, cursor: 'pointer', opacity: loading ? 0.7 : 1 }}>{loading ? 'Granting Access...' : 'Share'}</button>
-                    <p style={{ fontSize: '0.8rem', color: '#888', textAlign: 'center', margin: 0 }}>We use your default email app to send the invite link.</p>
-                </form>
+                </div>
+
+                {/* Footer with Link Copy */}
+                <div style={{ padding: '20px 24px', background: theme?.activeBg || '#f8fafc', borderTop: `1px solid ${theme?.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#3b82f6', fontWeight: 600, cursor: 'pointer' }} onClick={copyLink}>
+                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'white', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontSize: 16 }}>🔗</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.9rem' }}>{t('copyLink')}</span>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 400, color: '#64748b' }}>Anyone with link can view</span>
+                        </div>
+                    </div>
+
+                    {showCopiedTooltip && (
+                        <motion.span initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} style={{ color: '#10b981', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <FiCheck /> {t('copied')}
+                        </motion.span>
+                    )}
+                </div>
             </motion.div>
         </div>
     )

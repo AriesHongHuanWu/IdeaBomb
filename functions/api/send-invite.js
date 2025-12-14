@@ -29,21 +29,45 @@ export async function onRequestPost({ request, env }) {
                 to: [toEmail],
                 subject: `Invited to collaborate: ${inviterName} shared a whiteboard`,
                 html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-              <h2 style="color: #333;">You've been invited! 🚀</h2>
-              <p style="color: #555; font-size: 16px;">
-                <strong>${inviterName}</strong> has invited you to collaborate on a whiteboard as a <strong>${role}</strong>.
-              </p>
-              <div style="margin: 30px 0; text-align: center;">
-                <a href="${link}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px;">
-                  Open Whiteboard
-                </a>
-              </div>
-              <p style="color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
-                Powered by IdeaBomb • ${new Date().getFullYear()}
-              </p>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f6f9fc; padding: 40px 0; margin: 0; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); }
+        .header { background: #3b82f6; padding: 30px; text-align: center; color: white; }
+        .content { padding: 40px 30px; color: #334155; line-height: 1.6; }
+        .button { display: inline-block; background-color: #3b82f6; color: white !important; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 20px; }
+        .footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://ideabomb.pages.dev/logo.svg" alt="IdeaBomb" style="width: 50px; height: 50px; margin-bottom: 10px;">
+            <h1 style="margin:0; font-size: 24px;">IdeaBomb</h1>
+        </div>
+        <div class="content">
+            <h2 style="margin-top:0; color: #1e293b;">You've been invited!</h2>
+            <p>Hi ${toEmail.split('@')[0]},</p>
+            <p><strong>${inviterName}</strong> has invited you to collaborate on a whiteboard as a
+                <strong>${role}</strong>.</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${link}" class="button">Open Whiteboard</a>
             </div>
-        `
+            <p>If the button doesn't work, copy and paste this link:</p>
+            <p
+                style="background:#f1f5f9; padding: 10px; border-radius: 4px; word-break: break-all; font-size: 14px; font-family: monospace;">
+                ${link}</p>
+        </div>
+        <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} IdeaBomb. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+`
             })
         });
 
