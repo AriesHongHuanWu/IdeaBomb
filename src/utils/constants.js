@@ -25,6 +25,11 @@ export const translations = {
         // BoardPage
         share: 'Share', canvasSize: 'Canvas Size', help: 'Help',
         width: 'Width', height: 'Height', apply: 'Apply',
+        invite: 'Invite', inviteDesc: 'Invite collaborators by email (must use Google Login).',
+        copyLink: 'Copy Link', copied: 'Copied!',
+        import: 'Import', export: 'Export',
+        hideMe: 'Hide Me', showMe: 'Show Me',
+        accessDenied: 'Access Denied',
         toolbar: {
             select: 'Select', rectangle: 'Rectangle', circle: 'Circle',
             arrow: 'Arrow', text: 'Text', image: 'Image',
@@ -171,7 +176,7 @@ export const translations = {
     product: '產品', overview: '總覽', userGuide: '使用者指南', contact: '聯絡我們', settings: '設定',
     terms: '服務條款', privacy: '隱私權政策', rights: '版權所有。', createdBy: '由 AWBest Studio 製作'
 }
-}
+
 
 export const themeColors = {
     light: {
