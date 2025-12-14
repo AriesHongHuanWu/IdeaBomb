@@ -37,25 +37,29 @@ export default function ShareModal({ boardId, isOpen, onClose, user }) {
 
             await updateDoc(doc(db, 'boards', boardId), updates)
 
-            // --- EmailJS Logic ---
-            const SERVICE_ID = 'awbestmail'
-            const TEMPLATE_ID = 'ideabombinvite'
-            const PUBLIC_KEY = '-jg3wr8AP773h-fFD'
+            await updateDoc(doc(db, 'boards', boardId), updates)
 
+            // --- Cloudflare Pages Functions (MailChannels) ---
             try {
-                await emailjs.send(SERVICE_ID, TEMPLATE_ID, {
-                    to_email: emailToInvite,
-                    to_name: emailToInvite.split('@')[0],
-                    role: role,
-                    link: window.location.href,
-                    invite_sender: user?.displayName || 'An IdeaBomb User'
-                }, PUBLIC_KEY)
+                const response = await fetch('/api/invite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: emailToInvite,
+                        role: role,
+                        link: window.location.href,
+                        sender: user?.displayName || 'An IdeaBomb User'
+                    })
+                })
 
-                alert(`Official invitation sent to ${emailToInvite}!`)
+                if (response.ok) {
+                    alert(`${t('inviteSent') || 'Invitation sent'} to ${emailToInvite}!`)
+                } else {
+                    throw new Error('Server responded with error')
+                }
             } catch (err) {
-                // Fallback if EmailJS fails (e.g. quota exceeded)
-                console.error("EmailJS Error:", err)
-                alert("Automated email failed (quota exceeded?), opening default mail app...")
+                console.error("Email API Error:", err)
+                // Fallback: Mailto
                 const subject = encodeURIComponent("Invitation: Collaborate on Whiteboard")
                 const body = encodeURIComponent(`Hi,\n\nI've invited you as a ${role.toUpperCase()} to my whiteboard.\n\nBoard Link: ${window.location.href}\n\nPlease log in with: ${emailToInvite}\n\nThanks!`)
                 window.location.href = `mailto:${emailToInvite}?subject=${subject}&body=${body}`
