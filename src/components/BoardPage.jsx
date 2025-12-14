@@ -182,9 +182,11 @@ export default function BoardPage({ user }) {
         }, 30000)
 
         const unsub = onSnapshot(collection(db, 'boards', boardId, 'presence'), (snap) => {
-            // Filter out stale users (inactive loop > 2 min)? Or just store all and let UI decide.
-            // Let's just store all for now, maybe filter in UI.
-            setCollaborators(snap.docs.map(d => d.data()))
+            const now = Date.now()
+            const active = snap.docs
+                .map(d => d.data())
+                .filter(p => p.lastActive && (now - new Date(p.lastActive).getTime()) < 60000) // 1 min timeout
+            setCollaborators(active)
         })
 
         return () => { clearInterval(interval); unsub() }
