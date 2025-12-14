@@ -146,6 +146,9 @@ export default function BoardPage({ user }) {
     const userColor = useRef('#' + Math.floor(Math.random() * 16777215).toString(16))
 
     const handleCursorMove = (dataOrX, maybeY) => {
+        // Optimization: Don't broadcast cursor if no one else is watching (Save $$$)
+        if (collaborators.length <= 1 && !isIncognito) return
+
         if (isIncognito || !user || Date.now() - throttleRef.current < 100) return
         throttleRef.current = Date.now()
 
