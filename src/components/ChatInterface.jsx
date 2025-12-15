@@ -281,7 +281,8 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                             position: 'fixed', bottom: 100, right: 30, width: 380, height: 600,
                             background: theme?.cardBg || 'white', borderRadius: 24,
                             boxShadow: '0 20px 50px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column',
-                            zIndex: 2000, overflow: 'hidden', border: `1px solid ${theme?.border || 'rgba(0,0,0,0.1)'}`, color: theme?.text
+                            zIndex: 2000, overflow: 'hidden', border: `1px solid ${theme?.border || 'rgba(0,0,0,0.1)'}`, color: theme?.text,
+                            pointerEvents: 'auto'
                         }}
                     >
                         {/* Header */}
