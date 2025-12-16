@@ -135,6 +135,46 @@ export default function Dashboard({ user }) {
         }
     }
 
+    const [selectedIds, setSelectedIds] = useState([])
+
+    const handleBatchAction = async (action, val) => {
+        if (selectedIds.length === 0) return
+
+        if (action === 'delete') {
+            setModalConfig({
+                type: 'confirm',
+                title: `${t('deleteTitle')} (${selectedIds.length})`,
+                message: t('deleteMsg'),
+                onConfirm: async () => {
+                    try {
+                        const batch = writeBatch(db)
+                        selectedIds.forEach(bid => {
+                            batch.delete(doc(db, 'boards', bid))
+                        })
+                        await batch.commit()
+                        setSelectedIds([])
+                    } catch (err) {
+                        console.error("Batch delete failed", err)
+                        alert("Batch delete failed: " + err.message)
+                    }
+                    setModalConfig(null)
+                }
+            })
+        } else if (action === 'move') {
+            try {
+                const batch = writeBatch(db)
+                selectedIds.forEach(bid => {
+                    batch.update(doc(db, 'boards', bid), { folder: val === '' ? null : val })
+                })
+                await batch.commit()
+                setSelectedIds([])
+            } catch (e) {
+                console.error("Batch move failed", e)
+                alert("Batch move failed: " + e.message)
+            }
+        }
+    }
+
     const handleAction = async (action, board, val) => {
         try {
             const boardRef = doc(db, 'boards', board.id)
@@ -150,7 +190,7 @@ export default function Dashboard({ user }) {
                     message: t('deleteMsg'),
                     board: board, // crucial for handleAction id access
                     onConfirm: async () => {
-                        // (Deep Delete Implementation Omitted for Brevity - Same as before)
+                        // (Deep Delete Implementation)
                         try {
                             const batch = writeBatch(db)
                             const nodesSnap = await getDocs(collection(db, 'boards', board.id, 'nodes'))
@@ -301,74 +341,149 @@ export default function Dashboard({ user }) {
                                 gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                                 gap: 20
                             }}>
-                                {filteredBoards.map(board => (
-                                    <motion.div
-                                        key={board.id}
-                                        layoutId={board.id}
-                                        whileHover={{ y: -5, boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}
-                                        onClick={() => navigate(`/board/${board.id}`)}
-                                        style={{
-                                            background: theme.cardBg, borderRadius: 8, border: `1px solid ${theme.border}`,
-                                            overflow: 'hidden', cursor: 'pointer', transition: 'box-shadow 0.2s',
-                                            position: 'relative'
-                                        }}
-                                    >
-                                        {/* Preview Area */}
-                                        <div style={{ height: 140, background: theme.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: `1px solid ${theme.border}`, position: 'relative' }}>
-                                            {board.thumbnail ? (
-                                                <img src={board.thumbnail} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                            ) : (
-                                                <div style={{ opacity: 0.1, display: 'flex', flexDirection: 'column', alignItems: 'center', color: theme.text }}>
-                                                    <FiLayout style={{ fontSize: '3rem' }} />
-                                                </div>
-                                            )}
-                                            {/* Folder Badge */}
-                                            {board.folder && (
-                                                <div style={{
-                                                    position: 'absolute', top: 10, left: 10,
-                                                    background: 'rgba(0,0,0,0.05)', padding: '2px 8px', borderRadius: 12,
-                                                    fontSize: '0.75rem', color: theme.text, display: 'flex', alignItems: 'center', gap: 4
-                                                }}>
-                                                    <FiFolder size={12} /> {board.folder}
-                                                </div>
-                                            )}
-                                        </div>
+                                {filteredBoards.map(board => {
+                                    const isSelected = selectedIds.includes(board.id)
+                                    return (
+                                        <motion.div
+                                            key={board.id}
+                                            layoutId={board.id}
+                                            whileHover={{ y: -5, boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}
+                                            onClick={(e) => {
+                                                if (selectedIds.length > 0 || e.ctrlKey || e.metaKey) {
+                                                    // Selection Mode Logic
+                                                    if (isSelected) setSelectedIds(s => s.filter(id => id !== board.id))
+                                                    else setSelectedIds(s => [...s, board.id])
+                                                } else {
+                                                    navigate(`/board/${board.id}`)
+                                                }
+                                            }}
+                                            style={{
+                                                background: theme.cardBg, borderRadius: 8, border: isSelected ? '2px solid #1a73e8' : `1px solid ${theme.border}`,
+                                                overflow: 'hidden', cursor: 'pointer', transition: 'box-shadow 0.2s',
+                                                position: 'relative',
+                                                transform: isSelected ? 'scale(0.98)' : 'scale(1)'
+                                            }}
+                                        >
+                                            {/* Selection Checkbox */}
+                                            <div
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (isSelected) setSelectedIds(s => s.filter(id => id !== board.id))
+                                                    else setSelectedIds(s => [...s, board.id])
+                                                }}
+                                                className="selection-checkbox"
+                                                style={{
+                                                    position: 'absolute', top: 10, right: 10, zIndex: 10,
+                                                    width: 20, height: 20, borderRadius: 4,
+                                                    border: isSelected ? 'none' : '2px solid rgba(0,0,0,0.2)',
+                                                    background: isSelected ? '#1a73e8' : 'white',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    opacity: (isSelected || selectedIds.length > 0) ? 1 : 0, // Show if selected or in mode
+                                                    transition: 'opacity 0.2s'
+                                                }}
+                                                onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                                            >
+                                                {isSelected && <FiCheckSquare color="white" size={14} />}
+                                            </div>
+                                            <style>{`.selection-checkbox:hover { opacity: 1 !important; }`}</style>
 
-                                        {/* Info Area */}
-                                        <div style={{ padding: 15 }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', color: theme.textPrim, fontWeight: 500 }}>
-                                                    {board.title || t('untitled')}
-                                                </h3>
-                                                <div
-                                                    onClick={(e) => openContextMenu(e, board)}
-                                                    style={{ cursor: 'pointer', padding: 6, borderRadius: '50%', color: theme.text, marginRight: -5 }}
-                                                    onMouseEnter={e => e.target.style.background = 'rgba(0,0,0,0.05)'}
-                                                    onMouseLeave={e => e.target.style.background = 'transparent'}
-                                                >
-                                                    <FiMoreVertical />
-                                                </div>
+                                            {/* Preview Area */}
+                                            <div style={{ height: 140, background: theme.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: `1px solid ${theme.border}`, position: 'relative' }}>
+                                                {board.thumbnail ? (
+                                                    <img src={board.thumbnail} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <div style={{ opacity: 0.1, display: 'flex', flexDirection: 'column', alignItems: 'center', color: theme.text }}>
+                                                        <FiLayout style={{ fontSize: '3rem' }} />
+                                                    </div>
+                                                )}
+                                                {/* Folder Badge */}
+                                                {board.folder && (
+                                                    <div style={{
+                                                        position: 'absolute', top: 10, left: 10,
+                                                        background: 'rgba(0,0,0,0.05)', padding: '2px 8px', borderRadius: 12,
+                                                        fontSize: '0.75rem', color: theme.text, display: 'flex', alignItems: 'center', gap: 4
+                                                    }}>
+                                                        <FiFolder size={12} /> {board.folder}
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 15, marginTop: 10, fontSize: '0.8rem', color: theme.text }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} title="Collaborators">
-                                                    <FiUsers /> {board.allowedEmails?.length || 1}
+                                            {/* Info Area */}
+                                            <div style={{ padding: 15 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                    <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', color: theme.textPrim, fontWeight: 500 }}>
+                                                        {board.title || t('untitled')}
+                                                    </h3>
+                                                    <div
+                                                        onClick={(e) => openContextMenu(e, board)}
+                                                        style={{ cursor: 'pointer', padding: 6, borderRadius: '50%', color: theme.text, marginRight: -5 }}
+                                                        onMouseEnter={e => e.target.style.background = 'rgba(0,0,0,0.05)'}
+                                                        onMouseLeave={e => e.target.style.background = 'transparent'}
+                                                    >
+                                                        <FiMoreVertical />
+                                                    </div>
                                                 </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} title={t('lastActive')}>
-                                                    <FiClock /> {formatDate(board.createdAt)}
-                                                </div>
-                                            </div>
 
-                                            {(board.createdBy !== user.uid && board.ownerEmail !== user.email) && (
-                                                <div style={{ marginTop: 8, fontSize: '0.75rem', color: theme.activeText, background: theme.activeBg, display: 'inline-block', padding: '2px 6px', borderRadius: 4 }}>
-                                                    {t('sharedBy')} {board.ownerEmail}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 15, marginTop: 10, fontSize: '0.8rem', color: theme.text }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} title="Collaborators">
+                                                        <FiUsers /> {board.allowedEmails?.length || 1}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} title={t('lastActive')}>
+                                                        <FiClock /> {formatDate(board.createdAt)}
+                                                    </div>
                                                 </div>
-                                            )}
-                                        </div>
-                                    </motion.div>
-                                ))}
+
+                                                {(board.createdBy !== user.uid && board.ownerEmail !== user.email) && (
+                                                    <div style={{ marginTop: 8, fontSize: '0.75rem', color: theme.activeText, background: theme.activeBg, display: 'inline-block', padding: '2px 6px', borderRadius: 4 }}>
+                                                        {t('sharedBy')} {board.ownerEmail}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    )
+                                })}
                             </div>
                         )}
+
+                        {/* Batch Action Bar */}
+                        <AnimatePresence>
+                            {selectedIds.length > 0 && (
+                                <motion.div
+                                    initial={{ y: 100, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    exit={{ y: 100, opacity: 0 }}
+                                    style={{
+                                        position: 'fixed', bottom: 30, left: '50%', transform: 'translateX(-50%)',
+                                        background: theme.cardBg, padding: '10px 20px', borderRadius: 50,
+                                        boxShadow: '0 10px 40px rgba(0,0,0,0.2)', border: `1px solid ${theme.border}`,
+                                        display: 'flex', alignItems: 'center', gap: 20, zIndex: 1000
+                                    }}
+                                >
+                                    <div style={{ fontWeight: 'bold', color: theme.text, marginRight: 10 }}>
+                                        {selectedIds.length} Selected
+                                    </div>
+                                    <button onClick={() => setSelectedIds([])} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: theme.text }}>
+                                        Cancel
+                                    </button>
+                                    <div style={{ width: 1, height: 20, background: theme.border }}></div>
+                                    <button
+                                        onClick={() => {
+                                            const folder = prompt("Move to Folder name (leave empty to remove from folder):")
+                                            if (folder !== null) handleBatchAction('move', folder)
+                                        }}
+                                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: '#1a73e8' }}
+                                    >
+                                        <FiMove /> Move
+                                    </button>
+                                    <button
+                                        onClick={() => handleBatchAction('delete')}
+                                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: '#d93025' }}
+                                    >
+                                        <FiTrash2 /> Delete
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
 
                 </div>
@@ -395,7 +510,7 @@ export default function Dashboard({ user }) {
                                 <p style={{ color: '#666', marginBottom: 25, lineHeight: 1.5 }}>{modalConfig.message}</p>
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                                     <button onClick={() => setModalConfig(null)} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'transparent', color: '#666', cursor: 'pointer' }}>{t('cancel')}</button>
-                                    <button onClick={() => handleAction(modalConfig.type, modalConfig.board, null)} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#d93025', color: 'white', cursor: 'pointer', fontWeight: 600 }}>{t('confirm')}</button>
+                                    <button onClick={modalConfig.onConfirm} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#d93025', color: 'white', cursor: 'pointer', fontWeight: 600 }}>{t('confirm')}</button>
                                 </div>
                             </>
                         ) : modalConfig.type === 'settings' ? (
