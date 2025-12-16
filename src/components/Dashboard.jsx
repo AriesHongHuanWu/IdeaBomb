@@ -99,17 +99,23 @@ export default function Dashboard({ user }) {
     const folders = [...new Set(boards.map(b => b.folder).filter(f => f))]
 
     const getFilteredBoards = () => {
+        let result = boards
         switch (activeView) {
             case 'shared':
-                return boards.filter(b => b.ownerId !== user.uid)
+                result = boards.filter(b => b.ownerId !== user.uid)
+                break
             case 'created':
-                return boards.filter(b => b.ownerId === user.uid)
+                result = boards.filter(b => b.ownerId === user.uid)
+                break
             case 'folder':
-                return boards.filter(b => b.folder === selectedFolder)
+                result = boards.filter(b => b.folder === selectedFolder)
+                break
             case 'all':
             default:
-                return boards
+                result = boards
+                break
         }
+        return result.filter(b => !deletingIds.includes(b.id))
     }
 
     const filteredBoards = getFilteredBoards()
@@ -136,6 +142,7 @@ export default function Dashboard({ user }) {
     }
 
     const [selectedIds, setSelectedIds] = useState([])
+    const [deletingIds, setDeletingIds] = useState([]) // Optimistic UI
 
     const handleBatchAction = async (action, val) => {
         if (selectedIds.length === 0) return
@@ -146,18 +153,24 @@ export default function Dashboard({ user }) {
                 title: `${t('deleteTitle')} (${selectedIds.length})`,
                 message: t('deleteMsg'),
                 onConfirm: async () => {
+                    // Optimistic Update
+                    const idsToDelete = [...selectedIds]
+                    setDeletingIds(prev => [...prev, ...idsToDelete])
+                    setSelectedIds([])
+                    setModalConfig(null)
+
                     try {
                         const batch = writeBatch(db)
-                        selectedIds.forEach(bid => {
+                        idsToDelete.forEach(bid => {
                             batch.delete(doc(db, 'boards', bid))
                         })
                         await batch.commit()
-                        setSelectedIds([])
                     } catch (err) {
                         console.error("Batch delete failed", err)
                         alert("Batch delete failed: " + err.message)
+                        // Revert optimistic update on error
+                        setDeletingIds(prev => prev.filter(id => !idsToDelete.includes(id)))
                     }
-                    setModalConfig(null)
                 }
             })
         } else if (action === 'move') {
@@ -190,6 +203,10 @@ export default function Dashboard({ user }) {
                     message: t('deleteMsg'),
                     board: board, // crucial for handleAction id access
                     onConfirm: async () => {
+                        // Optimistic Update
+                        setDeletingIds(prev => [...prev, board.id])
+                        setModalConfig(null)
+
                         // (Deep Delete Implementation)
                         try {
                             const batch = writeBatch(db)
@@ -204,8 +221,8 @@ export default function Dashboard({ user }) {
                         } catch (err) {
                             console.error("Deep delete failed", err)
                             alert("Failed to clean up board files: " + err.message)
+                            setDeletingIds(prev => prev.filter(id => id !== board.id))
                         }
-                        setModalConfig(null)
                     }
                 })
                 return
