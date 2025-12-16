@@ -43,6 +43,8 @@ export default function Dashboard({ user }) {
     const [activeView, setActiveView] = useState('all')
     const [selectedFolder, setSelectedFolder] = useState(null)
     const [showTodo, setShowTodo] = useState(false)
+    const [selectedIds, setSelectedIds] = useState([])
+    const [deletingIds, setDeletingIds] = useState([]) // Optimistic UI
     const isMobile = useMediaQuery('(max-width: 768px)')
 
     // Global Settings
@@ -141,8 +143,7 @@ export default function Dashboard({ user }) {
         }
     }
 
-    const [selectedIds, setSelectedIds] = useState([])
-    const [deletingIds, setDeletingIds] = useState([]) // Optimistic UI
+
 
     const handleBatchAction = async (action, val) => {
         if (selectedIds.length === 0) return
