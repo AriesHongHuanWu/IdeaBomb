@@ -251,51 +251,59 @@ export default function TodoView({ user, isOpen, onClose }) {
                         width: '100%', maxWidth: 700,
                         background: theme.modalBg, borderLeft: `1px solid ${theme.border}`,
                         boxShadow: '0 0 30px rgba(0,0,0,0.1)',
-                        zIndex: 900, display: 'flex', color: theme.text
+                        zIndex: 900, display: 'flex', flexDirection: isMobile ? 'column' : 'row', color: theme.text
                     }}
                 >
                     {/* --- Sidebar (Navigation) --- */}
                     <div style={{
-                        width: 200, background: theme.sidebar, borderRight: `1px solid ${theme.border}`,
-                        padding: '20px 0', display: isMobile ? 'none' : 'flex', flexDirection: 'column'
+                        width: isMobile ? '100%' : 200, background: theme.sidebar,
+                        borderRight: isMobile ? 'none' : `1px solid ${theme.border}`,
+                        borderBottom: isMobile ? `1px solid ${theme.border}` : 'none',
+                        padding: isMobile ? '10px' : '20px 0',
+                        display: 'flex', flexDirection: isMobile ? 'row' : 'column',
+                        overflowX: isMobile ? 'auto' : 'visible', gap: isMobile ? 10 : 0
                     }}>
-                        <div style={{ padding: '0 20px 20px', fontWeight: 'bold', fontSize: '1.1rem', color: '#db4c3f', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <FiCheckCircle /> IdeaBomb
-                        </div>
+                        {!isMobile && (
+                            <div style={{ padding: '0 20px 20px', fontWeight: 'bold', fontSize: '1.1rem', color: '#db4c3f', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <FiCheckCircle /> IdeaBomb
+                            </div>
+                        )}
 
                         <div
                             onClick={() => setActiveView('inbox')}
-                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'inbox' ? theme.activeBg : 'transparent', fontWeight: activeView === 'inbox' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'inbox' ? theme.activeText : theme.text }}
+                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'inbox' ? theme.activeBg : 'transparent', fontWeight: activeView === 'inbox' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'inbox' ? theme.activeText : theme.text, whiteSpace: 'nowrap', borderRadius: isMobile ? 20 : 0 }}
                         >
                             <FiInbox color="#246fe0" /> {t('inbox')}
-                            <span style={{ marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.7 }}>{todos.length}</span>
+                            {!isMobile && <span style={{ marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.7 }}>{todos.length}</span>}
                         </div>
                         <div
                             onClick={() => setActiveView('today')}
-                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'today' ? theme.activeBg : 'transparent', fontWeight: activeView === 'today' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'today' ? theme.activeText : theme.text }}
+                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'today' ? theme.activeBg : 'transparent', fontWeight: activeView === 'today' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'today' ? theme.activeText : theme.text, whiteSpace: 'nowrap', borderRadius: isMobile ? 20 : 0 }}
                         >
                             <FiSun color="#058527" /> {t('today')}
                         </div>
                         <div
                             onClick={() => setActiveView('upcoming')}
-                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'upcoming' ? theme.activeBg : 'transparent', fontWeight: activeView === 'upcoming' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'upcoming' ? theme.activeText : theme.text }}
+                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'upcoming' ? theme.activeBg : 'transparent', fontWeight: activeView === 'upcoming' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'upcoming' ? theme.activeText : theme.text, whiteSpace: 'nowrap', borderRadius: isMobile ? 20 : 0 }}
                         >
                             <FiUpcoming color="#692fc2" /> {t('upcoming')}
                         </div>
 
-                        <div style={{ marginTop: 'auto', padding: 20 }}>
-                            <button
-                                onClick={convertToWhiteboard}
-                                disabled={isAIProcessing}
-                                style={{
-                                    width: '100%', padding: '10px', borderRadius: 8, border: 'none',
-                                    background: theme.activeBg, color: theme.activeText, fontSize: '0.8rem',
-                                    cursor: 'pointer', fontWeight: 600
-                                }}
-                            >
-                                {isAIProcessing ? `${t('loading')}` : '✨ To Whiteboard'}
-                            </button>
-                        </div>
+                        {!isMobile && (
+                            <div style={{ marginTop: 'auto', padding: 20 }}>
+                                <button
+                                    onClick={convertToWhiteboard}
+                                    disabled={isAIProcessing}
+                                    style={{
+                                        width: '100%', padding: '10px', borderRadius: 8, border: 'none',
+                                        background: theme.activeBg, color: theme.activeText, fontSize: '0.8rem',
+                                        cursor: 'pointer', fontWeight: 600
+                                    }}
+                                >
+                                    {isAIProcessing ? `${t('loading')}` : '✨ To Whiteboard'}
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* --- Main Content --- */}

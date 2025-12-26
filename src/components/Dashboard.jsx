@@ -251,20 +251,21 @@ export default function Dashboard({ user }) {
                     {user && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: theme.textPrim }}>
                             <img src={user.photoURL} alt="User" style={{ width: 32, height: 32, borderRadius: '50%' }} />
-                            <span>{user.displayName}</span>
+                            {!isMobile && <span>{user.displayName}</span>}
                         </div>
                     )}
                     <button onClick={() => signOut(auth)} style={{ background: theme.bg, border: `1px solid ${theme.border}`, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: theme.text }}>
                         <FiLogOut /> {t('signOut')}
                     </button>
                 </div>
-            </header>
+            </header >
 
             {/* Main Layout */}
-            <div style={{ display: 'flex', minHeight: 'calc(100vh - 70px)' }}>
+            < div style={{ display: 'flex', minHeight: 'calc(100vh - 70px)' }
+            }>
 
                 {/* Sidebar */}
-                <div style={{
+                < div style={{
                     width: isMobile ? '60px' : '250px',
                     background: theme.sidebar,
                     borderRight: `1px solid ${theme.border}`,
@@ -287,28 +288,34 @@ export default function Dashboard({ user }) {
                     />
 
                     {/* Admin Link */}
-                    {['aries0d0f@gmail.com', 'aries.wu@ideabomb.com', 'arieswu001@gmail.com'].includes(user?.email?.toLowerCase()) && (
-                        <NavItem icon={<FiShield />} label={t('admin')} active={false} onClick={() => navigate('/admin')} isMobile={isMobile} />
-                    )}
+                    {
+                        ['aries0d0f@gmail.com', 'aries.wu@ideabomb.com', 'arieswu001@gmail.com'].includes(user?.email?.toLowerCase()) && (
+                            <NavItem icon={<FiShield />} label={t('admin')} active={false} onClick={() => navigate('/admin')} isMobile={isMobile} />
+                        )
+                    }
 
                     <div style={{ margin: '10px 0', borderTop: `1px solid ${theme.border}` }}></div>
 
-                    {!isMobile && (
-                        <div style={{ padding: '0 20px', marginBottom: 10, fontSize: '0.8rem', fontWeight: 'bold', color: theme.text }}>
-                            {t('folders')}
-                        </div>
-                    )}
+                    {
+                        !isMobile && (
+                            <div style={{ padding: '0 20px', marginBottom: 10, fontSize: '0.8rem', fontWeight: 'bold', color: theme.text }}>
+                                {t('folders')}
+                            </div>
+                        )
+                    }
 
-                    {folders.map(folder => (
-                        <NavItem
-                            key={folder}
-                            icon={<FiFolder />}
-                            label={folder}
-                            active={activeView === 'folder' && selectedFolder === folder}
-                            onClick={() => { setActiveView('folder'); setSelectedFolder(folder) }}
-                            isMobile={isMobile}
-                        />
-                    ))}
+                    {
+                        folders.map(folder => (
+                            <NavItem
+                                key={folder}
+                                icon={<FiFolder />}
+                                label={folder}
+                                active={activeView === 'folder' && selectedFolder === folder}
+                                onClick={() => { setActiveView('folder'); setSelectedFolder(folder) }}
+                                isMobile={isMobile}
+                            />
+                        ))
+                    }
 
                     <div style={{ marginTop: 20 }}>
                         <NavItem
@@ -319,13 +326,13 @@ export default function Dashboard({ user }) {
                             isMobile={isMobile}
                         />
                     </div>
-                </div>
+                </div >
 
                 {/* Content Area */}
-                <div style={{ flex: 1, padding: isMobile ? '20px' : 40, height: '100%', overflow: 'hidden' }}>
+                < div style={{ flex: 1, padding: isMobile ? '20px' : 40, height: '100%', overflow: 'hidden' }}>
 
                     {/* Todo Panel Integration */}
-                    <TodoView user={user} isOpen={showTodo} onClose={() => setShowTodo(false)} />
+                    < TodoView user={user} isOpen={showTodo} onClose={() => setShowTodo(false)} />
 
                     {/* Dashboard Content */}
                     <div>
@@ -504,152 +511,156 @@ export default function Dashboard({ user }) {
                         </AnimatePresence>
                     </div>
 
-                </div>
-            </div>
+                </div >
+            </div >
 
             {/* Modal System */}
-            {modalConfig && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-                    background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-                }}>
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                        style={{
-                            background: 'white', padding: 30, borderRadius: 24,
-                            boxShadow: '0 20px 60px rgba(0,0,0,0.3)', width: '90%', maxWidth: 400,
-                            border: '1px solid rgba(0,0,0,0.1)'
-                        }}
-                    >
-                        {modalConfig.type === 'confirm' ? (
-                            <>
-                                <h2 style={{ margin: '0 0 10px 0', fontSize: '1.4rem', color: '#202124' }}>{modalConfig.title}</h2>
-                                <p style={{ color: '#666', marginBottom: 25, lineHeight: 1.5 }}>{modalConfig.message}</p>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                                    <button onClick={() => setModalConfig(null)} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'transparent', color: '#666', cursor: 'pointer' }}>{t('cancel')}</button>
-                                    <button onClick={modalConfig.onConfirm} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#d93025', color: 'white', cursor: 'pointer', fontWeight: 600 }}>{t('confirm')}</button>
-                                </div>
-                            </>
-                        ) : modalConfig.type === 'settings' ? (
-                            <>
-                                <h2 style={{ margin: '0 0 20px 0', fontSize: '1.4rem', color: '#202124', display: 'flex', alignItems: 'center', gap: 10 }}>
-                                    <FiSettings /> {t('settings')}
-                                </h2>
+            {
+                modalConfig && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                        background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                    }}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                            style={{
+                                background: 'white', padding: 30, borderRadius: 24,
+                                boxShadow: '0 20px 60px rgba(0,0,0,0.3)', width: '90%', maxWidth: 400,
+                                border: '1px solid rgba(0,0,0,0.1)'
+                            }}
+                        >
+                            {modalConfig.type === 'confirm' ? (
+                                <>
+                                    <h2 style={{ margin: '0 0 10px 0', fontSize: '1.4rem', color: '#202124' }}>{modalConfig.title}</h2>
+                                    <p style={{ color: '#666', marginBottom: 25, lineHeight: 1.5 }}>{modalConfig.message}</p>
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                                        <button onClick={() => setModalConfig(null)} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'transparent', color: '#666', cursor: 'pointer' }}>{t('cancel')}</button>
+                                        <button onClick={modalConfig.onConfirm} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#d93025', color: 'white', cursor: 'pointer', fontWeight: 600 }}>{t('confirm')}</button>
+                                    </div>
+                                </>
+                            ) : modalConfig.type === 'settings' ? (
+                                <>
+                                    <h2 style={{ margin: '0 0 20px 0', fontSize: '1.4rem', color: '#202124', display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <FiSettings /> {t('settings')}
+                                    </h2>
 
-                                <div style={{ marginBottom: 20 }}>
-                                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#5f6368', marginBottom: 10 }}>{t('theme')}</div>
-                                    <div style={{ display: 'flex', gap: 10 }}>
+                                    <div style={{ marginBottom: 20 }}>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#5f6368', marginBottom: 10 }}>{t('theme')}</div>
+                                        <div style={{ display: 'flex', gap: 10 }}>
+                                            <button
+                                                onClick={() => setSettings(s => ({ ...s, theme: 'light' }))}
+                                                style={{ flex: 1, padding: 12, borderRadius: 8, border: settings.theme === 'light' ? '2px solid #1a73e8' : '1px solid #dadce0', background: 'white', color: settings.theme === 'light' ? '#1a73e8' : '#5f6368', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                                            >
+                                                <FiSun /> {t('light')}
+                                            </button>
+                                            <button
+                                                onClick={() => setSettings(s => ({ ...s, theme: 'dark' }))}
+                                                style={{ flex: 1, padding: 12, borderRadius: 8, border: settings.theme === 'dark' ? '2px solid #1a73e8' : '1px solid #dadce0', background: '#333', color: settings.theme === 'dark' ? '#1a73e8' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                                            >
+                                                <FiMoon /> {t('dark')}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ marginBottom: 30 }}>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#5f6368', marginBottom: 10 }}>{t('lang')}</div>
+                                        <div style={{ display: 'flex', gap: 10 }}>
+                                            <button
+                                                onClick={() => setSettings(s => ({ ...s, lang: 'en' }))}
+                                                style={{ flex: 1, padding: 12, borderRadius: 8, border: settings.lang === 'en' ? '2px solid #1a73e8' : '1px solid #dadce0', background: settings.lang === 'en' ? '#e8f0fe' : 'transparent', color: settings.lang === 'en' ? '#1a73e8' : '#5f6368', cursor: 'pointer' }}
+                                            >
+                                                English
+                                            </button>
+                                            <button
+                                                onClick={() => setSettings(s => ({ ...s, lang: 'zh-TW' }))}
+                                                style={{ flex: 1, padding: 12, borderRadius: 8, border: settings.lang === 'zh-TW' ? '2px solid #1a73e8' : '1px solid #dadce0', background: settings.lang === 'zh-TW' ? '#e8f0fe' : 'transparent', color: settings.lang === 'zh-TW' ? '#1a73e8' : '#5f6368', cursor: 'pointer' }}
+                                            >
+                                                繁體中文
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                        <button onClick={() => setModalConfig(null)} style={{ padding: '10px 25px', borderRadius: 12, border: 'none', background: '#1a73e8', color: 'white', cursor: 'pointer', fontWeight: 600 }}>{t('confirm')}</button>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <h2 style={{ margin: '0 0 20px 0', fontSize: '1.4rem', color: '#202124' }}>{modalConfig.title}</h2>
+                                    <input
+                                        autoFocus
+                                        id="modal-input"
+                                        defaultValue={modalConfig.initialValue}
+                                        placeholder={t('typeHere')}
+                                        onKeyDown={e => { if (e.key === 'Enter') handleAction(modalConfig.type, modalConfig.board, e.target.value) }}
+                                        style={{
+                                            width: '100%', padding: '12px 16px', borderRadius: 12,
+                                            border: '1px solid #dadce0', fontSize: '1rem', outline: 'none',
+                                            marginBottom: 20, background: '#f8f9fa'
+                                        }}
+                                        ref={input => input && (input.value = modalConfig.initialValue || '')}
+                                    />
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                                         <button
-                                            onClick={() => setSettings(s => ({ ...s, theme: 'light' }))}
-                                            style={{ flex: 1, padding: 12, borderRadius: 8, border: settings.theme === 'light' ? '2px solid #1a73e8' : '1px solid #dadce0', background: 'white', color: settings.theme === 'light' ? '#1a73e8' : '#5f6368', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                                            onClick={() => setModalConfig(null)}
+                                            style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: 'transparent', color: '#5f6368', fontWeight: 600, cursor: 'pointer' }}
                                         >
-                                            <FiSun /> {t('light')}
+                                            {t('cancel')}
                                         </button>
                                         <button
-                                            onClick={() => setSettings(s => ({ ...s, theme: 'dark' }))}
-                                            style={{ flex: 1, padding: 12, borderRadius: 8, border: settings.theme === 'dark' ? '2px solid #1a73e8' : '1px solid #dadce0', background: '#333', color: settings.theme === 'dark' ? '#1a73e8' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                                            onClick={() => handleAction(modalConfig.type, modalConfig.board, document.getElementById('modal-input').value)}
+                                            style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#1a73e8', color: 'white', fontWeight: 600, cursor: 'pointer' }}
                                         >
-                                            <FiMoon /> {t('dark')}
+                                            {t('confirm')}
                                         </button>
                                     </div>
-                                </div>
-
-                                <div style={{ marginBottom: 30 }}>
-                                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#5f6368', marginBottom: 10 }}>{t('lang')}</div>
-                                    <div style={{ display: 'flex', gap: 10 }}>
-                                        <button
-                                            onClick={() => setSettings(s => ({ ...s, lang: 'en' }))}
-                                            style={{ flex: 1, padding: 12, borderRadius: 8, border: settings.lang === 'en' ? '2px solid #1a73e8' : '1px solid #dadce0', background: settings.lang === 'en' ? '#e8f0fe' : 'transparent', color: settings.lang === 'en' ? '#1a73e8' : '#5f6368', cursor: 'pointer' }}
-                                        >
-                                            English
-                                        </button>
-                                        <button
-                                            onClick={() => setSettings(s => ({ ...s, lang: 'zh-TW' }))}
-                                            style={{ flex: 1, padding: 12, borderRadius: 8, border: settings.lang === 'zh-TW' ? '2px solid #1a73e8' : '1px solid #dadce0', background: settings.lang === 'zh-TW' ? '#e8f0fe' : 'transparent', color: settings.lang === 'zh-TW' ? '#1a73e8' : '#5f6368', cursor: 'pointer' }}
-                                        >
-                                            繁體中文
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                    <button onClick={() => setModalConfig(null)} style={{ padding: '10px 25px', borderRadius: 12, border: 'none', background: '#1a73e8', color: 'white', cursor: 'pointer', fontWeight: 600 }}>{t('confirm')}</button>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <h2 style={{ margin: '0 0 20px 0', fontSize: '1.4rem', color: '#202124' }}>{modalConfig.title}</h2>
-                                <input
-                                    autoFocus
-                                    id="modal-input"
-                                    defaultValue={modalConfig.initialValue}
-                                    placeholder={t('typeHere')}
-                                    onKeyDown={e => { if (e.key === 'Enter') handleAction(modalConfig.type, modalConfig.board, e.target.value) }}
-                                    style={{
-                                        width: '100%', padding: '12px 16px', borderRadius: 12,
-                                        border: '1px solid #dadce0', fontSize: '1rem', outline: 'none',
-                                        marginBottom: 20, background: '#f8f9fa'
-                                    }}
-                                    ref={input => input && (input.value = modalConfig.initialValue || '')}
-                                />
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                                    <button
-                                        onClick={() => setModalConfig(null)}
-                                        style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: 'transparent', color: '#5f6368', fontWeight: 600, cursor: 'pointer' }}
-                                    >
-                                        {t('cancel')}
-                                    </button>
-                                    <button
-                                        onClick={() => handleAction(modalConfig.type, modalConfig.board, document.getElementById('modal-input').value)}
-                                        style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: '#1a73e8', color: 'white', fontWeight: 600, cursor: 'pointer' }}
-                                    >
-                                        {t('confirm')}
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </motion.div>
-                </div>
-            )}
+                                </>
+                            )}
+                        </motion.div>
+                    </div>
+                )
+            }
 
             {/* Context Menu */}
-            {contextMenu && (
-                <div
-                    style={{
-                        position: 'fixed', top: contextMenu.y + 10, left: contextMenu.x - 100,
-                        background: 'white', padding: 8, borderRadius: 12,
-                        boxShadow: '0 5px 20px rgba(0,0,0,0.15)', zIndex: 900,
-                        display: 'flex', flexDirection: 'column', minWidth: 160,
-                        border: '1px solid rgba(0,0,0,0.05)'
-                    }}
-                    onClick={e => e.stopPropagation()}
-                >
-                    <button
-                        onClick={() => { setModalConfig({ type: 'rename', title: 'Rename Board', initialValue: contextMenu.board.title, board: contextMenu.board }); setContextMenu(null) }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 15px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 8, fontSize: '0.9rem', color: '#333' }}
-                        onMouseEnter={e => e.target.style.background = '#f5f5f5'} onMouseLeave={e => e.target.style.background = 'transparent'}
+            {
+                contextMenu && (
+                    <div
+                        style={{
+                            position: 'fixed', top: contextMenu.y + 10, left: contextMenu.x - 100,
+                            background: 'white', padding: 8, borderRadius: 12,
+                            boxShadow: '0 5px 20px rgba(0,0,0,0.15)', zIndex: 900,
+                            display: 'flex', flexDirection: 'column', minWidth: 160,
+                            border: '1px solid rgba(0,0,0,0.05)'
+                        }}
+                        onClick={e => e.stopPropagation()}
                     >
-                        <FiEdit2 /> Rename
-                    </button>
-                    <button
-                        onClick={() => { setModalConfig({ type: 'move', title: 'Move to Folder', initialValue: contextMenu.board.folder, board: contextMenu.board }); setContextMenu(null) }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 15px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 8, fontSize: '0.9rem', color: '#333' }}
-                        onMouseEnter={e => e.target.style.background = '#f5f5f5'} onMouseLeave={e => e.target.style.background = 'transparent'}
-                    >
-                        <FiMove /> Move to Folder
-                    </button>
-                    <div style={{ height: 1, background: '#eee', margin: '5px 0' }} />
-                    <button
-                        onClick={() => { handleAction('delete', contextMenu.board); setContextMenu(null) }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 15px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 8, fontSize: '0.9rem', color: '#d93025' }}
-                        onMouseEnter={e => e.target.style.background = '#fff0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}
-                    >
-                        <FiTrash2 /> Delete
-                    </button>
-                </div>
-            )}
-        </div>
+                        <button
+                            onClick={() => { setModalConfig({ type: 'rename', title: 'Rename Board', initialValue: contextMenu.board.title, board: contextMenu.board }); setContextMenu(null) }}
+                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 15px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 8, fontSize: '0.9rem', color: '#333' }}
+                            onMouseEnter={e => e.target.style.background = '#f5f5f5'} onMouseLeave={e => e.target.style.background = 'transparent'}
+                        >
+                            <FiEdit2 /> Rename
+                        </button>
+                        <button
+                            onClick={() => { setModalConfig({ type: 'move', title: 'Move to Folder', initialValue: contextMenu.board.folder, board: contextMenu.board }); setContextMenu(null) }}
+                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 15px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 8, fontSize: '0.9rem', color: '#333' }}
+                            onMouseEnter={e => e.target.style.background = '#f5f5f5'} onMouseLeave={e => e.target.style.background = 'transparent'}
+                        >
+                            <FiMove /> Move to Folder
+                        </button>
+                        <div style={{ height: 1, background: '#eee', margin: '5px 0' }} />
+                        <button
+                            onClick={() => { handleAction('delete', contextMenu.board); setContextMenu(null) }}
+                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 15px', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer', borderRadius: 8, fontSize: '0.9rem', color: '#d93025' }}
+                            onMouseEnter={e => e.target.style.background = '#fff0f0'} onMouseLeave={e => e.target.style.background = 'transparent'}
+                        >
+                            <FiTrash2 /> Delete
+                        </button>
+                    </div>
+                )
+            }
+        </div >
     )
 }
 
