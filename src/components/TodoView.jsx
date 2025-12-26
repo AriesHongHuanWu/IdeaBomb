@@ -46,13 +46,18 @@ const PriorityFlag = ({ priority, selected, onClick }) => {
 
 export default function TodoView({ user, isOpen, onClose }) {
     const [todos, setTodos] = useState([])
-    const [activeView, setActiveView] = useState('inbox') // inbox, today, upcoming, calendar
+    const [activeView, setActiveView] = useState('inbox') // inbox, today, upcoming, calendar, invites
     const [newTodo, setNewTodo] = useState('')
     const [newTodoDate, setNewTodoDate] = useState('')
     const [newTodoPriority, setNewTodoPriority] = useState(4) // 4 = normal
     const [isAIProcessing, setIsAIProcessing] = useState(false)
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
     const { t, theme } = useSettings()
+
+    // Invite Modal State
+    const [inviteModal, setInviteModal] = useState(null) // { todoId, todoTitle }
+    const [inviteEmail, setInviteEmail] = useState('')
+    const [pendingInvites, setPendingInvites] = useState([])
 
     // --- Data Sync ---
     useEffect(() => {
@@ -64,6 +69,20 @@ export default function TodoView({ user, isOpen, onClose }) {
         )
         const unsub = onSnapshot(q, (snap) => {
             setTodos(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+        })
+        return unsub
+    }, [user])
+
+    // --- Pending Invites Sync ---
+    useEffect(() => {
+        if (!user) return
+        const q = query(
+            collection(db, 'todo_invites'),
+            where('toEmail', '==', user.email),
+            where('status', '==', 'pending')
+        )
+        const unsub = onSnapshot(q, (snap) => {
+            setPendingInvites(snap.docs.map(d => ({ id: d.id, ...d.data() })))
         })
         return unsub
     }, [user])
@@ -121,18 +140,51 @@ export default function TodoView({ user, isOpen, onClose }) {
         await updateDoc(doc(db, 'todos', id), { priority: p })
     }
 
-    const shareTodo = async (todo) => {
-        const email = prompt("Enter email to share this task with:")
-        if (email && email.includes('@')) {
-            try {
-                await updateDoc(doc(db, 'todos', todo.id), {
-                    members: arrayUnion(email)
-                })
-                alert(`Shared with ${email}`)
-            } catch (e) {
-                console.error(e)
-                alert("Error sharing task")
-            }
+    const shareTodo = (todo) => {
+        // Open custom modal instead of prompt()
+        setInviteModal({ todoId: todo.id, todoTitle: todo.text })
+        setInviteEmail('')
+    }
+
+    const sendInvite = async () => {
+        if (!inviteEmail || !inviteEmail.includes('@') || !inviteModal) return
+        try {
+            await addDoc(collection(db, 'todo_invites'), {
+                fromUid: user.uid,
+                fromName: user.displayName || user.email,
+                toEmail: inviteEmail.toLowerCase().trim(),
+                todoId: inviteModal.todoId,
+                todoTitle: inviteModal.todoTitle,
+                status: 'pending',
+                createdAt: serverTimestamp()
+            })
+            setInviteModal(null)
+            setInviteEmail('')
+        } catch (e) {
+            console.error(e)
+            alert('Error sending invite')
+        }
+    }
+
+    const acceptInvite = async (invite) => {
+        try {
+            // Add user to todo members
+            await updateDoc(doc(db, 'todos', invite.todoId), {
+                members: arrayUnion(user.email)
+            })
+            // Delete invite
+            await deleteDoc(doc(db, 'todo_invites', invite.id))
+        } catch (e) {
+            console.error(e)
+            alert('Error accepting invite')
+        }
+    }
+
+    const declineInvite = async (invite) => {
+        try {
+            await deleteDoc(doc(db, 'todo_invites', invite.id))
+        } catch (e) {
+            console.error(e)
         }
     }
 
@@ -358,212 +410,289 @@ export default function TodoView({ user, isOpen, onClose }) {
     )
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <motion.div
-                    initial={{ x: '100%', opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: '100%', opacity: 0 }}
-                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                    style={{
-                        position: 'fixed', top: 70, right: 0, bottom: 0,
-                        width: '100%', maxWidth: 700,
-                        background: theme.modalBg, borderLeft: `1px solid ${theme.border}`,
-                        boxShadow: '0 0 30px rgba(0,0,0,0.1)',
-                        zIndex: 900, display: 'flex', flexDirection: isMobile ? 'column' : 'row', color: theme.text
-                    }}
-                >
-                    {/* --- Sidebar (Navigation) --- */}
-                    <div style={{
-                        width: isMobile ? '100%' : 200, background: theme.sidebar,
-                        borderRight: isMobile ? 'none' : `1px solid ${theme.border}`,
-                        borderBottom: isMobile ? `1px solid ${theme.border}` : 'none',
-                        padding: isMobile ? '10px' : '20px 0',
-                        display: 'flex', flexDirection: isMobile ? 'row' : 'column',
-                        overflowX: isMobile ? 'auto' : 'visible', gap: isMobile ? 10 : 0
-                    }}>
-                        {!isMobile && (
-                            <div style={{ padding: '0 20px 20px', fontWeight: 'bold', fontSize: '1.1rem', color: '#db4c3f', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <FiCheckCircle /> IdeaBomb
+        <>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ x: '100%', opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: '100%', opacity: 0 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                        style={{
+                            position: 'fixed', top: 70, right: 0, bottom: 0,
+                            width: '100%', maxWidth: 700,
+                            background: theme.modalBg, borderLeft: `1px solid ${theme.border}`,
+                            boxShadow: '0 0 30px rgba(0,0,0,0.1)',
+                            zIndex: 900, display: 'flex', flexDirection: isMobile ? 'column' : 'row', color: theme.text
+                        }}
+                    >
+                        {/* --- Sidebar (Navigation) --- */}
+                        <div style={{
+                            width: isMobile ? '100%' : 200, background: theme.sidebar,
+                            borderRight: isMobile ? 'none' : `1px solid ${theme.border}`,
+                            borderBottom: isMobile ? `1px solid ${theme.border}` : 'none',
+                            padding: isMobile ? '10px' : '20px 0',
+                            display: 'flex', flexDirection: isMobile ? 'row' : 'column',
+                            overflowX: isMobile ? 'auto' : 'visible', gap: isMobile ? 10 : 0
+                        }}>
+                            {!isMobile && (
+                                <div style={{ padding: '0 20px 20px', fontWeight: 'bold', fontSize: '1.1rem', color: '#db4c3f', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <FiCheckCircle /> IdeaBomb
+                                </div>
+                            )}
+
+                            <div
+                                onClick={() => setActiveView('inbox')}
+                                style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'inbox' ? theme.activeBg : 'transparent', fontWeight: activeView === 'inbox' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'inbox' ? theme.activeText : theme.text, whiteSpace: 'nowrap', borderRadius: isMobile ? 20 : 0 }}
+                            >
+                                <FiInbox color="#246fe0" /> {t('inbox')}
+                                {!isMobile && <span style={{ marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.7 }}>{todos.length}</span>}
                             </div>
-                        )}
-
-                        <div
-                            onClick={() => setActiveView('inbox')}
-                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'inbox' ? theme.activeBg : 'transparent', fontWeight: activeView === 'inbox' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'inbox' ? theme.activeText : theme.text, whiteSpace: 'nowrap', borderRadius: isMobile ? 20 : 0 }}
-                        >
-                            <FiInbox color="#246fe0" /> {t('inbox')}
-                            {!isMobile && <span style={{ marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.7 }}>{todos.length}</span>}
-                        </div>
-                        <div
-                            onClick={() => setActiveView('today')}
-                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'today' ? theme.activeBg : 'transparent', fontWeight: activeView === 'today' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'today' ? theme.activeText : theme.text, whiteSpace: 'nowrap', borderRadius: isMobile ? 20 : 0 }}
-                        >
-                            <FiSun color="#058527" /> {t('today')}
-                        </div>
-                        <div
-                            onClick={() => setActiveView('upcoming')}
-                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'upcoming' ? theme.activeBg : 'transparent', fontWeight: activeView === 'upcoming' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'upcoming' ? theme.activeText : theme.text, whiteSpace: 'nowrap', borderRadius: isMobile ? 20 : 0 }}
-                        >
-                            <FiUpcoming color="#692fc2" /> {t('upcoming')}
-                        </div>
-                        <div
-                            onClick={() => setActiveView('calendar')}
-                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'calendar' ? theme.activeBg : 'transparent', fontWeight: activeView === 'calendar' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'calendar' ? theme.activeText : theme.text, whiteSpace: 'nowrap', borderRadius: isMobile ? 20 : 0 }}
-                        >
-                            <FiCalendar color="#e58e26" /> {t('calendar') || "Calendar"}
-                        </div>
-
-                        {!isMobile && (
-                            <div style={{ marginTop: 'auto', padding: 20 }}>
-                                <button
-                                    onClick={convertToWhiteboard}
-                                    disabled={isAIProcessing}
-                                    style={{
-                                        width: '100%', padding: '10px', borderRadius: 8, border: 'none',
-                                        background: theme.activeBg, color: theme.activeText, fontSize: '0.8rem',
-                                        cursor: 'pointer', fontWeight: 600
-                                    }}
-                                >
-                                    {isAIProcessing ? `${t('loading')}` : '✨ To Whiteboard'}
-                                </button>
+                            <div
+                                onClick={() => setActiveView('today')}
+                                style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'today' ? theme.activeBg : 'transparent', fontWeight: activeView === 'today' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'today' ? theme.activeText : theme.text, whiteSpace: 'nowrap', borderRadius: isMobile ? 20 : 0 }}
+                            >
+                                <FiSun color="#058527" /> {t('today')}
                             </div>
-                        )}
-                    </div>
+                            <div
+                                onClick={() => setActiveView('upcoming')}
+                                style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'upcoming' ? theme.activeBg : 'transparent', fontWeight: activeView === 'upcoming' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'upcoming' ? theme.activeText : theme.text, whiteSpace: 'nowrap', borderRadius: isMobile ? 20 : 0 }}
+                            >
+                                <FiUpcoming color="#692fc2" /> {t('upcoming')}
+                            </div>
+                            <div
+                                onClick={() => setActiveView('calendar')}
+                                style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'calendar' ? theme.activeBg : 'transparent', fontWeight: activeView === 'calendar' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'calendar' ? theme.activeText : theme.text, whiteSpace: 'nowrap', borderRadius: isMobile ? 20 : 0 }}
+                            >
+                                <FiCalendar color="#e58e26" /> {t('calendar') || "Calendar"}
+                            </div>
+                            <div
+                                onClick={() => setActiveView('invites')}
+                                style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'invites' ? theme.activeBg : 'transparent', fontWeight: activeView === 'invites' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'invites' ? theme.activeText : theme.text, whiteSpace: 'nowrap', borderRadius: isMobile ? 20 : 0, position: 'relative' }}
+                            >
+                                <FiUserPlus color="#9b59b6" /> Invitations
+                                {pendingInvites.length > 0 && (
+                                    <span style={{ position: 'absolute', top: 4, right: 10, background: '#e74c3c', color: 'white', fontSize: '0.7rem', borderRadius: 10, padding: '1px 6px', fontWeight: 'bold' }}>{pendingInvites.length}</span>
+                                )}
+                            </div>
 
-                    {/* --- Main Content --- */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-
-                        {/* Header */}
-                        <div style={{ padding: '15px 20px', borderBottom: `1px solid ${theme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: theme.textPrim }}>
-                                {activeView === 'inbox' && t('inbox')}
-                                {activeView === 'today' && t('today')}
-                                {activeView === 'upcoming' && t('upcoming')}
-                                {activeView === 'calendar' && (t('calendar') || "Calendar")}
-                            </h2>
-                            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 5, color: theme.text }}><FiX size={20} /></button>
-                        </div>
-
-                        {/* Content Area */}
-                        {activeView === 'calendar' ? (
-                            <CalendarComponent />
-                        ) : (
-                            /* Task List */
-                            <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-
-                                {filteredTodos.length === 0 ? (
-                                    <div style={{ textAlign: 'center', marginTop: 50, color: theme.text, opacity: 0.5 }}>
-                                        {t('noTasks')}
-                                    </div>
-                                ) : filteredTodos.map(todo => (
-                                    <div
-                                        key={todo.id}
+                            {!isMobile && (
+                                <div style={{ marginTop: 'auto', padding: 20 }}>
+                                    <button
+                                        onClick={convertToWhiteboard}
+                                        disabled={isAIProcessing}
                                         style={{
-                                            display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 15, position: 'relative',
-                                            padding: '10px 0', borderBottom: `1px solid ${theme.border}`
+                                            width: '100%', padding: '10px', borderRadius: 8, border: 'none',
+                                            background: theme.activeBg, color: theme.activeText, fontSize: '0.8rem',
+                                            cursor: 'pointer', fontWeight: 600
                                         }}
                                     >
-                                        <div
-                                            onClick={() => toggleComplete(todo)}
+                                        {isAIProcessing ? `${t('loading')}` : '✨ To Whiteboard'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* --- Main Content --- */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+
+                            {/* Header */}
+                            <div style={{ padding: '15px 20px', borderBottom: `1px solid ${theme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: theme.textPrim }}>
+                                    {activeView === 'inbox' && t('inbox')}
+                                    {activeView === 'today' && t('today')}
+                                    {activeView === 'upcoming' && t('upcoming')}
+                                    {activeView === 'calendar' && (t('calendar') || "Calendar")}
+                                    {activeView === 'invites' && 'Invitations'}
+                                </h2>
+                                <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 5, color: theme.text }}><FiX size={20} /></button>
+                            </div>
+
+                            {/* Content Area */}
+                            {activeView === 'calendar' ? (
+                                <CalendarComponent />
+                            ) : activeView === 'invites' ? (
+                                /* Invitations List */
+                                <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+                                    {pendingInvites.length === 0 ? (
+                                        <div style={{ textAlign: 'center', marginTop: 50, color: theme.text, opacity: 0.5 }}>
+                                            No pending invitations.
+                                        </div>
+                                    ) : pendingInvites.map(invite => (
+                                        <motion.div
+                                            key={invite.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
                                             style={{
-                                                cursor: 'pointer', marginTop: 3,
-                                                width: 18, height: 18, borderRadius: '50%',
-                                                border: `2px solid ${todo.priority === 1 ? '#d1453b' : todo.priority === 2 ? '#eb8909' : todo.priority === 3 ? '#246fe0' : theme.text}`,
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                background: todo.completed ? theme.text : 'transparent'
+                                                display: 'flex', alignItems: 'center', gap: 15, marginBottom: 15,
+                                                padding: 15, background: theme.cardBg, borderRadius: 10, border: `1px solid ${theme.border}`
                                             }}
                                         >
-                                            {todo.completed && <FiCheck size={12} color={theme.bg} />}
-                                        </div>
-
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{
-                                                textDecoration: todo.completed ? 'line-through' : 'none',
-                                                color: todo.completed ? theme.text : theme.textPrim,
-                                                fontSize: '0.95rem', lineHeight: '1.5', opacity: todo.completed ? 0.6 : 1
-                                            }}>
-                                                {todo.text}
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontWeight: 600, color: theme.textPrim, marginBottom: 5 }}>{invite.todoTitle}</div>
+                                                <div style={{ fontSize: '0.8rem', color: theme.text, opacity: 0.7 }}>From: {invite.fromName}</div>
                                             </div>
-                                            {todo.dueDate && (
-                                                <div style={{ fontSize: '0.75rem', color: '#d1453b', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                    <FiCalendar size={10} /> {todo.dueDate}
+                                            <button
+                                                onClick={() => acceptInvite(invite)}
+                                                style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#27ae60', color: 'white', cursor: 'pointer', fontWeight: 500 }}
+                                            >
+                                                Accept
+                                            </button>
+                                            <button
+                                                onClick={() => declineInvite(invite)}
+                                                style={{ padding: '8px 16px', borderRadius: 6, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.text, cursor: 'pointer' }}
+                                            >
+                                                Decline
+                                            </button>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            ) : (
+                                /* Task List */
+                                <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+
+                                    {filteredTodos.length === 0 ? (
+                                        <div style={{ textAlign: 'center', marginTop: 50, color: theme.text, opacity: 0.5 }}>
+                                            {t('noTasks')}
+                                        </div>
+                                    ) : filteredTodos.map(todo => (
+                                        <div
+                                            key={todo.id}
+                                            style={{
+                                                display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 15, position: 'relative',
+                                                padding: '10px 0', borderBottom: `1px solid ${theme.border}`
+                                            }}
+                                        >
+                                            <div
+                                                onClick={() => toggleComplete(todo)}
+                                                style={{
+                                                    cursor: 'pointer', marginTop: 3,
+                                                    width: 18, height: 18, borderRadius: '50%',
+                                                    border: `2px solid ${todo.priority === 1 ? '#d1453b' : todo.priority === 2 ? '#eb8909' : todo.priority === 3 ? '#246fe0' : theme.text}`,
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    background: todo.completed ? theme.text : 'transparent'
+                                                }}
+                                            >
+                                                {todo.completed && <FiCheck size={12} color={theme.bg} />}
+                                            </div>
+
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{
+                                                    textDecoration: todo.completed ? 'line-through' : 'none',
+                                                    color: todo.completed ? theme.text : theme.textPrim,
+                                                    fontSize: '0.95rem', lineHeight: '1.5', opacity: todo.completed ? 0.6 : 1
+                                                }}>
+                                                    {todo.text}
+                                                </div>
+                                                {todo.dueDate && (
+                                                    <div style={{ fontSize: '0.75rem', color: '#d1453b', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                        <FiCalendar size={10} /> {todo.dueDate}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div style={{ display: 'flex', gap: 5, opacity: 0.5 }}>
+                                                <button onClick={() => shareTodo(todo)} title="Share Task" style={{ border: 'none', background: 'none', cursor: 'pointer', color: theme.text }}>
+                                                    <FiUserPlus size={14} />
+                                                </button>
+                                                <div style={{ fontSize: '0.7rem', color: theme.text, marginTop: 5 }}>P{todo.priority || 4}</div>
+                                                <button onClick={() => deleteTodo(todo.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: theme.text }}>
+                                                    <FiTrash2 size={14} />
+                                                </button>
+                                            </div>
+                                            {todo.members && todo.members.length > 1 && (
+                                                <div style={{ position: 'absolute', bottom: 5, right: 80, fontSize: '0.65rem', color: theme.activeText, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                                    <FiUsers /> {todo.members.length}
                                                 </div>
                                             )}
                                         </div>
+                                    ))}
 
-                                        <div style={{ display: 'flex', gap: 5, opacity: 0.5 }}>
-                                            <button onClick={() => shareTodo(todo)} title="Share Task" style={{ border: 'none', background: 'none', cursor: 'pointer', color: theme.text }}>
-                                                <FiUserPlus size={14} />
-                                            </button>
-                                            <div style={{ fontSize: '0.7rem', color: theme.text, marginTop: 5 }}>P{todo.priority || 4}</div>
-                                            <button onClick={() => deleteTodo(todo.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: theme.text }}>
-                                                <FiTrash2 size={14} />
-                                            </button>
-                                        </div>
-                                        {todo.members && todo.members.length > 1 && (
-                                            <div style={{ position: 'absolute', bottom: 5, right: 80, fontSize: '0.65rem', color: theme.activeText, display: 'flex', alignItems: 'center', gap: 3 }}>
-                                                <FiUsers /> {todo.members.length}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-
-                                <form onSubmit={handleAdd} style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, border: `1px solid ${theme.border}`, borderRadius: 10, padding: 10 }}>
-                                    <input
-                                        value={newTodo}
-                                        onChange={e => setNewTodo(e.target.value)}
-                                        placeholder={t('addTask') + "..."}
-                                        style={{
-                                            border: 'none', outline: 'none', fontSize: '1rem', fontWeight: 500,
-                                            background: 'transparent', color: theme.textPrim
-                                        }}
-                                        autoFocus
-                                    />
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ display: 'flex', gap: 8 }}>
-                                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                                <input
-                                                    type="date"
-                                                    value={newTodoDate}
-                                                    onChange={e => setNewTodoDate(e.target.value)}
-                                                    style={{
-                                                        border: `1px solid ${theme.border}`, borderRadius: 4, padding: '4px 8px',
-                                                        fontSize: '0.8rem', color: theme.text, outline: 'none',
-                                                        fontFamily: 'inherit', background: theme.inputBg || 'transparent'
-                                                    }}
-                                                />
-                                                <div style={{ display: 'flex', gap: 2, marginLeft: 8 }}>
-                                                    {[1, 2, 3, 4].map(p => (
-                                                        <PriorityFlag
-                                                            key={p}
-                                                            priority={p}
-                                                            selected={newTodoPriority === p}
-                                                            onClick={() => setNewTodoPriority(p)}
-                                                        />
-                                                    ))}
+                                    <form onSubmit={handleAdd} style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, border: `1px solid ${theme.border}`, borderRadius: 10, padding: 10 }}>
+                                        <input
+                                            value={newTodo}
+                                            onChange={e => setNewTodo(e.target.value)}
+                                            placeholder={t('addTask') + "..."}
+                                            style={{
+                                                border: 'none', outline: 'none', fontSize: '1rem', fontWeight: 500,
+                                                background: 'transparent', color: theme.textPrim
+                                            }}
+                                            autoFocus
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', gap: 8 }}>
+                                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                                    <input
+                                                        type="date"
+                                                        value={newTodoDate}
+                                                        onChange={e => setNewTodoDate(e.target.value)}
+                                                        style={{
+                                                            border: `1px solid ${theme.border}`, borderRadius: 4, padding: '4px 8px',
+                                                            fontSize: '0.8rem', color: theme.text, outline: 'none',
+                                                            fontFamily: 'inherit', background: theme.inputBg || 'transparent'
+                                                        }}
+                                                    />
+                                                    <div style={{ display: 'flex', gap: 2, marginLeft: 8 }}>
+                                                        {[1, 2, 3, 4].map(p => (
+                                                            <PriorityFlag
+                                                                key={p}
+                                                                priority={p}
+                                                                selected={newTodoPriority === p}
+                                                                onClick={() => setNewTodoPriority(p)}
+                                                            />
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <button
+                                                type="submit"
+                                                disabled={!newTodo}
+                                                style={{
+                                                    background: newTodo ? '#db4c3f' : theme.activeBg,
+                                                    color: newTodo ? 'white' : theme.activeText,
+                                                    border: 'none', padding: '6px 12px', borderRadius: 6, fontWeight: 'bold', cursor: newTodo ? 'pointer' : 'default'
+                                                }}
+                                            >
+                                                {t('addTask')}
+                                            </button>
                                         </div>
-                                        <button
-                                            type="submit"
-                                            disabled={!newTodo}
-                                            style={{
-                                                background: newTodo ? '#db4c3f' : theme.activeBg,
-                                                color: newTodo ? 'white' : theme.activeText,
-                                                border: 'none', padding: '6px 12px', borderRadius: 6, fontWeight: 'bold', cursor: newTodo ? 'pointer' : 'default'
-                                            }}
-                                        >
-                                            {t('addTask')}
-                                        </button>
-                                    </div>
-                                </form>
+                                    </form>
 
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Invite Modal */}
+            <AnimatePresence>
+                {inviteModal && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            style={{ background: theme.cardBg, padding: 25, borderRadius: 16, width: '90%', maxWidth: 400, boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}
+                        >
+                            <h3 style={{ margin: '0 0 8px 0', color: theme.textPrim }}>Share Task</h3>
+                            <p style={{ margin: '0 0 20px 0', color: theme.text, opacity: 0.7, fontSize: '0.9rem' }}>"{inviteModal.todoTitle}"</p>
+                            <input
+                                type="email"
+                                value={inviteEmail}
+                                onChange={e => setInviteEmail(e.target.value)}
+                                placeholder="Enter email address..."
+                                style={{ width: '100%', padding: 12, borderRadius: 8, border: `1px solid ${theme.border}`, fontSize: '1rem', marginBottom: 20, background: theme.bg, color: theme.text, outline: 'none' }}
+                                autoFocus
+                            />
+                            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                                <button onClick={() => setInviteModal(null)} style={{ padding: '10px 20px', borderRadius: 8, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.text, cursor: 'pointer' }}>Cancel</button>
+                                <button onClick={sendInvite} disabled={!inviteEmail.includes('@')} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: inviteEmail.includes('@') ? '#9b59b6' : '#ccc', color: 'white', cursor: inviteEmail.includes('@') ? 'pointer' : 'default', fontWeight: 600 }}>Send Invite</button>
                             </div>
-                        )}
+                        </motion.div>
                     </div>
-                </motion.div>
-            )}
-        </AnimatePresence>
+                )}
+            </AnimatePresence>
+        </>
     )
 }

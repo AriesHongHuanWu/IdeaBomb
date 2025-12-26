@@ -70,6 +70,18 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && isMember(resource.data);
     }
 
+    // Todo Invites (Internal Invite System)
+    match /todo_invites/{inviteId} {
+      // Sender can create invites
+      allow create: if request.auth != null;
+      // Recipient can read invites sent to them
+      allow read: if request.auth != null && request.auth.token.email == resource.data.toEmail;
+      // Sender can read invites they sent
+      allow read: if request.auth != null && request.auth.uid == resource.data.fromUid;
+      // Recipient or Sender can delete (accept/decline)
+      allow delete: if request.auth != null && (request.auth.token.email == resource.data.toEmail || request.auth.uid == resource.data.fromUid);
+    }
+
     match /boards/{boardId} {
       // 1. Board Document Rules
       // Split get and list to ensure query validation passes simply
