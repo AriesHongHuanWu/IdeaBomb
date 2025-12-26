@@ -49,38 +49,61 @@ export default function Dashboard({ user }) {
     const [deletingIds, setDeletingIds] = useState([]) // Optimistic UI
     const isMobile = useMediaQuery('(max-width: 768px)')
 
-    useEffect(() => {
-        const requestNotificationPermission = async () => {
-            // 1. Check if supported
-            if (!messaging) return;
+    // Notification State
+    const [notifPermission, setNotifPermission] = useState(Notification.permission)
 
-            try {
-                // 2. Request permission (Browser native prompt)
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    // 3. Get Token
-                    // VAPID Key from Project Settings -> Cloud Messaging -> Web Configuration
-                    const token = await getToken(messaging, {
-                        vapidKey: 'BMQJ2K5T3L8Z6X9Y4U1W7V0N2M5P8R6S1T4O9L2K8J7H6G5F4D3A2S1' // Replace with your actual VAPID public key if needed, or rely on manifest
-                    });
-
-                    if (token) {
-                        // 4. Save to Firestore
-                        await setDoc(doc(db, 'fcm_tokens', user.email), {
-                            token: token,
-                            uid: user.uid,
-                            updatedAt: new Date().toISOString()
-                        });
-                        console.log("Notification Token Saved", token);
-                    }
-                }
-            } catch (err) {
-                console.log("Notification permission error/denied", err);
-            }
+    const handleEnableNotifications = async () => {
+        if (!messaging) {
+            alert("Messaging not supported in this browser.")
+            return
         }
+        try {
+            const permission = await Notification.requestPermission()
+            setNotifPermission(permission)
 
-        if (user) {
-            requestNotificationPermission();
+            if (permission === 'granted') {
+                const token = await getToken(messaging, {
+                    vapidKey: 'BMQJ2K5T3L8Z6X9Y4U1W7V0N2M5P8R6S1T4O9L2K8J7H6G5F4D3A2S1'
+                })
+
+                if (token) {
+                    // 1. Save to Firestore
+                    await setDoc(doc(db, 'fcm_tokens', user.email), {
+                        token: token,
+                        uid: user.uid,
+                        updatedAt: new Date().toISOString()
+                    })
+
+                    // 2. Send Welcome Notification
+                    await fetch('/api/notify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            tokens: [token],
+                            title: 'Notifications Enabled! 🎉',
+                            body: 'You will now receive updates when mentioned in Team Chat.',
+                            link: '/dashboard'
+                        })
+                    })
+                    alert("Notifications enabled! A test message has been sent.")
+                }
+            }
+        } catch (error) {
+            console.error("Notification Error:", error)
+            alert("Error enabling notifications: " + error.message)
+        }
+    }
+
+    // Still try silent update if already granted (to keep token fresh)
+    useEffect(() => {
+        if (Notification.permission === 'granted' && messaging && user) {
+            getToken(messaging, { vapidKey: 'BMQJ2K5T3L8Z6X9Y4U1W7V0N2M5P8R6S1T4O9L2K8J7H6G5F4D3A2S1' })
+                .then(token => {
+                    if (token) {
+                        setDoc(doc(db, 'fcm_tokens', user.email), { token, uid: user.uid, updatedAt: new Date().toISOString() })
+                    }
+                })
+                .catch(e => console.log('Silent token refresh failed', e))
         }
     }, [user])
 
@@ -285,6 +308,19 @@ export default function Dashboard({ user }) {
                     <img src="/logo.svg" alt="Logo" style={{ height: 24 }} /> IdeaBomb
                 </h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                    {notifPermission === 'default' && (
+                        <button
+                            onClick={handleEnableNotifications}
+                            style={{
+                                background: 'linear-gradient(135deg, #FF6B6B, #EE5253)',
+                                color: 'white', border: 'none', padding: '8px 16px', borderRadius: 20,
+                                cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 8,
+                                boxShadow: '0 4px 10px rgba(238, 82, 83, 0.3)', fontSize: '0.9rem'
+                            }}
+                        >
+                            <span style={{ fontSize: '1.2rem' }}>🔔</span> Enable Notifications
+                        </button>
+                    )}
                     {user && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: theme.textPrim }}>
                             <img src={user.photoURL} alt="User" style={{ width: 32, height: 32, borderRadius: '50%' }} />
