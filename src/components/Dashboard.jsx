@@ -57,12 +57,8 @@ export default function Dashboard({ user }) {
         return 'denied' // validation failure fallback
     })
 
-    // First-Time Notification Modal
-    const [showNotifModal, setShowNotifModal] = useState(() => {
-        if (typeof window === 'undefined' || !('Notification' in window)) return false
-        if (Notification.permission !== 'default') return false
-        return !localStorage.getItem('hasSeenNotifModal')
-    })
+    // First-Time Notification Modal - DISABLED per user request
+    const [showNotifModal, setShowNotifModal] = useState(false)
 
     const handleEnableNotifications = async () => {
         const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY

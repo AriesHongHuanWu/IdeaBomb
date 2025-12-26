@@ -5,7 +5,7 @@ import {
     FiCheckCircle, FiCircle, FiX, FiInbox, FiSun, FiCalendar as FiUpcoming,
     FiFlag, FiMenu, FiChevronRight, FiChevronDown, FiUserPlus, FiUsers
 } from 'react-icons/fi'
-import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, orderBy, serverTimestamp, setDoc, arrayUnion } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, orderBy, serverTimestamp, setDoc, arrayUnion, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { useSettings } from '../App'
@@ -188,10 +188,39 @@ export default function TodoView({ user, isOpen, onClose }) {
         }
     }
 
+    // --- AI Conversion State ---
+    const [exportModal, setExportModal] = useState(null) // { boards: [], folders: [] }
+    const [exportTarget, setExportTarget] = useState('new') // 'new' | boardId
+    const [exportFolder, setExportFolder] = useState('')
+
+    // --- Open Export Modal ---
+    const openExportModal = async () => {
+        if (todos.length === 0) return alert("No tasks to convert!")
+
+        // Fetch user's boards for selection
+        try {
+            const q = query(
+                collection(db, 'boards'),
+                where('allowedEmails', 'array-contains', user.email)
+            )
+            const snap = await getDocs(q)
+            const boards = snap.docs.map(d => ({ id: d.id, title: d.data().title, folder: d.data().folder }))
+            const folders = [...new Set(boards.map(b => b.folder).filter(Boolean))]
+
+            setExportModal({ boards, folders })
+            setExportTarget('new')
+            setExportFolder('')
+        } catch (e) {
+            console.error(e)
+            alert('Error loading boards')
+        }
+    }
+
     // --- AI Conversion ---
     const convertToWhiteboard = async () => {
-        if (todos.length === 0) return alert("No tasks to convert!")
         setIsAIProcessing(true)
+        setExportModal(null)
+
         try {
             const apiKey = import.meta.env.VITE_GEMINI_API_KEY
             if (!apiKey) throw new Error("API Key missing")
@@ -199,32 +228,53 @@ export default function TodoView({ user, isOpen, onClose }) {
             const genAI = new GoogleGenerativeAI(apiKey)
             const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash-lite" })
 
-            const taskList = todos.map(t => `- [P${t.priority || 4}] ${t.text} (Due: ${t.dueDate || 'None'})`).join('\n')
+            // Enhanced task list with more context
+            const taskList = todos.map(t => {
+                let line = `- [Priority ${t.priority || 4}] "${t.text}"`
+                if (t.dueDate) line += ` (Due: ${t.dueDate})`
+                if (t.completed) line += ` [COMPLETED]`
+                if (t.members && t.members.length > 1) line += ` [Shared with ${t.members.length} people]`
+                return line
+            }).join('\n')
 
             const prompt = `
-                    Act as a Project Manager using Kanban methodology.
-                    Organize these tasks into a structured project board.
-                    
-                    Tasks:
-                    ${taskList}
-                    
-                    Goal: Group tasks into logical Columns (e.g., "To Do", "In Progress", "Backlog", or by Topic).
-                    Sort them by Priority (P1 highest) within columns.
-                    
-                    Return validated JSON strictly matching this structure:
-                    {
-                        "title": "Smart Project Board",
-                        "columns": [
-                            {
-                                "title": "Column Name",
-                                "color": "#e0e0e0", 
-                                "tasks": [
-                                    { "content": "Task Content", "priority": 1 }
-                                ]
-                            }
-                        ]
-                    }
-                `
+You are a professional project manager and visual thinking expert.
+Analyze the following task list and create a comprehensive, actionable project board.
+
+## User's Tasks:
+${taskList}
+
+## Your Mission:
+1. **Analyze** - Identify themes, dependencies, and logical groupings
+2. **Categorize** - Group tasks into meaningful columns (don't just use generic "To Do/In Progress/Done")
+3. **Enhance** - For each task, add:
+   - A clearer, action-oriented title
+   - Brief context or next steps (1-2 sentences)
+   - Suggested timeline if missing
+4. **Visualize** - Suggest connections between related tasks
+
+## Output Requirements:
+Return ONLY valid JSON matching this exact structure:
+{
+    "title": "Descriptive Board Title Based on Content",
+    "insights": "Brief 1-2 sentence summary of what this project is about",
+    "columns": [
+        {
+            "title": "Column Name",
+            "color": "#hex_color",
+            "tasks": [
+                {
+                    "content": "Enhanced task description with context",
+                    "priority": 1,
+                    "originalTask": "Original task text for reference"
+                }
+            ]
+        }
+    ]
+}
+
+Use these colors: #ffcdf3 (urgent), #ffe7b3 (important), #d4e5ff (normal), #e8f5e9 (low/done)
+`
 
             const result = await model.generateContent(prompt)
             const text = (await result.response).text()
@@ -232,10 +282,7 @@ export default function TodoView({ user, isOpen, onClose }) {
             const data = JSON.parse(jsonStr)
 
             // --- Programmatic Layout Calculation ---
-            // Instead of trusting AI for geometry, we build the layout ourselves.
             const nodes = []
-
-            // Generate UUID helper
             const uuid = () => crypto.randomUUID()
 
             const COL_WIDTH = 300
@@ -243,29 +290,28 @@ export default function TodoView({ user, isOpen, onClose }) {
             const START_X = 100
             const START_Y = 100
 
-            // Priority Colors
             const P_COLORS = { 1: '#ffcdf3', 2: '#ffe7b3', 3: '#d4e5ff', 4: '#f0f0f0' }
 
                 ; (data.columns || []).forEach((col, colIdx) => {
                     const colX = START_X + colIdx * (COL_WIDTH + COL_GAP)
                     let currentY = START_Y
 
-                    // 1. Create Column Header Node
+                    // Column Header
                     nodes.push({
                         id: uuid(),
-                        type: 'note', // Using Note as header for visual consistency
+                        type: 'note',
                         content: `### ${col.title}`,
                         x: colX,
                         y: currentY - 60,
                         width: COL_WIDTH,
                         height: 50,
-                        color: '#ffffff', // White header
-                        fontSize: 20,
+                        color: col.color || '#ffffff',
+                        fontSize: 18,
                         textAlign: 'center',
-                        locked: true // Optional concept
+                        locked: true
                     })
 
-                        // 2. Create Task Nodes
+                        // Tasks
                         ; (col.tasks || []).forEach((task) => {
                             nodes.push({
                                 id: uuid(),
@@ -274,28 +320,38 @@ export default function TodoView({ user, isOpen, onClose }) {
                                 x: colX,
                                 y: currentY,
                                 width: COL_WIDTH,
-                                height: 150, // Standard height
-                                color: P_COLORS[task.priority] || '#fff9c4', // Fallback yellow
+                                height: 150,
+                                color: P_COLORS[task.priority] || col.color || '#fff9c4',
                                 fontSize: 14
                             })
-                            currentY += 170 // Height + Gap
+                            currentY += 170
                         })
                 })
 
-            const boardRef = await addDoc(collection(db, 'boards'), {
-                title: data.title || "AI Kanban Board",
-                createdBy: user.uid,
-                ownerId: user.uid,
-                ownerEmail: user.email,
-                createdAt: new Date().toISOString(),
-                allowedEmails: [user.email],
-                members: [user.uid],
-                elements: [],
-                folder: 'AI Generated'
-            })
+            let targetBoardId
 
+            if (exportTarget === 'new') {
+                // Create new board
+                const boardRef = await addDoc(collection(db, 'boards'), {
+                    title: data.title || "AI Kanban Board",
+                    createdBy: user.uid,
+                    ownerId: user.uid,
+                    ownerEmail: user.email,
+                    createdAt: new Date().toISOString(),
+                    allowedEmails: [user.email],
+                    members: [user.uid],
+                    elements: [],
+                    folder: exportFolder || 'AI Generated'
+                })
+                targetBoardId = boardRef.id
+            } else {
+                // Use existing board
+                targetBoardId = exportTarget
+            }
+
+            // Add nodes to board
             const batchPromises = nodes.map(node =>
-                setDoc(doc(db, `boards/${boardRef.id}/nodes`, node.id), {
+                setDoc(doc(db, `boards/${targetBoardId}/nodes`, node.id), {
                     ...node,
                     createdBy: user.uid,
                     createdAt: serverTimestamp()
@@ -303,7 +359,7 @@ export default function TodoView({ user, isOpen, onClose }) {
             )
 
             await Promise.all(batchPromises)
-            window.location.href = `/board/${boardRef.id}`
+            window.location.href = `/board/${targetBoardId}`
 
         } catch (error) {
             console.error("AI Error:", error)
@@ -479,7 +535,7 @@ export default function TodoView({ user, isOpen, onClose }) {
                             {!isMobile && (
                                 <div style={{ marginTop: 'auto', padding: 20 }}>
                                     <button
-                                        onClick={convertToWhiteboard}
+                                        onClick={openExportModal}
                                         disabled={isAIProcessing}
                                         style={{
                                             width: '100%', padding: '10px', borderRadius: 8, border: 'none',
@@ -688,6 +744,69 @@ export default function TodoView({ user, isOpen, onClose }) {
                             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                                 <button onClick={() => setInviteModal(null)} style={{ padding: '10px 20px', borderRadius: 8, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.text, cursor: 'pointer' }}>Cancel</button>
                                 <button onClick={sendInvite} disabled={!inviteEmail.includes('@')} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: inviteEmail.includes('@') ? '#9b59b6' : '#ccc', color: 'white', cursor: inviteEmail.includes('@') ? 'pointer' : 'default', fontWeight: 600 }}>Send Invite</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Export to Whiteboard Modal */}
+            <AnimatePresence>
+                {exportModal && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            style={{ background: theme.cardBg, padding: 25, borderRadius: 16, width: '90%', maxWidth: 450, boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}
+                        >
+                            <h3 style={{ margin: '0 0 15px 0', color: theme.textPrim, display: 'flex', alignItems: 'center', gap: 10 }}>✨ Export to Whiteboard</h3>
+                            <p style={{ margin: '0 0 20px 0', color: theme.text, opacity: 0.7, fontSize: '0.85rem' }}>
+                                AI will analyze your {todos.length} tasks and create a visual Kanban board.
+                            </p>
+
+                            {/* Destination Selection */}
+                            <div style={{ marginBottom: 20 }}>
+                                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500, color: theme.textPrim }}>Destination</label>
+                                <select
+                                    value={exportTarget}
+                                    onChange={e => setExportTarget(e.target.value)}
+                                    style={{ width: '100%', padding: 12, borderRadius: 8, border: `1px solid ${theme.border}`, fontSize: '0.95rem', background: theme.bg, color: theme.text, outline: 'none' }}
+                                >
+                                    <option value="new">➕ Create New Board</option>
+                                    {exportModal.boards.map(b => (
+                                        <option key={b.id} value={b.id}>📋 {b.title} {b.folder && `(${b.folder})`}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Folder Selection (only for new boards) */}
+                            {exportTarget === 'new' && (
+                                <div style={{ marginBottom: 20 }}>
+                                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500, color: theme.textPrim }}>Folder</label>
+                                    <input
+                                        type="text"
+                                        value={exportFolder}
+                                        onChange={e => setExportFolder(e.target.value)}
+                                        placeholder="AI Generated"
+                                        list="folder-suggestions"
+                                        style={{ width: '100%', padding: 12, borderRadius: 8, border: `1px solid ${theme.border}`, fontSize: '0.95rem', background: theme.bg, color: theme.text, outline: 'none' }}
+                                    />
+                                    <datalist id="folder-suggestions">
+                                        {exportModal.folders.map(f => <option key={f} value={f} />)}
+                                    </datalist>
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                                <button onClick={() => setExportModal(null)} style={{ padding: '10px 20px', borderRadius: 8, border: `1px solid ${theme.border}`, background: 'transparent', color: theme.text, cursor: 'pointer' }}>Cancel</button>
+                                <button
+                                    onClick={convertToWhiteboard}
+                                    disabled={isAIProcessing}
+                                    style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white', cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)' }}
+                                >
+                                    {isAIProcessing ? 'Processing...' : '✨ Generate'}
+                                </button>
                             </div>
                         </motion.div>
                     </div>
