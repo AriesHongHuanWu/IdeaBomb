@@ -1634,17 +1634,21 @@ const DraggableNode = ({ node, scale, isSelected, onSelect, onUpdatePosition, on
         window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp)
     }
 
-    const handleStyle = { position: 'absolute', width: 12, height: 12, background: 'white', borderRadius: '50%', border: '1px solid #999', zIndex: 101 }
+    const isMobile = window.innerWidth < 768
+    const HANDLE_SIZE = isMobile ? 24 : 12
+    const HANDLE_OFFSET = -HANDLE_SIZE / 2
+
+    const handleStyle = { position: 'absolute', width: HANDLE_SIZE, height: HANDLE_SIZE, background: 'white', borderRadius: '50%', border: '1px solid #999', zIndex: 101 }
     // Handles: nw, n, ne, e, se, s, sw, w
     const handles = [
-        { dir: 'nw', top: -6, left: -6, cursor: 'nwse-resize' },
-        { dir: 'n', top: -6, left: '50%', marginLeft: -6, cursor: 'ns-resize' },
-        { dir: 'ne', top: -6, right: -6, cursor: 'nesw-resize' },
-        { dir: 'e', top: '50%', right: -6, marginTop: -6, cursor: 'ew-resize' },
-        { dir: 'se', bottom: -6, right: -6, cursor: 'nwse-resize' },
-        { dir: 's', bottom: -6, left: '50%', marginLeft: -6, cursor: 'ns-resize' },
-        { dir: 'sw', bottom: -6, left: -6, cursor: 'nesw-resize' },
-        { dir: 'w', top: '50%', left: -6, marginTop: -6, cursor: 'ew-resize' }
+        { dir: 'nw', top: HANDLE_OFFSET, left: HANDLE_OFFSET, cursor: 'nwse-resize' },
+        { dir: 'n', top: HANDLE_OFFSET, left: '50%', marginLeft: HANDLE_OFFSET, cursor: 'ns-resize' },
+        { dir: 'ne', top: HANDLE_OFFSET, right: HANDLE_OFFSET, cursor: 'nesw-resize' },
+        { dir: 'e', top: '50%', right: HANDLE_OFFSET, marginTop: HANDLE_OFFSET, cursor: 'ew-resize' },
+        { dir: 'se', bottom: HANDLE_OFFSET, right: HANDLE_OFFSET, cursor: 'nwse-resize' },
+        { dir: 's', bottom: HANDLE_OFFSET, left: '50%', marginLeft: HANDLE_OFFSET, cursor: 'ns-resize' },
+        { dir: 'sw', bottom: HANDLE_OFFSET, left: HANDLE_OFFSET, cursor: 'nesw-resize' },
+        { dir: 'w', top: '50%', left: HANDLE_OFFSET, marginTop: HANDLE_OFFSET, cursor: 'ew-resize' }
     ]
 
     const isSuggested = node.aiStatus === 'suggested'

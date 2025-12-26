@@ -3,12 +3,19 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     FiCheck, FiPlus, FiCalendar, FiClock, FiTag, FiTrash2, FiMoreHorizontal,
     FiCheckCircle, FiCircle, FiX, FiInbox, FiSun, FiCalendar as FiUpcoming,
-    FiFlag, FiMenu, FiChevronRight, FiChevronDown
+    FiFlag, FiMenu, FiChevronRight, FiChevronDown, FiUserPlus, FiUsers
 } from 'react-icons/fi'
-import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, orderBy, serverTimestamp, setDoc } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, orderBy, serverTimestamp, setDoc, arrayUnion } from 'firebase/firestore'
 import { db } from '../firebase'
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { useSettings } from '../App'
+
+// Calendar Imports
+import { Calendar, momentLocalizer } from 'react-big-calendar'
+import moment from 'moment'
+import 'react-big-calendar/lib/css/react-big-calendar.css'
+
+const localizer = momentLocalizer(moment)
 
 // --- Components ---
 
@@ -39,7 +46,7 @@ const PriorityFlag = ({ priority, selected, onClick }) => {
 
 export default function TodoView({ user, isOpen, onClose }) {
     const [todos, setTodos] = useState([])
-    const [activeView, setActiveView] = useState('inbox') // inbox, today, upcoming
+    const [activeView, setActiveView] = useState('inbox') // inbox, today, upcoming, calendar
     const [newTodo, setNewTodo] = useState('')
     const [newTodoDate, setNewTodoDate] = useState('')
     const [newTodoPriority, setNewTodoPriority] = useState(4) // 4 = normal
@@ -69,6 +76,7 @@ export default function TodoView({ user, isOpen, onClose }) {
             if (activeView === 'inbox') return true
             if (activeView === 'today') return t.dueDate === today
             if (activeView === 'upcoming') return t.dueDate && t.dueDate > today
+            if (activeView === 'calendar') return true // Calendar handles its own filtering
             return true
         }).sort((a, b) => {
             // Sort by Priority (asc, 1 is high) then Date
@@ -111,6 +119,21 @@ export default function TodoView({ user, isOpen, onClose }) {
 
     const updatePriority = async (id, p) => {
         await updateDoc(doc(db, 'todos', id), { priority: p })
+    }
+
+    const shareTodo = async (todo) => {
+        const email = prompt("Enter email to share this task with:")
+        if (email && email.includes('@')) {
+            try {
+                await updateDoc(doc(db, 'todos', todo.id), {
+                    members: arrayUnion(email)
+                })
+                alert(`Shared with ${email}`)
+            } catch (e) {
+                console.error(e)
+                alert("Error sharing task")
+            }
+        }
     }
 
     // --- AI Conversion ---
@@ -238,6 +261,38 @@ export default function TodoView({ user, isOpen, onClose }) {
         }
     }
 
+    // Calendar Events Mapper
+    const calendarEvents = todos.filter(t => t.dueDate).map(t => ({
+        id: t.id,
+        title: t.text,
+        start: new Date(t.dueDate),
+        end: new Date(t.dueDate),
+        allDay: true,
+        resource: t
+    }))
+
+    const CalendarComponent = () => (
+        <div style={{ height: '100%', padding: 20 }}>
+            <style>{`
+                .rbc-calendar { color: ${theme.text} !important; font-family: 'Inter', sans-serif; }
+                .rbc-toolbar button { color: ${theme.text}; }
+                .rbc-toolbar button:active, .rbc-toolbar button.rbc-active { background: ${theme.highlight}; color: white; }
+                .rbc-off-range-bg { background: ${theme.bg === '#1a1a1a' ? '#2a2a2a' : '#f0f0f0'}; }
+                .rbc-day-bg { background: transparent; }
+                .rbc-event { background: var(--primary) !important; border-radius: 4px; }
+            `}</style>
+            <Calendar
+                localizer={localizer}
+                events={calendarEvents}
+                startAccessor="start"
+                endAccessor="end"
+                style={{ height: 500 }}
+                views={['month', 'week', 'day']}
+                onSelectEvent={event => alert(`Task: ${event.title}\nDue: ${moment(event.start).format('YYYY-MM-DD')}\nPriority: P${event.resource.priority}`)}
+            />
+        </div>
+    )
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -288,6 +343,12 @@ export default function TodoView({ user, isOpen, onClose }) {
                         >
                             <FiUpcoming color="#692fc2" /> {t('upcoming')}
                         </div>
+                        <div
+                            onClick={() => setActiveView('calendar')}
+                            style={{ padding: '8px 20px', cursor: 'pointer', background: activeView === 'calendar' ? theme.activeBg : 'transparent', fontWeight: activeView === 'calendar' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: 10, color: activeView === 'calendar' ? theme.activeText : theme.text, whiteSpace: 'nowrap', borderRadius: isMobile ? 20 : 0 }}
+                        >
+                            <FiCalendar color="#e58e26" /> {t('calendar') || "Calendar"}
+                        </div>
 
                         {!isMobile && (
                             <div style={{ marginTop: 'auto', padding: 20 }}>
@@ -307,7 +368,7 @@ export default function TodoView({ user, isOpen, onClose }) {
                     </div>
 
                     {/* --- Main Content --- */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
                         {/* Header */}
                         <div style={{ padding: '15px 20px', borderBottom: `1px solid ${theme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -315,113 +376,127 @@ export default function TodoView({ user, isOpen, onClose }) {
                                 {activeView === 'inbox' && t('inbox')}
                                 {activeView === 'today' && t('today')}
                                 {activeView === 'upcoming' && t('upcoming')}
+                                {activeView === 'calendar' && (t('calendar') || "Calendar")}
                             </h2>
                             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 5, color: theme.text }}><FiX size={20} /></button>
                         </div>
 
-                        {/* Task List */}
-                        <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+                        {/* Content Area */}
+                        {activeView === 'calendar' ? (
+                            <CalendarComponent />
+                        ) : (
+                            /* Task List */
+                            <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
 
-                            {filteredTodos.length === 0 ? (
-                                <div style={{ textAlign: 'center', marginTop: 50, color: theme.text, opacity: 0.5 }}>
-                                    {t('noTasks')}
-                                </div>
-                            ) : filteredTodos.map(todo => (
-                                <div
-                                    key={todo.id}
-                                    style={{
-                                        display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 15, position: 'relative',
-                                        padding: '10px 0', borderBottom: `1px solid ${theme.border}`
-                                    }}
-                                >
+                                {filteredTodos.length === 0 ? (
+                                    <div style={{ textAlign: 'center', marginTop: 50, color: theme.text, opacity: 0.5 }}>
+                                        {t('noTasks')}
+                                    </div>
+                                ) : filteredTodos.map(todo => (
                                     <div
-                                        onClick={() => toggleComplete(todo)}
+                                        key={todo.id}
                                         style={{
-                                            cursor: 'pointer', marginTop: 3,
-                                            width: 18, height: 18, borderRadius: '50%',
-                                            border: `2px solid ${todo.priority === 1 ? '#d1453b' : todo.priority === 2 ? '#eb8909' : todo.priority === 3 ? '#246fe0' : theme.text}`,
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            background: todo.completed ? theme.text : 'transparent'
+                                            display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 15, position: 'relative',
+                                            padding: '10px 0', borderBottom: `1px solid ${theme.border}`
                                         }}
                                     >
-                                        {todo.completed && <FiCheck size={12} color={theme.bg} />}
-                                    </div>
-
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{
-                                            textDecoration: todo.completed ? 'line-through' : 'none',
-                                            color: todo.completed ? theme.text : theme.textPrim,
-                                            fontSize: '0.95rem', lineHeight: '1.5', opacity: todo.completed ? 0.6 : 1
-                                        }}>
-                                            {todo.text}
+                                        <div
+                                            onClick={() => toggleComplete(todo)}
+                                            style={{
+                                                cursor: 'pointer', marginTop: 3,
+                                                width: 18, height: 18, borderRadius: '50%',
+                                                border: `2px solid ${todo.priority === 1 ? '#d1453b' : todo.priority === 2 ? '#eb8909' : todo.priority === 3 ? '#246fe0' : theme.text}`,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                background: todo.completed ? theme.text : 'transparent'
+                                            }}
+                                        >
+                                            {todo.completed && <FiCheck size={12} color={theme.bg} />}
                                         </div>
-                                        {todo.dueDate && (
-                                            <div style={{ fontSize: '0.75rem', color: '#d1453b', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                <FiCalendar size={10} /> {todo.dueDate}
+
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{
+                                                textDecoration: todo.completed ? 'line-through' : 'none',
+                                                color: todo.completed ? theme.text : theme.textPrim,
+                                                fontSize: '0.95rem', lineHeight: '1.5', opacity: todo.completed ? 0.6 : 1
+                                            }}>
+                                                {todo.text}
+                                            </div>
+                                            {todo.dueDate && (
+                                                <div style={{ fontSize: '0.75rem', color: '#d1453b', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                    <FiCalendar size={10} /> {todo.dueDate}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: 5, opacity: 0.5 }}>
+                                            <button onClick={() => shareTodo(todo)} title="Share Task" style={{ border: 'none', background: 'none', cursor: 'pointer', color: theme.text }}>
+                                                <FiUserPlus size={14} />
+                                            </button>
+                                            <div style={{ fontSize: '0.7rem', color: theme.text, marginTop: 5 }}>P{todo.priority || 4}</div>
+                                            <button onClick={() => deleteTodo(todo.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: theme.text }}>
+                                                <FiTrash2 size={14} />
+                                            </button>
+                                        </div>
+                                        {todo.members && todo.members.length > 1 && (
+                                            <div style={{ position: 'absolute', bottom: 5, right: 80, fontSize: '0.65rem', color: theme.activeText, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                                <FiUsers /> {todo.members.length}
                                             </div>
                                         )}
                                     </div>
+                                ))}
 
-                                    <div style={{ display: 'flex', gap: 5, opacity: 0.5 }}>
-                                        <div style={{ fontSize: '0.7rem', color: theme.text, marginTop: 5 }}>P{todo.priority || 4}</div>
-                                        <button onClick={() => deleteTodo(todo.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: theme.text }}>
-                                            <FiTrash2 size={14} />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-
-                            <form onSubmit={handleAdd} style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, border: `1px solid ${theme.border}`, borderRadius: 10, padding: 10 }}>
-                                <input
-                                    value={newTodo}
-                                    onChange={e => setNewTodo(e.target.value)}
-                                    placeholder={t('addTask') + "..."}
-                                    style={{
-                                        border: 'none', outline: 'none', fontSize: '1rem', fontWeight: 500,
-                                        background: 'transparent', color: theme.textPrim
-                                    }}
-                                    autoFocus
-                                />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ display: 'flex', gap: 8 }}>
-                                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                            <input
-                                                type="date"
-                                                value={newTodoDate}
-                                                onChange={e => setNewTodoDate(e.target.value)}
-                                                style={{
-                                                    border: `1px solid ${theme.border}`, borderRadius: 4, padding: '4px 8px',
-                                                    fontSize: '0.8rem', color: theme.text, outline: 'none',
-                                                    fontFamily: 'inherit', background: theme.inputBg || 'transparent'
-                                                }}
-                                            />
-                                            <div style={{ display: 'flex', gap: 2, marginLeft: 8 }}>
-                                                {[1, 2, 3, 4].map(p => (
-                                                    <PriorityFlag
-                                                        key={p}
-                                                        priority={p}
-                                                        selected={newTodoPriority === p}
-                                                        onClick={() => setNewTodoPriority(p)}
-                                                    />
-                                                ))}
+                                <form onSubmit={handleAdd} style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, border: `1px solid ${theme.border}`, borderRadius: 10, padding: 10 }}>
+                                    <input
+                                        value={newTodo}
+                                        onChange={e => setNewTodo(e.target.value)}
+                                        placeholder={t('addTask') + "..."}
+                                        style={{
+                                            border: 'none', outline: 'none', fontSize: '1rem', fontWeight: 500,
+                                            background: 'transparent', color: theme.textPrim
+                                        }}
+                                        autoFocus
+                                    />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', gap: 8 }}>
+                                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                                <input
+                                                    type="date"
+                                                    value={newTodoDate}
+                                                    onChange={e => setNewTodoDate(e.target.value)}
+                                                    style={{
+                                                        border: `1px solid ${theme.border}`, borderRadius: 4, padding: '4px 8px',
+                                                        fontSize: '0.8rem', color: theme.text, outline: 'none',
+                                                        fontFamily: 'inherit', background: theme.inputBg || 'transparent'
+                                                    }}
+                                                />
+                                                <div style={{ display: 'flex', gap: 2, marginLeft: 8 }}>
+                                                    {[1, 2, 3, 4].map(p => (
+                                                        <PriorityFlag
+                                                            key={p}
+                                                            priority={p}
+                                                            selected={newTodoPriority === p}
+                                                            onClick={() => setNewTodoPriority(p)}
+                                                        />
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
+                                        <button
+                                            type="submit"
+                                            disabled={!newTodo}
+                                            style={{
+                                                background: newTodo ? '#db4c3f' : theme.activeBg,
+                                                color: newTodo ? 'white' : theme.activeText,
+                                                border: 'none', padding: '6px 12px', borderRadius: 6, fontWeight: 'bold', cursor: newTodo ? 'pointer' : 'default'
+                                            }}
+                                        >
+                                            {t('addTask')}
+                                        </button>
                                     </div>
-                                    <button
-                                        type="submit"
-                                        disabled={!newTodo}
-                                        style={{
-                                            background: newTodo ? '#db4c3f' : theme.activeBg,
-                                            color: newTodo ? 'white' : theme.activeText,
-                                            border: 'none', padding: '6px 12px', borderRadius: 6, fontWeight: 'bold', cursor: newTodo ? 'pointer' : 'default'
-                                        }}
-                                    >
-                                        {t('addTask')}
-                                    </button>
-                                </div>
-                            </form>
+                                </form>
 
-                        </div>
+                            </div>
+                        )}
                     </div>
                 </motion.div>
             )}
