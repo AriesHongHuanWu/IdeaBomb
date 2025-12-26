@@ -271,23 +271,87 @@ export default function TodoView({ user, isOpen, onClose }) {
         resource: t
     }))
 
+    const eventStyleGetter = (event) => {
+        const priorityColors = {
+            1: '#d1453b', // Red
+            2: '#eb8909', // Orange
+            3: '#246fe0', // Blue
+            4: '#808080'  // Grey
+        }
+        const color = priorityColors[event.resource.priority] || '#808080'
+        return {
+            style: {
+                backgroundColor: color,
+                borderRadius: '6px',
+                opacity: 0.9,
+                color: 'white',
+                border: 'none',
+                display: 'block',
+                fontSize: '0.85rem',
+                padding: '2px 6px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }
+        }
+    }
+
     const CalendarComponent = () => (
-        <div style={{ height: '100%', padding: 20 }}>
+        <div style={{ height: '100%', padding: '0 20px 20px' }}>
             <style>{`
-                .rbc-calendar { color: ${theme.text} !important; font-family: 'Inter', sans-serif; }
-                .rbc-toolbar button { color: ${theme.text}; }
-                .rbc-toolbar button:active, .rbc-toolbar button.rbc-active { background: ${theme.highlight}; color: white; }
-                .rbc-off-range-bg { background: ${theme.bg === '#1a1a1a' ? '#2a2a2a' : '#f0f0f0'}; }
-                .rbc-day-bg { background: transparent; }
-                .rbc-event { background: var(--primary) !important; border-radius: 4px; }
+                .rbc-calendar { font-family: 'Inter', sans-serif; color: ${theme.text}; }
+                
+                /* Toolbar */
+                .rbc-toolbar { margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+                .rbc-toolbar-label { font-size: 1.2rem; font-weight: 700; color: ${theme.textPrim}; }
+                .rbc-btn-group { box-shadow: none; border: 1px solid ${theme.border}; border-radius: 8px; overflow: hidden; }
+                .rbc-btn-group button { border: none; background: ${theme.bg}; color: ${theme.text}; cursor: pointer; padding: 6px 12px; font-weight: 500; transition: 0.2s; }
+                .rbc-btn-group button:hover { background: ${theme.activeBg}; }
+                .rbc-btn-group button.rbc-active { background: ${theme.activeBg}; color: ${theme.activeText}; font-weight: 700; box-shadow: none; }
+                
+                /* Header */
+                .rbc-header { padding: 12px 0; font-weight: 600; font-size: 0.85rem; color: ${theme.text}; border-bottom: 1px solid ${theme.border}; text-transform: uppercase; letter-spacing: 0.5px; }
+                
+                /* Grid & Month */
+                .rbc-month-view { border: 1px solid ${theme.border}; border-radius: 12px; overflow: hidden; background: ${theme.cardBg}; }
+                .rbc-day-bg { border-left: 1px solid ${theme.border}; }
+                .rbc-month-row + .rbc-month-row { border-top: 1px solid ${theme.border}; }
+                .rbc-off-range-bg { background: ${theme.bg === '#1a1a1a' ? 'rgba(255,255,255,0.03)' : '#f9fafb'}; }
+                
+                /* Date Cell */
+                .rbc-date-cell { padding: 8px; font-size: 0.9rem; font-weight: 500; color: ${theme.text}; opacity: 0.8; }
+                .rbc-today { background: ${theme.activeBg}; }
+                .rbc-now { color: ${theme.activeText}; font-weight: 700; }
+
+                /* Hide default border mess */
+                .rbc-month-row { border: none; }
+                .rbc-day-bg + .rbc-day-bg { border-left: 1px solid ${theme.border}; }
             `}</style>
             <Calendar
                 localizer={localizer}
                 events={calendarEvents}
                 startAccessor="start"
                 endAccessor="end"
-                style={{ height: 500 }}
-                views={['month', 'week', 'day']}
+                style={{ height: 'calc(100% - 20px)' }}
+                views={['month', 'week', 'agenda']}
+                eventPropGetter={eventStyleGetter}
+                components={{
+                    toolbar: (props) => (
+                        <div className="rbc-toolbar">
+                            <span className="rbc-btn-group">
+                                <button type="button" onClick={() => props.onNavigate('PREV')}><FiChevronDown style={{ transform: 'rotate(90deg)' }} /></button>
+                                <button type="button" onClick={() => props.onNavigate('TODAY')}>{t('today')}</button>
+                                <button type="button" onClick={() => props.onNavigate('NEXT')}><FiChevronRight /></button>
+                            </span>
+                            <span className="rbc-toolbar-label">{props.label}</span>
+                            <span className="rbc-btn-group">
+                                {props.views.map(view => (
+                                    <button key={view} type="button" className={props.view === view ? 'rbc-active' : ''} onClick={() => props.onView(view)}>
+                                        {view.charAt(0).toUpperCase() + view.slice(1)}
+                                    </button>
+                                ))}
+                            </span>
+                        </div>
+                    )
+                }}
                 onSelectEvent={event => alert(`Task: ${event.title}\nDue: ${moment(event.start).format('YYYY-MM-DD')}\nPriority: P${event.resource.priority}`)}
             />
         </div>
