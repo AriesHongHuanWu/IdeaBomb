@@ -336,7 +336,9 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
                                             borderRadius: isMe ? '15px 15px 0 15px' : '15px 15px 15px 0',
                                             boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
                                             fontSize: '0.95rem',
-                                            border: isAI ? `1px solid ${theme?.border || '#eee'}` : 'none'
+                                            border: isAI ? `1px solid ${theme?.border || '#eee'}` : 'none',
+                                            wordBreak: 'break-word',
+                                            overflowWrap: 'break-word'
                                         }}>
                                             {msg.content}
                                         </div>
