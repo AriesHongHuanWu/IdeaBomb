@@ -63,7 +63,7 @@ export default function Dashboard({ user }) {
 
             if (permission === 'granted') {
                 const token = await getToken(messaging, {
-                    vapidKey: 'BMQJ2K5T3L8Z6X9Y4U1W7V0N2M5P8R6S1T4O9L2K8J7H6G5F4D3A2S1'
+                    vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
                 })
 
                 if (token) {
@@ -97,7 +97,7 @@ export default function Dashboard({ user }) {
     // Still try silent update if already granted (to keep token fresh)
     useEffect(() => {
         if (Notification.permission === 'granted' && messaging && user) {
-            getToken(messaging, { vapidKey: 'BMQJ2K5T3L8Z6X9Y4U1W7V0N2M5P8R6S1T4O9L2K8J7H6G5F4D3A2S1' })
+            getToken(messaging, { vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY })
                 .then(token => {
                     if (token) {
                         setDoc(doc(db, 'fcm_tokens', user.email), { token, uid: user.uid, updatedAt: new Date().toISOString() })
