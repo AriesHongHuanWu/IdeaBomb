@@ -200,8 +200,8 @@ export default function LandingPage({ user }) {
                         <div style={{ color: theme.text, opacity: 0.7, fontSize: '0.9rem' }}>© 2025 IdeaBomb Inc. {t('rights')}</div>
                         <div style={{ color: theme.text, opacity: 0.6, fontSize: '0.8rem', marginTop: 10, fontWeight: 500 }}>{t('createdBy')}</div>
                         <div style={{ marginTop: 15, display: 'flex', gap: 15 }}>
-                            <span onClick={() => navigate('/terms')} style={{ color: theme.text, opacity: 0.7, fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.textDecoration = 'underline'} onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>{t('terms')}</span>
-                            <span onClick={() => navigate('/privacy')} style={{ color: theme.text, opacity: 0.7, fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.textDecoration = 'underline'} onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>{t('privacy')}</span>
+                            <a href="/terms" style={{ color: theme.text, opacity: 0.7, fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.textDecoration = 'underline'} onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>{t('terms')}</a>
+                            <a href="/privacy" style={{ color: theme.text, opacity: 0.7, fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.textDecoration = 'underline'} onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>{t('privacy')}</a>
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: 60, flexWrap: 'wrap' }}>
