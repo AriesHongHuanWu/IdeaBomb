@@ -6,13 +6,13 @@ export const translations = {
         close: 'Close', signOut: 'Sign Out', loading: 'Loading...',
 
         // Dashboard
-        home: 'Home Page', all: 'All Boards', my: 'My Boards', shared: 'Shared with me',
-        todo: 'TODO', admin: 'Admin Console', folders: 'FOLDERS',
-        newBoard: 'New Board', noBoards: 'No boards found in this view.',
+        home: 'Home', all: 'All Boards', my: 'My Boards', shared: 'Shared with me',
+        todo: 'Tasks', admin: 'Admin Console', folders: 'Folders',
+        newBoard: 'New Board', noBoards: 'No boards found here.',
         untitled: 'Untitled Board', sharedBy: 'Shared by', lastActive: 'Last Active',
         rename: 'Rename', move: 'Move to Folder',
         typeHere: 'Type here...',
-        deleteTitle: 'Delete Board?', deleteMsg: 'Are you sure you want to delete this board? This action cannot be undone.',
+        deleteTitle: 'Delete Board', deleteMsg: 'Are you sure you want to delete this board? This action cannot be undone.',
         renameTitle: 'Rename Board', moveTitle: 'Move to Folder',
 
         // TodoView
