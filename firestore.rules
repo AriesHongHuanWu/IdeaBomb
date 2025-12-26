@@ -45,6 +45,12 @@ service cloud.firestore {
       allow read: if request.auth != null;
     }
 
+    // FCM Tokens for Notifications
+    match /fcm_tokens/{email} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.email == email;
+    }
+
     // System Stats (User Count) and Public Configs
     match /system/{document=**} {
       allow read: if true;
