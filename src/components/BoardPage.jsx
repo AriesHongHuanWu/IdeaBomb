@@ -26,6 +26,7 @@ export default function BoardPage({ user }) {
     const [isShareOpen, setIsShareOpen] = useState(false)
     const [hasAccess, setHasAccess] = useState(true)
     const [activePage, setActivePage] = useState('Page 1')
+    const [allowedEmails, setAllowedEmails] = useState([])
     const [pages, setPages] = useState(['Page 1'])
     const [lastAIAction, setLastAIAction] = useState(null)
     const [clipboard, setClipboard] = useState(null)
@@ -87,7 +88,9 @@ export default function BoardPage({ user }) {
             if (docSnap.exists()) {
                 const data = docSnap.data()
                 setBoardTitle(data.title); const isOwner = data.createdBy === user.uid;
-                const isAllowed = data.allowedEmails?.some(e => e.toLowerCase() === (user.email || '').toLowerCase()) || isOwner;
+                const emails = data.allowedEmails || []
+                setAllowedEmails(emails)
+                const isAllowed = emails.some(e => e.toLowerCase() === (user.email || '').toLowerCase()) || isOwner;
                 if (data.allowedEmails && !isAllowed) { setHasAccess(false) } else { setHasAccess(true) }
                 if (data.pageConfigs) setPageConfigs(data.pageConfigs)
             } else { setBoardTitle('Board Not Found') }
@@ -999,7 +1002,7 @@ export default function BoardPage({ user }) {
                     t={t}
                 />
             </div>
-            <ChatInterface boardId={boardId} user={user} onAction={handleAIAction} nodes={nodes} collaborators={collaborators} />
+            <ChatInterface boardId={boardId} user={user} onAction={handleAIAction} nodes={nodes} collaborators={collaborators} allowedEmails={allowedEmails} />
             {/* Confirm Modal */}
             {confirmModal && (
                 <div style={{

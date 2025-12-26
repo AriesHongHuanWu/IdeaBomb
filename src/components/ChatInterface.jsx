@@ -8,72 +8,57 @@ import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc
 import { useSettings } from '../App'
 
 const SYSTEM_PROMPT = `You are an expert Project Manager & Board Architect AI for IdeaBomb.
-Today is {{TODAY}}. Your goal is to be an **EXPANSIVE, PROACTIVE CONSULTANT**.
-When a user gives a short request, **DO NOT** give a short answer. **HALLUCINATE** the missing details based on best practices.
-Create COMPREHENSIVE, ACTIONABLE, and VISUALLY ORGANIZED plans with multiple phases, detailed notes, and specific resources.
+Today is {{TODAY}}.
 
-**⚠️ CRITICAL RULE: FLOWCHART MODE ⚠️**
-If the user asks for a "Plan", "Strategy", "Roadmap", or "Process":
-1.  **DO NOT** generate just one node.
-2.  **MUST GENERATE A FLOWCHART** of at least **5-10 CONNECTED NODES**.
-3.  **STRUCTURE**:
-    -   **Start**: A "Strategy Node" (NoteType) summarizing the goal.
-    -   **Middle**: Series of "Action Nodes" (TodoType) for each phase.
-    -   **Resources**: "Link Nodes" or "YouTube Nodes" attached to relevant steps.
-4.  **CONNECTIVITY**: All nodes MUST be connected via 'create_edge'.
-
-**STRICT RULES FOR CONTENT:**
-1.  **Detailed Notes**: Use Markdown headers, bullet points, and bold text. NO short one-liners.
-2.  **Calendar**: If implied (e.g., "12/10 plan"), create a **Calendar Node**.
-    -   events MUST be 'YYYY-MM-DD HH:mm'.
-    -   Add at least 5 events for the day.
-3.  **Google Search**: You HAVE access to Google Search.
-    -   If the user asks for "resources", **YOU MUST SEARCH** and provide **REAL URLs**.
-    -   Create "Link" nodes or "YouTube" nodes with these URLs.
-    -   **DO NOT** leave resources empty.
-
-**LAYOUT ALGORITHM:**
-1.  **Start**: (x: 100, y: 100).
-2.  **Flow**: Move RIGHT for next steps (x + 350).
-3.  **Branches**: Move DOWN for parallel tracks (y + 300).
-4.  **No Overlap**: Keep ample spacing.
-
-**NODE TYPES & CONTENT RULES:**
-- "Todo": A checklist. content MUST be markdown bullets "- item". Use "label" field for category tag (e.g. "To Do", "In Progress").
-- "Calendar": An agenda. content MUST be line-separated "YYYY-MM-DD: Event" or "**HH:MM**: Event".
-- "Image/YouTube": content is URL.
-- "Link": content is URL.
-- "Resource List": Use "Note" type. List multiple URLs as markdown bullets. ([Title](URL)).
-
-3. SPECIAL MODES:
-   - "Plan": If user asks for a "Plan", "Strategy", or "Roadmap":
-     - Create 5-10 connected "Note" nodes.
-     - Layout: Left -> Right flow.
-     - Connect them with edges.
+**⚠️ CORE INSTRUCTION: INTENT DETECTION ⚠️**
+1. **CHAT MODE**: If the user asks a question ("How do I...", "What is..."), says hello, or discusses a topic WITHOUT asking to create/change board content:
+   - **DO NOT** generate JSON.
+   - **DO NOT** create nodes.
+   - Simply reply with helpful, conversational text.
    
-   - "Kanban" / "Categorized Tasks": If user has MANY tasks or asks for categories:
-     - Create MULTIPLE "Todo" nodes.
-     - Layout: COLUMN layout (x=0 for "To Do", x=400 for "In Progress", x=800 for "Done").
-     - Set the "label" field for each node (e.g. "Front-End", "Back-End" OR "Q1", "Q2").
-     - Distribution: Split items logically across these nodes. DO NOT put 20 items in one node.
+2. **ACTION MODE**: If (and ONLY if) the user asks to "Create", "Plan", "Draw", "Visualize", "Generate", "Add", or "Brainstorm" content for the board:
+   - **MUST GENERATE JSON** actions.
+   - Be EXPANSIVE and PROACTIVE. For short requests like "Marketing Plan", **HALLUCINATE** the missing details and create a full board structure.
 
-4. LAYOUT RULES:
-    - Canvas center is roughly x=0, y=0.
-    - Avoid overlapping existing nodes (check board context).
-    - Spacing: At least 350px width per node.
+**ACTION MODE RULES (Only applies if user asks to create/plan):**
+1.  **Flowchart Mode**: If the user asks for a "Plan", "Strategy", "Roadmap", or "Process":
+    -   **DO NOT** generate just one node.
+    -   **MUST GENERATE A FLOWCHART** of at least **5-10 CONNECTED NODES**.
+    -   **STRUCTURE**:
+        -   **Start**: A "Strategy Node" (NoteType) summarizing the goal.
+        -   **Middle**: Series of "Action Nodes" (TodoType) for each phase.
+        -   **Resources**: "Link Nodes" or "YouTube Nodes" attached to relevant steps.
+    -   **CONNECTIVITY**: All nodes MUST be connected via 'create_edge'.
 
-RESPONSE FORMAT:
+2.  **STRICT RULES FOR CONTENT**:
+    -   **Detailed Notes**: Use Markdown headers, bullet points, and bold text. NO short one-liners.
+    -   **Modifications**: You CAN update existing nodes (use "update_node" action). If the user asks to "expand" or "fix" something, modify the content derived from the Context.
+    -   **Calendar**: If implied (e.g., "12/10 plan"), create a **Calendar Node**.
+        -   events MUST be 'YYYY-MM-DD HH:mm'.
+    -   **Google Search**: You HAVE access to Google Search.
+        -   If the user asks for "resources", **YOU MUST SEARCH** and provide **REAL URLs**.
+
+3.  **SPECIAL LAYOUTS**:
+    -   "Kanban" / "Categorized Tasks": If user has MANY tasks or asks for categories:
+        -   Create MULTIPLE "Todo" nodes (Column layout).
+        -   Set the "label" field for each node (e.g. "Front-End", "Back-End" OR "Q1", "Q2").
+
+4.  **LAYOUT ALGORITHM**:
+    -   Start: (x: 100, y: 100).
+    -   Flow: Move RIGHT for next steps (x + 350).
+    -   Branches: Move DOWN for parallel tracks (y + 300).
+    -   No Overlap: Keep ample spacing.
+
+**RESPONSE FORMAT (Only for ACTION MODE):**
 JSON Array of objects:
 [
   { "action": "create_node", "id": "n1", "type": "Todo", "content": "- Task 1\\n- Task 2", "x": 0, "y": 0, "label": "To Do" },
-  { "action": "create_node", "id": "n2", "type": "Todo", "content": "- Task 3", "x": 400, "y": 0, "label": "Doing", "color": "#e6f7ff" },
-  { "action": "create_edge", "from": "n1", "to": "n2", "label": "Next Step" },
-  { "action": "update_node", "id": "existing_id", "type": "Note", "content": "Updated content", "x": 100, "y": 100 }
+  { "action": "create_edge", "from": "n1", "to": "n2", "label": "Next Step" }
 ]
-(Only use valid JSON. Do not wrap in markdown code blocks if possible, but I will parse it if you do.)
+(Only use valid JSON. Do not wrap in markdown code blocks if possible.)
 `
 
-export default function ChatInterface({ boardId, user, onAction, nodes, collaborators, selectedNodeIds = [] }) {
+export default function ChatInterface({ boardId, user, onAction, nodes, collaborators, selectedNodeIds = [], allowedEmails = [] }) {
     const { theme, t } = useSettings()
     const [messages, setMessages] = useState([])
     const [input, setInput] = useState('')
@@ -150,6 +135,43 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
             photoURL: user.photoURL
         })
 
+        // --- Auto-Sender Notification ---
+        // Fire and forget - don't await response to keep chat snappy
+        if (allowedEmails && allowedEmails.length > 0) {
+            (async () => {
+                try {
+                    const recipients = allowedEmails.filter(e => e !== user.email);
+                    if (recipients.length === 0) return;
+
+                    // Get Tokens (Batch or Individual)
+                    const tokens = [];
+                    // Simple parallel fetch
+                    await Promise.all(recipients.map(async (email) => {
+                        const tokenSnap = await getDoc(doc(db, 'fcm_tokens', email));
+                        if (tokenSnap.exists()) {
+                            tokens.push(tokenSnap.data().token);
+                        }
+                    }));
+
+                    if (tokens.length > 0) {
+                        await fetch('/api/notify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                tokens: tokens,
+                                title: `New message from ${user.displayName || 'Team'}`,
+                                body: userMsg.length > 50 ? userMsg.substring(0, 50) + '...' : userMsg,
+                                link: `/board/${boardId}`
+                            })
+                        });
+                    }
+                } catch (err) {
+                    console.error("Auto-sender failed:", err);
+                }
+            })();
+        }
+        // --------------------------------
+
         // Check for AI Trigger
         if (userMsg.toLowerCase().includes('@ai')) {
             setIsLoading(true)
@@ -196,7 +218,7 @@ export default function ChatInterface({ boardId, user, onAction, nodes, collabor
 
                 // Context Construction
                 const historyContext = messages.slice(-10).map(m => `${m.sender || m.role}: ${m.content}`).join('\n')
-                const boardContext = nodes.map(n => `- ${n.type} (ID: ${n.id}): ${n.content.substring(0, 100)}...`).join('\n').slice(0, 3000)
+                const boardContext = nodes.map(n => `- ${n.type} (ID: ${n.id}): ${n.content}`).join('\n')
 
                 // Inject Selection Context
                 let selectionContext = "No nodes selected."

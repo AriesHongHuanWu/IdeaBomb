@@ -20,3 +20,16 @@ export const db = initializeFirestore(app, {
         tabManager: persistentMultipleTabManager()
     })
 });
+
+// Initialize Messaging (only in browser)
+let messaging = null;
+if (typeof window !== "undefined") {
+    import("firebase/messaging").then(({ getMessaging }) => {
+        try {
+            messaging = getMessaging(app);
+        } catch (e) {
+            console.log("Firebase Messaging failed to init (likely unsupported env):", e);
+        }
+    });
+}
+export { messaging };

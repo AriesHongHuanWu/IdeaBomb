@@ -73,12 +73,12 @@ function App() {
                         <Route path="/privacy" element={<PageTransition><PrivacyPolicy /></PageTransition>} />
 
                         {/* Auth Routes */}
-                        <Route path="/login" element={<PageTransition>{!user ? <Login /> : <Navigate to="/dashboard" />}</PageTransition>} />
+                        <Route path="/login" element={<PageTransition>{!user ? <Login /> : <Navigate to={location.state?.from?.pathname || "/dashboard"} replace />}</PageTransition>} />
 
                         {/* Protected Routes */}
-                        <Route path="/dashboard" element={<PageTransition>{user ? <Dashboard user={user} /> : <Navigate to="/login" />}</PageTransition>} />
-                        <Route path="/board/:boardId" element={<PageTransition>{user ? <BoardPage user={user} /> : <Navigate to="/login" />}</PageTransition>} />
-                        <Route path="/admin" element={<PageTransition>{user ? <AdminPage user={user} /> : <Navigate to="/login" />}</PageTransition>} />
+                        <Route path="/dashboard" element={<PageTransition>{user ? <Dashboard user={user} /> : <Navigate to="/login" state={{ from: location }} replace />}</PageTransition>} />
+                        <Route path="/board/:boardId" element={<PageTransition>{user ? <BoardPage user={user} /> : <Navigate to="/login" state={{ from: location }} replace />}</PageTransition>} />
+                        <Route path="/admin" element={<PageTransition>{user ? <AdminPage user={user} /> : <Navigate to="/login" state={{ from: location }} replace />}</PageTransition>} />
 
                         <Route path="*" element={<Navigate to="/" />} />
                     </Routes>

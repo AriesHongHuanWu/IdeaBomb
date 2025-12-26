@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { FiArrowLeft, FiSave, FiUsers, FiSettings, FiActivity, FiSearch, FiPlus, FiTrash2, FiCpu, FiAlertCircle } from 'react-icons/fi'
 import { db } from '../firebase'
 import { doc, getDoc, setDoc, onSnapshot, updateDoc, collection, query, getDocs } from 'firebase/firestore'
+import NotificationManager from './NotificationManager'
 
 // Simple Admin List (For prototype safety, ideally in Firestore rules)
 const ADMIN_EMAILS = [
@@ -255,6 +256,8 @@ export default function AdminPage({ user }) {
                                 />
                             </div>
 
+                            {/* PWA Notifications */}
+                            <NotificationManager user={user} />
                         </motion.div>
                     )}
                 </div>

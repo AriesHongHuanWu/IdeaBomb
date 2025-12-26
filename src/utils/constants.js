@@ -148,6 +148,7 @@ export const translations = {
     // They are kept here to match the instruction's intent of adding them in this block.
     width: '寬度', height: '高度', apply: '套用',
     heroTitle: '思考無邊界。\n協作更智慧。',
+    geminiBanner: '✨ 現已整合 Gemini AI',
     heroDesc: '專為工程團隊打造的無限白板。藉助 Google Gemini AI 的力量進行腦力激盪、規劃與構建。',
     ctaStart: '免費開始使用', ctaDemo: '觀看演示',
     whyChoose: '為什麼選擇 IdeaBomb？', whyDesc: '銀行級的安全性，消費級的簡易性。',

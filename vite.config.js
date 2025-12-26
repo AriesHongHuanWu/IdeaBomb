@@ -9,6 +9,12 @@ export default defineConfig({
         react(),
         VitePWA({
             registerType: 'autoUpdate',
+            devOptions: { enabled: true },
+            workbox: {
+                cleanupOutdatedCaches: true,
+                skipWaiting: true,
+                clientsClaim: true,
+            },
             includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png', 'logo.svg'],
             manifest: {
                 name: 'IdeaBomb - AI Collaborative Whiteboard',
