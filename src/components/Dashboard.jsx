@@ -49,10 +49,21 @@ export default function Dashboard({ user }) {
     const [deletingIds, setDeletingIds] = useState([]) // Optimistic UI
     const isMobile = useMediaQuery('(max-width: 768px)')
 
-    // Notification State
-    const [notifPermission, setNotifPermission] = useState(Notification.permission)
+    // Notification State - Safely Initialize
+    const [notifPermission, setNotifPermission] = useState(() => {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            return Notification.permission
+        }
+        return 'denied' // validation failure fallback
+    })
 
     const handleEnableNotifications = async () => {
+        const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY
+        if (!vapidKey) {
+            alert("Configuration Error: VITE_FIREBASE_VAPID_KEY is missing in .env")
+            return
+        }
+
         if (!messaging) {
             alert("Messaging not supported in this browser.")
             return
@@ -63,7 +74,7 @@ export default function Dashboard({ user }) {
 
             if (permission === 'granted') {
                 const token = await getToken(messaging, {
-                    vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
+                    vapidKey: vapidKey
                 })
 
                 if (token) {
@@ -75,16 +86,20 @@ export default function Dashboard({ user }) {
                     })
 
                     // 2. Send Welcome Notification
-                    await fetch('/api/notify', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            tokens: [token],
-                            title: 'Notifications Enabled! 🎉',
-                            body: 'You will now receive updates when mentioned in Team Chat.',
-                            link: '/dashboard'
+                    try {
+                        await fetch('/api/notify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                tokens: [token],
+                                title: 'Notifications Enabled! 🎉',
+                                body: 'You will now receive updates when mentioned in Team Chat.',
+                                link: '/dashboard'
+                            })
                         })
-                    })
+                    } catch (e) {
+                        console.error("Welcome push failed", e)
+                    }
                     alert("Notifications enabled! A test message has been sent.")
                 }
             }
@@ -96,8 +111,10 @@ export default function Dashboard({ user }) {
 
     // Still try silent update if already granted (to keep token fresh)
     useEffect(() => {
-        if (Notification.permission === 'granted' && messaging && user) {
-            getToken(messaging, { vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY })
+        const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY
+        // Safety check for API and Key existence
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted' && messaging && user && vapidKey) {
+            getToken(messaging, { vapidKey: vapidKey })
                 .then(token => {
                     if (token) {
                         setDoc(doc(db, 'fcm_tokens', user.email), { token, uid: user.uid, updatedAt: new Date().toISOString() })
@@ -106,6 +123,7 @@ export default function Dashboard({ user }) {
                 .catch(e => console.log('Silent token refresh failed', e))
         }
     }, [user])
+
 
     // Global Settings
     const { settings, setSettings, t, theme } = useSettings()
