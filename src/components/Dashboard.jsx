@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { auth, db } from '../firebase'
 import { signOut } from 'firebase/auth'
-import { collection, addDoc, query, where, onSnapshot, setDoc } from 'firebase/firestore'
+import { collection, addDoc, query, where, onSnapshot, setDoc, getDoc } from 'firebase/firestore'
 import { FiPlus, FiLogOut, FiLayout, FiHome, FiFolder, FiUsers, FiGrid, FiShare2, FiClock, FiMoreVertical, FiEdit2, FiTrash2, FiMove, FiShield, FiGlobe, FiCheckSquare, FiCheckCircle, FiSettings, FiSun, FiMoon } from 'react-icons/fi'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { updateDoc, doc, deleteDoc } from 'firebase/firestore'
 import TodoView from './TodoView'
 import { writeBatch, getDocs } from 'firebase/firestore'
 import { useSettings } from '../App'
+import { messaging } from '../firebase'
+import { getToken } from 'firebase/messaging'
 
 // Helper for dates
 const formatDate = (date) => {
@@ -46,6 +48,41 @@ export default function Dashboard({ user }) {
     const [selectedIds, setSelectedIds] = useState([])
     const [deletingIds, setDeletingIds] = useState([]) // Optimistic UI
     const isMobile = useMediaQuery('(max-width: 768px)')
+
+    useEffect(() => {
+        const requestNotificationPermission = async () => {
+            // 1. Check if supported
+            if (!messaging) return;
+
+            try {
+                // 2. Request permission (Browser native prompt)
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    // 3. Get Token
+                    // VAPID Key from Project Settings -> Cloud Messaging -> Web Configuration
+                    const token = await getToken(messaging, {
+                        vapidKey: 'BMQJ2K5T3L8Z6X9Y4U1W7V0N2M5P8R6S1T4O9L2K8J7H6G5F4D3A2S1' // Replace with your actual VAPID public key if needed, or rely on manifest
+                    });
+
+                    if (token) {
+                        // 4. Save to Firestore
+                        await setDoc(doc(db, 'fcm_tokens', user.email), {
+                            token: token,
+                            uid: user.uid,
+                            updatedAt: new Date().toISOString()
+                        });
+                        console.log("Notification Token Saved", token);
+                    }
+                }
+            } catch (err) {
+                console.log("Notification permission error/denied", err);
+            }
+        }
+
+        if (user) {
+            requestNotificationPermission();
+        }
+    }, [user])
 
     // Global Settings
     const { settings, setSettings, t, theme } = useSettings()
