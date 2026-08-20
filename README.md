@@ -2,9 +2,6 @@
 
 A real-time collaborative whiteboard where an AI assistant writes onto the canvas instead of replying in chat.
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Live demo](https://img.shields.io/badge/demo-ideabomb.awbest.tech-informational)](https://ideabomb.awbest.tech)
-
 Planning sessions usually split across a whiteboard, a task list and a chat window. IdeaBomb puts all three on one infinite canvas: stickies, todo lists, calendars, Kanban columns, embeds and the arrows between them all live in Firestore, so several people on the same board see each other's cursors and edits as they happen. The chat panel reads the same board state, and when you ask it for a launch plan it emits a JSON action list that the client turns into real nodes and edges laid out on the canvas.
 
 Live deployment: **https://ideabomb.awbest.tech**
